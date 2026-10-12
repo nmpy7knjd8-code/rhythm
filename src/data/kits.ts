@@ -84,3 +84,5 @@ export const KITS: Kit[] = [
 
 // Rim / cross-stick sits about 3 dB lower in every kit (×0.708).
 for (const k of KITS) { const a = k.voices.accent; if (a) { a.gain = (a.gain ?? 1) * 0.708; if (a.fallback) a.fallback.gain = (a.fallback.gain ?? 1) * 0.708 } }
+// Open hi-hat about 3.5 dB lower in every kit (×0.668); closed hat and pedal unchanged.
+for (const k of KITS) { const o = k.voices.open; if (o) { o.gain = (o.gain ?? 1) * 0.668; if (o.fallback) o.fallback.gain = (o.fallback.gain ?? 1) * 0.668 } }
