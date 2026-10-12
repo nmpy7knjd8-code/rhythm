@@ -426,9 +426,24 @@ export function SongForm({ song }: { song?: Song }) {
   const cur = live ? sectionOf(sg, P.songBar) : -1
   const cur_step = useStep('song')
   const V = useMemo(() => sg.bars.length ? variation(sg) : null, [sg, sg.bars.length])
+  // keep the active section in view as playback moves on; hand scrolling pauses this for a few seconds
+  const listRef = useRef<HTMLOListElement>(null), gridRef = useRef<HTMLDivElement>(null), lastUser = useRef(0)
+  useEffect(() => {
+    const sc = listRef.current?.closest('.overflow-y-auto'); if (!sc) return
+    const mark = () => { lastUser.current = Date.now() }
+    for (const ev of ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const) sc.addEventListener(ev, mark, { passive: true })
+    return () => { for (const ev of ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const) sc.removeEventListener(ev, mark) }
+  }, [])
+  useEffect(() => {
+    if (!live || cur < 0 || Date.now() - lastUser.current < 4000) return
+    const li = listRef.current?.children[cur] as HTMLElement | undefined, sc = listRef.current?.closest('.overflow-y-auto') as HTMLElement | null
+    if (!li || !sc) return
+    const top = (gridRef.current?.offsetHeight ?? 0) + 8, r = li.getBoundingClientRect(), b = sc.getBoundingClientRect()
+    if (r.top < b.top + top || r.bottom > b.bottom - 8) sc.scrollTo({ top: sc.scrollTop + (r.top - b.top) - top, behavior: 'smooth' })
+  }, [cur, live])
   return <div>
-    {live && sg.bars[P.songBar] && <StepGrid pattern={sg.bars[P.songBar]} current={P.playing ? cur_step : -1} />}
-    <ol className="mt-3 divide-y divide-line">{sg.sections.map((s, i) => {
+    {live && sg.bars[P.songBar] && <div ref={gridRef} className="sticky -top-4 z-10 -mx-4 -mt-4 px-4 pt-4 pb-2 bg-[#141416]"><StepGrid pattern={sg.bars[P.songBar]} current={P.playing ? cur_step : -1} /></div>}
+    <ol ref={listRef} className="mt-1 divide-y divide-line">{sg.sections.map((s, i) => {
       const on = i === cur; const pct = on ? ((P.songBar - s.start + 1) / s.bars) * 100 : 0
       const go = async () => { if (!live) { await P.loadSong(sg, i); await P.toggle() } else P.jumpSection(i) }
       return <li key={i} role="button" tabIndex={0} aria-label={`Jump to ${s.name}`} onClick={go} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void go() } }} className="flex items-center gap-2 py-2 cursor-pointer active:bg-white/[0.03] rounded-lg">
