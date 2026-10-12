@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { RHYTHMS, PATTERNS } from '../data/rhythms'
-import { STORY_ARRANGEMENT, STORY_TEXT } from '../data/story'
+import { STORY_ARRANGEMENT } from '../data/story'
 import { HISTORY, SOURCES } from '../data/history'
 import { CULTURES, WORDING_NOTES, INTERLOCK_PRESETS, SOURCES_VERIFIED, type Strength } from '../data/cultures'
 import { ARTISTS } from '../data/artists'
