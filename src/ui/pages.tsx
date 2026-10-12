@@ -238,11 +238,11 @@ export function Lens({ id, go }: { id?: string; go: (h: string) => void }) {
   const a = ARTISTS.find(x => x.id === id)
   if (!a) return <>
     <H1 t="Drummer's Lens" sub="How these drummers create feeling and tell a story with the kit." />
-    <ul className="divide-y divide-line">{ARTISTS.map(x => <li key={x.id}><button onClick={() => go(`lens/${x.id}`)} className="w-full py-5 text-left flex justify-between"><span className="text-lg">{x.name}</span><span className="text-sm text-bone/40">{x.band}</span></button></li>)}</ul>
+    <ul className="divide-y divide-line">{ARTISTS.map(x => <li key={x.id}><button onClick={() => go(`lens/${x.id}`)} className="w-full -mx-3 px-3 py-4 text-left flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.03] active:bg-white/[0.06]" style={{ width: 'calc(100% + 1.5rem)' }}><span className="min-w-0 flex-1"><span className="block text-lg leading-snug">{x.name}</span><span className="block mt-0.5 text-[13px] text-bone/45 leading-snug">{x.band.split(/\s*;\s*/).map(b => b[0].toUpperCase() + b.slice(1)).join(' · ')}</span></span><span aria-hidden className="text-bone/30 text-xl leading-none">›</span></button></li>)}</ul>
   </>
   return <>
     <button onClick={() => go('lens')} className="text-sm text-bone/50 mb-8">← Drummer's Lens</button>
-    <H1 t={a.name} sub={`${a.band} · ${a.era}`} />
+    <H1 t={a.name} sub={`${a.band.split(/\s*;\s*/).map(b => b[0].toUpperCase() + b.slice(1)).join(' · ')} · ${a.era}`} />
     {videosFor(a.name).length > 0 && <section className="mb-12"><Tag c="Watch" />{videosFor(a.name).map(v => <VideoEmbed key={v.videoId} v={v} />)}</section>}
     {a.technique.length > 0 && <section className="mb-10"><Tag c="Technique" /><ul className="mt-3 space-y-3 text-bone/75 leading-relaxed">{a.technique.map(t => <li key={t}>{t}</li>)}</ul></section>}
     {a.feeling && <section className="mb-10"><Tag c="Feeling" /><p className="mt-3 text-bone/75 leading-relaxed">{a.feeling}</p></section>}
@@ -265,19 +265,33 @@ function InPulse({ name }: { name: string }) {
       <span className="min-w-0"><span className="block truncate">{j.raw.song}</span><span className="block text-xs text-bone/50 truncate">{j.raw.artist} · {shownBpm(j, j.raw.bpm)} BPM</span></span></li>)}</ul></section>
 }
 
+/** Songs in Pulse that show a theory idea, each with a play button. */
+function TheorySongs({ refs }: { refs: { id: string; note: string }[] }) {
+  const { loadSong, toggle, playing } = usePlayer()
+  const list = refs.map(r => ({ r, s: ALL_SONGS.find(x => x.raw.id === r.id) })).filter(x => x.s)
+  if (!list.length) return null
+  return <div className="mt-6"><span className="block text-[11px] uppercase tracking-wider text-mute">Hear it in Pulse</span>
+    <ul className="mt-1 divide-y divide-line">{list.map(({ r, s }) => <li key={r.id} className="py-2.5 flex items-center gap-3">
+      <button aria-label={`Play ${s!.raw.song}`} onClick={async () => { await loadSong(s!); if (!playing) await toggle() }} className="w-8 h-8 shrink-0 rounded-full bg-white/[0.08] grid place-items-center text-xs">▶</button>
+      <span className="min-w-0 text-sm leading-snug"><span className="text-bone/85">{s!.raw.song}</span><span className="text-bone/45"> · {r.note}</span></span></li>)}</ul></div>
+}
+
 export function Theory() {
   const { load, toggle, playing } = usePlayer()
   const loadAll = async (ps: Pattern[]) => { ps.forEach((p, i) => load(p, i > 0)); if (!playing) await toggle() }
-  const NO_COMBO = new Set(['meter-basics', 'compound']) // different meters: stacking them makes no musical sense
+  const NO_COMBO = new Set<string>() // different meters: stacking them makes no musical sense
   return <>
     <H1 t="Theory" sub="The ideas underneath rhythm, from meter to tension and release. Every concept has a pattern you can play." />
     <nav className="mb-14 flex flex-wrap gap-x-4 gap-y-2 text-sm text-bone/50">{THEORY.map(c => <a key={c.id} href={`#/theory`} onClick={e => { e.preventDefault(); document.getElementById(c.id)?.scrollIntoView({ behavior: 'smooth' }) }}>{c.title.split(':')[0]}</a>)}</nav>
     {THEORY.map(c => <section key={c.id} id={c.id} className="mb-16 scroll-mt-6">
       <h2 className="text-xl font-medium">{c.title}</h2>
       <p className="mt-3 text-bone/75 leading-relaxed">{c.body}</p>
+      {c.count && <p className="mt-4 text-[15px] leading-relaxed text-bone/70"><span className="block text-[11px] uppercase tracking-wider text-mute mb-1">Count it</span>{c.count}</p>}
+      {c.points && <ul className="mt-4 space-y-2 text-[15px] leading-relaxed text-bone/65 list-disc pl-5 marker:text-bone/30">{c.points.map(t => <li key={t}>{t}</li>)}</ul>}
       <p className="mt-4 text-sm text-bone/50">{c.listen}</p>
       {c.patterns.map(p => <div key={p.id} className="mt-5"><h3 className="text-sm font-medium">{p.name}</h3><LoadButtons pattern={p} /></div>)}
-      {c.patterns.length > 1 && !NO_COMBO.has(c.id) && <button className="mt-4 text-sm text-amber" onClick={() => loadAll(c.patterns)}>Play all {c.patterns.length} together →</button>}
+      {c.patterns.length > 1 && c.combo !== false && !NO_COMBO.has(c.id) && <button className="mt-4 text-sm text-amber" onClick={() => loadAll(c.patterns)}>Play all {c.patterns.length} together →</button>}
+      {c.songs && <TheorySongs refs={c.songs} />}
     </section>)}
   </>
 }
