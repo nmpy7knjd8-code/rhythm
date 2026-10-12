@@ -95,6 +95,8 @@ function RequestSong() {
   </form>
 }
 
+const POPULAR = ['The Beatles', 'Led Zeppelin', 'Nirvana', 'AC/DC', 'The Police', 'Foo Fighters', 'Van Halen', 'Red Hot Chili Peppers', 'Aerosmith', 'Rush', 'Tool', 'Toto', 'Phil Collins', 'Iron Maiden', 'The Who', 'Black Sabbath', 'Metallica', 'System of a Down', 'Dream Theater', 'A Perfect Circle', 'Paul Simon', 'James Brown', 'Benny Goodman Orchestra', 'The Jimi Hendrix Experience', 'Porcupine Tree', 'Meshuggah', 'Gojira', 'The Surfaris', 'Chic', 'Weather Report', 'Mahavishnu Orchestra']
+
 /** Smooth-scroll so the artist group lands 80 px from the top; re-aim as lazy content above shifts the layout. */
 function scrollToArtist(id: string) {
   const aim = (behavior: ScrollBehavior) => { const el = document.getElementById(id); if (!el) return 0
@@ -113,14 +115,19 @@ function Songs() {
     for (let i = g.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [g[i], g[j]] = [g[j], g[i]] }
     return g.flat()
   }, [])
-  const artists = useMemo(() => [...new Set(list.map(s => s.raw.artist))], [list])
+  // most songs in Pulse first, then broad popularity
+  const artists = useMemo(() => { const n = new Map<string, number>(); for (const s of list) n.set(s.raw.artist, (n.get(s.raw.artist) ?? 0) + 1)
+    const pop = (a: string) => { const i = POPULAR.indexOf(a); return i < 0 ? 999 : i }
+    return [...n.keys()].sort((x, y) => n.get(y)! - n.get(x)! || pop(x) - pop(y) || x.localeCompare(y)) }, [list])
+  const [allArtists, setAllArtists] = useState(false)
   const [picked, setPicked] = useState<string | null>(null)
   const slug = (a: string) => 'artist-' + a.toLowerCase().replace(/[^a-z0-9]+/g, '-')
   return <div className="rise">
-    <nav aria-label="Artists" className="mb-6 flex flex-wrap justify-center gap-1.5">
+    <nav aria-label="Artists" className={`mx-auto max-w-md flex flex-wrap justify-center gap-1 overflow-hidden ${allArtists ? '' : 'max-h-[46px]'}`}>
       {artists.map(a => <button key={a} onClick={() => { setPicked(a); scrollToArtist(slug(a)) }}
-        className={`h-7 px-3 rounded-full text-[12px] border transition-colors ${picked === a ? 'border-amber/60 text-amber bg-amber/[0.08]' : 'border-white/[0.08] bg-white/[0.04] text-bone/75 hover:text-amber hover:border-amber/40'}`}>{a}</button>)}
+        className={`h-[21px] px-2 rounded-full text-[10.5px] leading-none border transition-colors ${picked === a ? 'border-amber/60 text-amber bg-amber/[0.08]' : 'border-white/[0.07] bg-white/[0.035] text-bone/70 hover:text-amber hover:border-amber/40'}`}>{a}</button>)}
     </nav>
+    <div className="mt-1 mb-5 text-center"><button onClick={() => setAllArtists(v => !v)} className="text-[11px] text-mute hover:text-amber">{allArtists ? 'Fewer' : 'More artists'}</button></div>
     <RequestSong />
     <Note className="mb-8" line="Simplified drum-part transcriptions, for learning." more="Approximate transcriptions of each drum part, simplified for learning. Drum part only: no audio or lyrics. Tempos and song forms are approximate. Details on the About page." />
     {list.map((s, i) => <article key={s.raw.id} id={i === 0 || list[i - 1].raw.artist !== s.raw.artist ? slug(s.raw.artist) : undefined} className="scroll-mt-20 mb-10 pb-10 border-b border-line last:border-0">
