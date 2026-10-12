@@ -84,7 +84,7 @@ function RequestSong() {
       setState('sent'); setText('')
     } catch { setState('error') }
   }
-  return <form onSubmit={submit} className="mb-10">
+  return <form onSubmit={submit} className="mb-10 mx-auto max-w-sm">
     <input type="text" name="_honey" tabIndex={-1} autoComplete="off" aria-hidden="true" value={hp} onChange={e => setHp(e.target.value)} className="hidden" />
     <div className="flex gap-2">
       <input className="flex-1 min-w-0 h-10 px-3 rounded-xl bg-white/[0.05] border border-white/[0.06] text-sm placeholder:text-mute outline-none focus:border-amber/60" placeholder="Request a song" aria-label="Request a song" value={text} onChange={e => { setText(e.target.value); setState('idle') }} />
@@ -264,8 +264,6 @@ export function Lens({ id, go }: { id?: string; go: (h: string) => void }) {
 }
 
 export function Theory() {
-  const { load, toggle, playing } = usePlayer()
-  const loadAll = async (ps: Pattern[]) => { ps.forEach((p, i) => load(p, i > 0)); if (!playing) await toggle() }
   return <>
     <H1 t="Theory" sub="The ideas underneath rhythm, from meter to tension and release. Every concept has a pattern you can play." />
     <nav className="mb-14 flex flex-wrap gap-x-4 gap-y-2 text-sm text-bone/50">{THEORY.map(c => <a key={c.id} href={`#/theory`} onClick={e => { e.preventDefault(); document.getElementById(c.id)?.scrollIntoView({ behavior: 'smooth' }) }}>{c.title.split(':')[0]}</a>)}</nav>
@@ -274,7 +272,6 @@ export function Theory() {
       <p className="mt-3 text-bone/75 leading-relaxed">{c.body}</p>
       <p className="mt-4 text-sm text-bone/50">{c.listen}</p>
       {c.patterns.map(p => <div key={p.id} className="mt-5"><h3 className="text-sm font-medium">{p.name}</h3><LoadButtons pattern={p} /></div>)}
-      {c.patterns.length > 1 && <button className="mt-4 text-sm text-amber" onClick={() => loadAll(c.patterns)}>Play all {c.patterns.length} together →</button>}
     </section>)}
   </>
 }
