@@ -266,7 +266,7 @@ export function Lens({ id, go }: { id?: string; go: (h: string) => void }) {
 export function Theory() {
   const { load, toggle, playing } = usePlayer()
   const loadAll = async (ps: Pattern[]) => { ps.forEach((p, i) => load(p, i > 0)); if (!playing) await toggle() }
-  const NO_COMBO = new Set(['meter', 'compound', 'odd']) // different meters: stacking them makes no musical sense
+  const NO_COMBO = new Set(['meter-basics', 'compound']) // different meters: stacking them makes no musical sense
   return <>
     <H1 t="Theory" sub="The ideas underneath rhythm, from meter to tension and release. Every concept has a pattern you can play." />
     <nav className="mb-14 flex flex-wrap gap-x-4 gap-y-2 text-sm text-bone/50">{THEORY.map(c => <a key={c.id} href={`#/theory`} onClick={e => { e.preventDefault(); document.getElementById(c.id)?.scrollIntoView({ behavior: 'smooth' }) }}>{c.title.split(':')[0]}</a>)}</nav>

@@ -26,7 +26,7 @@ export const THEORY: Concept[] = [
       P('s-8', 'Level 2: eighths', 16, 4, 90, { tick: 'x.x.x.x.x.x.x.x.' }),
       P('s-16', 'Level 3: sixteenths', 16, 4, 90, { shaker: 'gggggggggggggggg' }),
     ] },
-  { id: 'meter', title: 'Meter basics',
+  { id: 'meter-basics', title: 'Meter basics',
     body: 'Meter groups pulses into repeating bars with a strong first beat. 2/4 is strong-weak (a march), 3/4 is strong-weak-weak (a waltz), and 4/4 is strong-weak-medium-weak, the default of rock and pop. The top number counts beats per bar; the bottom names the note value that gets one beat.',
     listen: 'Each one accents beat 1. Count along: 1-2, 1-2-3, 1-2-3-4.',
     patterns: [
@@ -38,15 +38,8 @@ export const THEORY: Concept[] = [
     body: 'In simple meter (2/4, 3/4, 4/4) each beat divides in two. In compound meter (6/8, 12/8) each beat divides in three, so 6/8 is two beats of three eighths, not six beats. 3/4 and 6/8 both hold six eighths, but 3/4 groups them 2+2+2 and 6/8 groups them 3+3.',
     listen: 'Six eighths each time. Feel three beats in 3/4 and two in 6/8.',
     patterns: [
-      P('m-34e', '3/4 (3 beats × 2)', 6, 2, 70, { low: 'X.....', back: '..x.x.', tick: 'xxxxxx' }, { timeSig: '3/4', ticksPerStep: 6 }),
-      P('m-68', '6/8 (2 beats × 3)', 6, 3, 70, { low: 'X.....', back: '...X..', tick: 'xxxxxx' }, { ticksPerStep: 6 }),
-    ] },
-  { id: 'odd', title: 'Odd meters',
-    body: 'Additive or "odd" meters build the bar from unequal groups of 2s and 3s: 7/8 as 2+2+3, and the Balkan aksak meters such as 9/8 = 2+2+2+3 (aksak is Turkish for "limping"). The unequal beat lengths are what make them feel lopsided but danceable.',
-    listen: 'Count the long beat in 7/8 and 9/8: it is the group of three.',
-    patterns: [
-      P('m-78', '7/8 as 2+2+3', 7, 7, 180, { low: 'X.x.X..', back: '..X....', tick: 'xxxxxxx' }, { ticksPerStep: 6 }),
-      P('m-98', '9/8 aksak 2+2+2+3', 9, 9, 200, { low: 'X.x.x.X..', back: '..X...X..', tick: 'xxxxxxxxx' }, { ticksPerStep: 6 }),
+      P('c-34', '3/4 (3 beats × 2)', 6, 2, 70, { low: 'X.....', back: '..x.x.', tick: 'xxxxxx' }, { timeSig: '3/4', ticksPerStep: 6 }),
+      P('c-68', '6/8 (2 beats × 3)', 6, 3, 70, { low: 'X.....', back: '...X..', tick: 'xxxxxx' }, { ticksPerStep: 6 }),
     ] },
   { id: 'accent', title: 'Backbeat and accent',
     body: 'An accent can come from loudness (dynamic), duration (agogic), pitch or timbre, or position. The backbeat (stress on 2 and 4) sets up a counter-accent against the metrically strong 1 and 3. That push-pull between metric and phenomenal accent drives most popular music. Moving accents inside a steady hi-hat line changes the feel completely, though not a single note is added.',
@@ -137,6 +130,14 @@ export const THEORY: Concept[] = [
     listen: 'Two bars: a normal backbeat, then the same beat played on a dotted-8th grid. The second bar feels slower and "over" the first.',
     patterns: [
       P('mm', 'Backbeat → dotted-8th implied tempo', 32, 4, 100, { low: 'X.......X.......X.....X.....X...', back: '....X.......X......X.....X.....X', tick: 'x.x.x.x.x.x.x.x.x..x..x..x..x..x' }, { ticksPerStep: 3 }),
+    ] },
+  { id: 'meter', title: 'Meter: simple, compound, additive',
+    body: 'Meter is the repeating pattern of strong and weak beats we infer from the music. In simple meter (2/4, 3/4, 4/4) each beat divides in two. In compound meter (6/8, 12/8) each beat divides in three, so 6/8 is two beats of three eighths, not six beats. Additive or "odd" meters build the bar from unequal groups of 2s and 3s: 7/8 as 2+2+3, and the Balkan aksak meters such as 9/8 = 2+2+2+3 (aksak is Turkish for "limping"). The unequal beat lengths are what make them feel lopsided but danceable.',
+    listen: 'Play the three in turn. Count the long beat in 7/8 and 9/8: it is the group of three.',
+    patterns: [
+      P('m-68', '6/8 compound (2 beats × 3)', 6, 3, 70, { low: 'X.....', back: '...X..', tick: 'xxxxxx' }, { ticksPerStep: 6 }),
+      P('m-78', '7/8 as 2+2+3', 7, 7, 180, { low: 'X.x.X..', back: '..X....', tick: 'xxxxxxx' }, { ticksPerStep: 6 }),
+      P('m-98', '9/8 aksak 2+2+2+3', 9, 9, 200, { low: 'X.x.x.X..', back: '..X...X..', tick: 'xxxxxxxxx' }, { ticksPerStep: 6 }),
     ] }
 ]
 registerPatterns(THEORY.flatMap(c => c.patterns))
