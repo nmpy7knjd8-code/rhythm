@@ -1,0 +1,90 @@
+{
+ "remove": [
+  "j-shaman",
+  "thetapulse",
+  "quadrant4",
+  "blackpage"
+ ],
+ "meta": {
+  "hotforteacher": {
+   "bpmDisplay": 0.5,
+   "bpmNote": "The tab is written in cut time (half note = 128); the record is 128 BPM, so Pulse shows 128 and plays the tab at its written speed."
+  },
+  "heaviestmatter": {
+   "bpmDisplay": 0.5,
+   "bpmNote": "The tab counts the double-time pulse (about 207); the record is listed at 103, so Pulse shows half and plays the tab at its written speed."
+  },
+  "singsing": {
+   "bpm": 220,
+   "bpmDisplay": 0.5,
+   "bpmNote": "The tab counts double (about 220 in the main groove); the 1937 record is listed at about 112, so Pulse shows half and plays the tab at its written speed."
+  },
+  "songforthedead": {
+   "bpm": 106,
+   "bpmNote": "Main groove about 106 (record listed at 107); the fast intro runs about 205–214 as written in the tab."
+  },
+  "purdie": {
+   "form": [
+    {
+     "section": "Intro (no drums)",
+     "bars": 9,
+     "timeSig": [
+      "1/4",
+      "4/4"
+     ]
+    },
+    {
+     "section": "Part 2 · hi-hat",
+     "bars": 88,
+     "timeSig": [
+      "4/4"
+     ]
+    },
+    {
+     "section": "Part 3 · ride",
+     "bars": 8,
+     "timeSig": [
+      "4/4"
+     ]
+    },
+    {
+     "section": "Part 4 · hi-hat",
+     "bars": 66,
+     "timeSig": [
+      "4/4"
+     ]
+    },
+    {
+     "section": "Part 5 · ride",
+     "bars": 6,
+     "timeSig": [
+      "4/4"
+     ]
+    }
+   ],
+   "firstDrumBar": 4
+  }
+ },
+ "pinnedFiles": [
+  "purdie",
+  "mobydick"
+ ],
+ "textFixes": [
+  {
+   "song": "byob",
+   "find": "Chrous",
+   "replace": "Chorus"
+  }
+ ],
+ "tagShuffle": true,
+ "shuffleBars": {
+  "rosanna": 119,
+  "mitchell": 183,
+  "moon": 183,
+  "purdie": 177,
+  "mobydick": 7,
+  "sugar": 35,
+  "danceeternity": 14,
+  "hotforteacher": 287
+ }
+}
