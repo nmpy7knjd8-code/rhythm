@@ -104,10 +104,17 @@ function Songs() {
     for (let i = g.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [g[i], g[j]] = [g[j], g[i]] }
     return g.flat()
   }, [])
+  const artists = useMemo(() => [...new Set(list.map(s => s.raw.artist))], [list])
+  const [picked, setPicked] = useState<string | null>(null)
+  const slug = (a: string) => 'artist-' + a.toLowerCase().replace(/[^a-z0-9]+/g, '-')
   return <div className="rise">
+    <nav aria-label="Artists" className="mb-6 flex flex-wrap justify-center gap-1.5">
+      {artists.map(a => <button key={a} onClick={() => { setPicked(a); document.getElementById(slug(a))?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
+        className={`h-7 px-3 rounded-full text-[12px] border transition-colors ${picked === a ? 'border-amber/60 text-amber bg-amber/[0.08]' : 'border-white/[0.08] bg-white/[0.04] text-bone/75 hover:text-amber hover:border-amber/40'}`}>{a}</button>)}
+    </nav>
     <RequestSong />
     <Note className="mb-8" line="Simplified drum-part transcriptions, for learning." more="Approximate transcriptions of each drum part, simplified for learning. Drum part only: no audio or lyrics. Tempos and song forms are approximate. Details on the About page." />
-    {list.map(s => <article key={s.raw.id} className="mb-10 pb-10 border-b border-line last:border-0">
+    {list.map((s, i) => <article key={s.raw.id} id={i === 0 || list[i - 1].raw.artist !== s.raw.artist ? slug(s.raw.artist) : undefined} className="scroll-mt-20 mb-10 pb-10 border-b border-line last:border-0">
       <div className="flex items-baseline justify-between gap-3"><h2 className="text-xl font-medium tracking-tight">{s.raw.song}</h2><span className="text-xs text-mute tabular-nums shrink-0">{s.raw.timeSig}</span></div>
       <p className="mt-1 text-sm text-bone/60">{s.raw.artist} · {s.raw.drummer}{s.raw.category === 'Virtuoso' && <span className="ml-2 text-[10px] uppercase tracking-wider text-amber/70">Virtuoso</span>}</p>
       {s.raw.confidence && <p className="mt-0.5 text-[11px] text-mute">{s.raw.confidence}</p>}
