@@ -61,5 +61,18 @@ export const ARTISTS: ArtistLens[] = [
     tryThis: [
       { pattern: P('freese-68', 'Judith-style 6/8 verse', 12, 2, 124, { low: 'X.....X.x...', back: '......X.....', tick: 'x.x.x.x.x.x.' }, false, 3), note: 'Rolling 6/8 (dotted quarter ≈ 83). Play the full Judith transcription under Songs to hear how hats, loose hats and ride mark each section.' },
     ] },
+  { id: "dolmayan", name: "John Dolmayan", band: "System of a Down", era: "1997–present", technique: [], feeling: "Tight, explosive and hand-driven. Parts stop and start with the riffs, with sudden snare-and-tom bursts.", storytelling: '', tryThis: [] },
+  { id: "grohl", name: "Dave Grohl", band: "Nirvana; Foo Fighters; Queens of the Stone Age", era: "1990–present", technique: [], feeling: "Huge, simple and hook-like. Power that comes from consistency and space, not from extra notes.", storytelling: '', tryThis: [] },
+  { id: "porcaro", name: "Jeff Porcaro", band: "Toto; session work", era: "1972–1992", technique: [], feeling: "Relaxed and deep in the pocket: shuffles that lope, sixteenths that feel like silk, and space in the ballads.", storytelling: '', tryThis: [] },
+  { id: "avh", name: "Alex Van Halen", band: "Van Halen", era: "1972–2020", technique: [], feeling: "Big, roomy and swinging. A rock drummer who thinks like a big-band drummer, built on shuffles and double-bass drive.", storytelling: '', tryThis: [] },
+  { id: "rudd", name: "Phil Rudd", band: "AC/DC", era: "1975–1983, 1994–2015", technique: [], feeling: "The pocket itself: hard-hit, unwavering and unadorned, so the guitars can swing over it.", storytelling: '', tryThis: [] },
+  { id: "portnoy", name: "Mike Portnoy", band: "Dream Theater; Transatlantic; The Winery Dogs", era: "1985–present", technique: [], feeling: "Maximal and theatrical, but driven by feel: odd meters played so they still make people move.", storytelling: '', tryThis: [] },
+  { id: "cobham", name: "Billy Cobham", band: "Mahavishnu Orchestra; solo", era: "1960s–present", technique: [], feeling: "Torrential power and speed in jazz-rock, with a funk player's sense of groove underneath.", storytelling: '', tryThis: [] },
+  { id: "rich", name: "Buddy Rich", band: "Artie Shaw; Tommy Dorsey; Buddy Rich Big Band", era: "1920s–1987", technique: [], feeling: "Blazing hands and swing that pushes the band forward, with show-stopping solos.", storytelling: '', tryThis: [] },
+  { id: "krupa", name: "Gene Krupa", band: "Benny Goodman; Gene Krupa Orchestra", era: "1920s–1973", technique: [], feeling: "The first drum star: tom-tom thunder and showmanship that put the drummer out front.", storytelling: '', tryThis: [] },
+  { id: "barker", name: "Travis Barker", band: "blink-182; The Transplants", era: "1998–present", technique: [], feeling: "Pop-punk speed with jazz, marching and hip-hop vocabulary: crisp, flashy and always tight.", storytelling: '', tryThis: [] },
+  { id: "chadsmith", name: "Chad Smith", band: "Red Hot Chili Peppers", era: "1988–present", technique: [], feeling: "Heavy, funky and swinging. A rock hitter with ghost-note funk, locked to the bass.", storytelling: '', tryThis: [] },
+  { id: "gadd", name: "Steve Gadd", band: "Session work; Paul Simon; Eric Clapton; Steely Dan", era: "1970s–present", technique: [], feeling: "The definitive studio groove: relaxed, precise, and full of rudimental detail that never clutters the song.", storytelling: '', tryThis: [] },
+  { id: "twilliams", name: "Tony Williams", band: "Miles Davis Quintet; Lifetime", era: "1960s–1997", technique: [], feeling: "Fearless, fast and conversational: time that moves with the band rather than under it.", storytelling: '', tryThis: [] },
 ]
 registerPatterns(ARTISTS.flatMap(a => a.tryThis.map(t => t.pattern)))

@@ -248,9 +248,21 @@ export function Lens({ id, go }: { id?: string; go: (h: string) => void }) {
     {a.feeling && <section className="mb-10"><Tag c="Feeling" /><p className="mt-3 text-bone/75 leading-relaxed">{a.feeling}</p></section>}
     <DeepLens name={a.name} />
     {a.storytelling && <section className="mb-12"><Tag c="Storytelling" /><p className="mt-3 text-bone/75 leading-relaxed">{a.storytelling}</p></section>}
-    <section><Tag c="Try this" />{a.tryThis.map(t => <div key={t.pattern.id} className="mt-5"><h3 className="font-medium">{t.pattern.name}</h3><p className="mt-1 text-sm text-bone/60">{t.note}</p><LoadButtons pattern={t.pattern} /></div>)}
-      <Note className="mt-8" line="Simplified illustrations, not transcriptions." /></section>
+    <InPulse name={a.name} />
+    {a.tryThis.length > 0 && <section><Tag c="Try this" />{a.tryThis.map(t => <div key={t.pattern.id} className="mt-5"><h3 className="font-medium">{t.pattern.name}</h3><p className="mt-1 text-sm text-bone/60">{t.note}</p><LoadButtons pattern={t.pattern} /></div>)}
+      <Note className="mt-8" line="Simplified illustrations, not transcriptions." /></section>}
   </>
+}
+
+/** Songs in the library played by this drummer, each with a play button. */
+function InPulse({ name }: { name: string }) {
+  const { loadSong, toggle, playing } = usePlayer()
+  const list = ALL_SONGS.filter(x => x.raw.drummer === name)
+  if (!list.length) return null
+  return <section className="mb-12"><Tag c="In Pulse" />
+    <ul className="mt-3 divide-y divide-line">{list.map(j => <li key={j.raw.id} className="py-3 flex items-center gap-3">
+      <button aria-label={`Play ${j.raw.song}`} onClick={async () => { await loadSong(j); if (!playing) await toggle() }} className="w-9 h-9 shrink-0 rounded-full bg-white/[0.08] grid place-items-center text-sm">▶</button>
+      <span className="min-w-0"><span className="block truncate">{j.raw.song}</span><span className="block text-xs text-bone/50 truncate">{j.raw.artist} · {shownBpm(j, j.raw.bpm)} BPM</span></span></li>)}</ul></section>
 }
 
 export function Theory() {
