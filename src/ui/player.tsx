@@ -268,7 +268,7 @@ function FillPicker() {
 
 /** Bottom sheet. Drag anywhere on the header (handle, title, tabs) or pull down on content that is scrolled to the top:
  *  the sheet follows the finger and closes past 40 px or on a quick flick. Close button, tap outside and Esc also close. */
-function Sheet({ open, onClose, children, title, subtitle, head }: { open: boolean; onClose: () => void; children: ReactNode; title?: string; subtitle?: string; head?: ReactNode }) {
+function Sheet({ open, onClose, children, title, subtitle, head, contentPull = true }: { open: boolean; onClose: () => void; children: ReactNode; title?: string; subtitle?: string; head?: ReactNode; contentPull?: boolean }) {
   const [dy, setDy] = useState(0); const drag = useRef<{ y: number; t: number; lastY: number; lastT: number; active: boolean; fromContent: boolean } | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   useEffect(() => { if (!open) setDy(0) }, [open])
@@ -289,13 +289,14 @@ function Sheet({ open, onClose, children, title, subtitle, head }: { open: boole
     const d = drag.current; drag.current = null; if (!d || !d.active) { setDy(0); return }
     const v = (d.lastY - ((d as { prevY?: number }).prevY ?? d.lastY)) / Math.max(1, d.lastT - d.t) // px/ms over the last move
     const dist = d.lastY - d.y
-    if (dist > 32 || (dist > 10 && v > 0.2)) onClose()
+    if (d.fromContent ? dist > 80 || (dist > 30 && v > 0.5) : dist > 32 || (dist > 10 && v > 0.2)) onClose()
     setDy(0)
   }
   // non-passive touchmove on the content so a pull-down at scrollTop 0 can stop native overscroll
   useEffect(() => {
     const el = scroller.current; if (!el) return
-    const ts = (e: TouchEvent) => start(e.touches[0].clientY, true)
+    // never start a sheet drag from sliders or other controls; tabs with sliders opt out of pull-to-close entirely
+    const ts = (e: TouchEvent) => { if (!contentPull || (e.target as HTMLElement).closest('input,select,textarea,[role=slider],.no-sheet-drag')) { drag.current = null; return } start(e.touches[0].clientY, true) }
     const tm = (e: TouchEvent) => move(e.touches[0].clientY, e)
     const te = () => end()
     el.addEventListener('touchstart', ts, { passive: true }); el.addEventListener('touchmove', tm, { passive: false }); el.addEventListener('touchend', te); el.addEventListener('touchcancel', te)
@@ -351,6 +352,7 @@ export function PlayerBar() {
       </div>
     </div></div>
     <Sheet open={open} onClose={() => setOpen(false)} title={sg ? sg.raw.song : title} subtitle={sg ? `${sg.raw.artist} · ${sg.raw.drummer}` : undefined}
+      contentPull={tab !== 'sound'}
       head={<Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} />}>
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
@@ -363,10 +365,10 @@ export function PlayerBar() {
       {tab === 'browse' && !sg && <Browser />}
       {tab === 'sound' && <div className="space-y-6">
         <section><Label>Tempo <span className="text-bone tabular-nums">{P.bpm}</span> <span className="normal-case tracking-normal">BPM</span></Label>
-          <input type="range" min={40} max={260} value={P.bpm} onChange={e => P.setBpm(+e.target.value)} className="slider" aria-label="Tempo" />
+          <input type="range" min={40} max={260} value={P.bpm} onChange={e => P.setBpm(+e.target.value)} className="slider no-sheet-drag touch-pan-x" aria-label="Tempo" />
           {P.layers[0]?.pattern.bpmNote && <p className="mt-1.5 text-[11px] text-mute leading-snug">{P.layers[0].pattern.bpmNote}{P.layers[0].pattern.bpmSource && <> <a className="underline underline-offset-2" href={P.layers[0].pattern.bpmSource} target="_blank" rel="noreferrer">source</a></>}</p>}</section>
         <section><Label>Swing <span className="text-bone tabular-nums">{Math.round(P.swing * 100)}%</span></Label>
-          <input type="range" min={0} max={1} step={0.01} value={P.swing} onChange={e => P.setSwing(+e.target.value)} className="slider" aria-label="Swing" /></section>
+          <input type="range" min={0} max={1} step={0.01} value={P.swing} onChange={e => P.setSwing(+e.target.value)} className="slider no-sheet-drag touch-pan-x" aria-label="Swing" /></section>
         <section><Label>Kit</Label>
           <select value={P.kitId} onChange={e => P.setKit(e.target.value)} className="sel w-full">{KITS.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}</select>
           <p className="mt-1.5 text-[11px] text-mute">{KITS.find(k => k.id === P.kitId)!.blurb}</p>
