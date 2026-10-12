@@ -87,8 +87,8 @@ function RequestSong() {
   return <form onSubmit={submit} className="mb-10 mx-auto max-w-sm">
     <input type="text" name="_honey" tabIndex={-1} autoComplete="off" aria-hidden="true" value={hp} onChange={e => setHp(e.target.value)} className="hidden" />
     <div className="flex gap-2">
-      <input className="flex-1 min-w-0 h-10 px-3 rounded-xl bg-white/[0.05] border border-white/[0.06] text-sm placeholder:text-mute outline-none focus:border-amber/60" placeholder="Request a song" aria-label="Request a song" value={text} onChange={e => { setText(e.target.value); setState('idle') }} />
-      <button disabled={!text.trim() || state === 'sending'} className="h-10 px-4 rounded-xl bg-amber text-ink text-sm font-medium disabled:opacity-30">{state === 'sending' ? '…' : 'Send'}</button>
+      <input className="flex-1 min-w-0 h-10 px-2.5 rounded-xl bg-white/[0.05] border border-white/[0.06] text-[13px] placeholder:text-[12px] placeholder:text-mute outline-none focus:border-amber/60" placeholder="Request a song, it will be added in minutes" aria-label="Request a song" value={text} onChange={e => { setText(e.target.value); setState('idle') }} />
+      <button disabled={!text.trim() || state === 'sending'} className="h-10 px-3.5 rounded-xl bg-amber text-ink text-sm font-medium disabled:opacity-30">{state === 'sending' ? '…' : 'Send'}</button>
     </div>
     {state === 'sent' && <p className="mt-1.5 text-[11px] text-amber">Thanks, request sent.</p>}
     {state === 'error' && <p className="mt-1.5 text-[11px] text-mute">Couldn't send. Try again in a moment.</p>}
