@@ -1,3 +1,4 @@
+declare const __BUILD_ID__: string
 import raw from './songs.json'
 import type { Fill, Pattern, Track, Voice } from '../engine/types'
 import { registerPatterns } from './rhythms'
@@ -34,7 +35,7 @@ interface SectionFile { humanize?: { lateMs: number; jitterMs: number }; name: s
 /** Fetch the full bar-by-bar part for a song (kept out of the main bundle). */
 export async function loadSongBars(song: Song): Promise<Song> {
   if (song.bars.length) return song
-  const r = await fetch(`${import.meta.env.BASE_URL}songs/${song.raw.id}.json`)
+  const r = await fetch(`${import.meta.env.BASE_URL}songs/${song.raw.id}.json?v=${__BUILD_ID__}`)
   const data = (await r.json()) as { sections: SectionFile[] }
   const bars: Pattern[] = []
   data.sections.forEach((sec, si) => sec.bars.forEach((b, i) => {

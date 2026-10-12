@@ -99,6 +99,10 @@ export class RhythmEngine {
   private song: { bars: Pattern[]; loop: [number, number] | null } | null = null
   private songBar = 0
   private songTick = 0
+  private lastTime = -1
+  private late = false
+  /** hits dropped because the scheduler was catching up after a stall (diagnostics) */
+  skipped = 0
   private pendingJump: number | null = null
   onSongBar?: (bar: number) => void
   setSong(bars: Pattern[] | null) { this.song = bars ? { bars, loop: null } : null; this.songBar = 0; this.songTick = 0; this.pendingJump = null }
@@ -109,13 +113,21 @@ export class RhythmEngine {
   private pendingBeatJump: number | null = null
   private songStep(time: number, tickSec: number) {
     if (this.pendingBeatJump !== null && this.songTick % 12 === 0) { this.songBar = this.pendingBeatJump; this.songTick = 0; this.pendingBeatJump = null; this.pendingJump = null }
-    const song = this.song!; const p = song.bars[this.songBar]; const tps = ticksPerStep(p); const len = p.steps * tps
+    const song = this.song!
+    if (!song.bars.length) return
+    if (!(this.songBar >= 0 && this.songBar < song.bars.length)) { this.songBar = 0; this.songTick = 0 }
+    const p = song.bars[this.songBar]; const tps = Math.max(1, ticksPerStep(p) || 1)
+    let len = p.steps * tps
+    if (!(len > 0) || !isFinite(len)) len = TICKS_PER_BAR // guard: a bar can never be empty or non-finite
+    if (this.songTick >= len) this.songTick = len - 1
     if (this.songTick === 0) {
       const b = this.songBar; Tone.getDraw().schedule(() => this.onSongBar?.(b), time)
       // tempo map: each bar may carry its own tempo; change it exactly on the bar line
-      if (p.suggestedBpm && Math.abs(Tone.getTransport().bpm.getValueAtTime(time) - p.suggestedBpm) > 0.01) Tone.getTransport().bpm.setValueAtTime(p.suggestedBpm, time)
+      const want = (p.suggestedBpm ?? 0) * this.songTempoScale
+      if (want > 0 && isFinite(want) && Math.abs(Tone.getTransport().bpm.getValueAtTime(time) - want) > 0.01) Tone.getTransport().bpm.setValueAtTime(want, time)
     }
-    if (p.tempoAt) for (const [f, bpm] of p.tempoAt) { const at = fracOf(f) * len; if (this.songTick === Math.ceil(at - 1e-9)) Tone.getTransport().bpm.setValueAtTime(bpm, time - (Math.ceil(at - 1e-9) - at) * tickSec) }
+    tickSec = 5 / Tone.getTransport().bpm.getValueAtTime(time + 1e-6) // after any tempo change at this instant
+    if (p.tempoAt) for (const [f, bpm] of p.tempoAt) { const at = fracOf(f) * len; if (this.songTick === Math.ceil(at - 1e-9)) Tone.getTransport().bpm.setValueAtTime(bpm * this.songTempoScale, Math.max(time - (Math.ceil(at - 1e-9) - at) * tickSec, this.lastTime)) }
     if (this.songTick % tps === 0) {
       const step = this.songTick / tps; const stepSec = tickSec * tps
       let t = time + swingOffset(p, step, this.swing) * stepSec
@@ -136,7 +148,20 @@ export class RhythmEngine {
 
   setKit(kit: Kit) { this.kit = kit; for (const c of this.channels.values()) this.clearInsts(c) }
   setSwing(s: number) { this.swing = s }
-  setBpm(bpm: number) { Tone.getTransport().bpm.rampTo(bpm, 0.05) }
+  /** Song tempo scale (slider while a song plays): every bar's own tempo × this factor. */
+  songTempoScale = 1
+  private songBaseBpm = 0
+  setSongBaseBpm(b: number) { this.songBaseBpm = b; this.songTempoScale = 1 }
+  setBpm(bpm: number) {
+    const bp = Tone.getTransport().bpm, now = Tone.now()
+    if (this.song && this.songBaseBpm > 0) {
+      // scale the song's tempo map instead of overriding it; replace pending automation rather than ramping over it
+      this.songTempoScale = Math.max(0.1, bpm / this.songBaseBpm)
+      const cur = this.song.bars[this.songBar]?.suggestedBpm ?? this.songBaseBpm
+      bp.cancelScheduledValues(now); bp.setValueAtTime(cur * this.songTempoScale, now); return
+    }
+    bp.cancelScheduledValues(now); bp.setValueAtTime(bp.getValueAtTime(now), now); bp.linearRampToValueAtTime(bpm, now + 0.05)
+  }
   /** Insert `fill` in the last bar of every `every` bars (0 = off). */
   setFill(fill: Fill | null, every: number) { this.fill = fill; this.fillEvery = every }
   subscribe(l: StepListener) { this.listeners.add(l); return () => { this.listeners.delete(l) } }
@@ -175,6 +200,7 @@ export class RhythmEngine {
     return p.barTicks ?? (len <= TICKS_PER_BAR * 2 && len % 6 === 0 && len !== TICKS_PER_BAR * 2 ? len : TICKS_PER_BAR)
   }
   private play(channelId: string, voice: Voice, t: number, vel: number, graces = 0, stepSec = 0.1, variant?: string) {
+    if (this.late || !isFinite(t)) { this.skipped++; return }
     this.trace?.push({ t, src: channelId, voice, bar: this.bar, variant })
     const vr = variant ? VARIANTS[variant] : undefined
     if (vr?.voice) voice = vr.voice
@@ -209,8 +235,14 @@ export class RhythmEngine {
     this.tick = 0; this.bar = 0
     const tickLen = `${(tr.PPQ * 4) / TICKS_PER_BAR}i`
     this.songTick = 0
+    this.lastTime = -1
     this.eventId = tr.scheduleRepeat(time => {
-      if (this.song) { this.songStep(time, Tone.Time(tickLen).toSeconds()); this.tick++; return }
+      // guards: never process the same instant twice (time must increase), and if the main thread stalled and Tone is
+      // catching up on ticks that are already in the past, advance the counters silently instead of bursting notes
+      if (!(time > this.lastTime)) return
+      this.lastTime = time
+      this.late = time < Tone.now() - 0.08
+      if (this.song) { this.songStep(time, 5 / tr.bpm.getValueAtTime(time)); this.tick++; return } // one tick = 1/48 bar of 4/4 = 5/bpm s
       const BT = this.barTicks()
       const barStart = this.tick % BT === 0
       const fillBar = this.inFill(this.bar)

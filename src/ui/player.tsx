@@ -80,7 +80,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       await loadSongBars(sg)
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); setArr(null); setSection(null); setLayers([])
       en.setSong(sg.bars); const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0)
-      setBpmS(sg.raw.bpm); en.setBpm(sg.raw.bpm)
+      setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
     },
     jumpBar: b => { e().jumpSong(b); if (!e().playing) setSongBar(b) },
     jumpSection: i => { if (!song) return; const st = song.sections[i].start; e().jumpSong(st, true); if (!e().playing) setSongBar(st)
