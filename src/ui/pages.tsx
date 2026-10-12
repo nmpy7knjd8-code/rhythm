@@ -110,6 +110,9 @@ function scrollToArtist(id: string) {
     if (++n > 12 || off < 2) { stop(); return } if (n % 3 === 0) aim(off > 600 ? 'smooth' : 'auto') }, 250)
 }
 
+/** Only lower or partial confidence gets a per-song note; the Songsterr credit lives in the page note. */
+const lowConf = (c?: string) => { const r = (c ?? '').replace(/^transcribed \(Songsterr community tab\);?\s*/i, '').trim(); return r ? r.charAt(0).toUpperCase() + r.slice(1) : '' }
+
 function Songs() {
   // artist groups shuffled on each visit; songs inside a group keep their order
   const list = useMemo(() => {
@@ -133,11 +136,11 @@ function Songs() {
     </nav>
     <div className="mt-1 mb-5 text-center"><button onClick={() => setAllArtists(v => !v)} className="text-[11px] text-mute hover:text-amber">{allArtists ? 'Fewer' : 'More artists'}</button></div>
     <RequestSong />
-    <Note className="mb-8" line="Simplified drum-part transcriptions, for learning." more="Approximate transcriptions of each drum part, simplified for learning. Drum part only: no audio or lyrics. Tempos and song forms are approximate. Details on the About page." />
+    <Note className="mb-8" line="Simplified drum-part transcriptions, for learning." more="Drum parts transcribed from Songsterr community tabs, simplified for learning. Drum part only: no audio or lyrics. Songs with lower confidence or partial tabs are marked on their cards. Details on the About page." />
     {list.map((s, i) => <article key={s.raw.id} id={i === 0 || list[i - 1].raw.artist !== s.raw.artist ? slug(s.raw.artist) : undefined} className="scroll-mt-20 mb-10 pb-10 border-b border-line last:border-0">
       <div className="flex items-baseline justify-between gap-3"><h2 className="text-xl font-medium tracking-tight">{s.raw.song}</h2><span className="text-xs text-mute tabular-nums shrink-0">{s.raw.timeSig}</span></div>
       <p className="mt-1 text-sm text-bone/60">{s.raw.artist} · {s.raw.drummer}{s.raw.category === 'Virtuoso' && <span className="ml-2 text-[10px] uppercase tracking-wider text-amber/70">Virtuoso</span>}</p>
-      {s.raw.confidence && <p className="mt-0.5 text-[11px] text-mute">{s.raw.confidence}</p>}
+      {lowConf(s.raw.confidence) && <p className="mt-0.5 text-[11px] text-mute">{lowConf(s.raw.confidence)}</p>}
       {s.raw.feel && <p className="mt-3 text-bone/80 leading-relaxed">{s.raw.feel}</p>}
       {s.raw.whyItWorks && <p className="mt-2 text-[15px] text-bone/55 leading-relaxed">{s.raw.whyItWorks}</p>}
       <StepGrid pattern={s.pattern} current={-1} />
