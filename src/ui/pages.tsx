@@ -135,7 +135,7 @@ function BeatRow({ b }: { b: StoryBeat }) {
   const live = P.song?.raw.id === b.songId && P.playing && P.songBar >= b.barStart - 1 && P.songBar <= b.barEnd - 1
   return <li className="py-2.5 flex items-start gap-3">
     <button aria-label={`Play ${b.label}, bars ${b.barStart}–${b.barEnd}`} onClick={() => live ? P.toggle() : P.playRange(sg, b.barStart - 1, b.barEnd)} className={`mt-0.5 w-8 h-8 shrink-0 rounded-full grid place-items-center text-[11px] ${live ? 'bg-amber text-ink' : 'bg-white/[0.08] text-bone/85'}`}>{live ? '■' : '▶'}</button>
-    <div className="min-w-0"><p className="text-sm"><span className="font-medium">{b.label}</span> <span className="text-[11px] text-mute tabular-nums">bars {b.barStart}–{b.barEnd}</span></p>{b.note && <p className="mt-0.5 text-sm text-bone/60 leading-relaxed">{b.note}</p>}</div>
+    <div className="min-w-0"><p className="text-sm"><span className="font-medium">{b.label}</span> <span className="text-[11px] text-mute tabular-nums">{b.barStart === b.barEnd ? `bar ${b.barStart}` : `bars ${b.barStart}–${b.barEnd}`}</span></p>{b.note && <p className="mt-0.5 text-sm text-bone/60 leading-relaxed">{b.note}</p>}</div>
   </li>
 }
 function StoryChapters() {
