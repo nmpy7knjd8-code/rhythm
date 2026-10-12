@@ -73,8 +73,10 @@ function RequestSong() {
     try {
       // Web3Forms public access key for pulse-requests@mail.grokbot.com (safe to embed; it only routes mail to that inbox)
       const key = (import.meta.env.VITE_WEB3FORMS_KEY as string | undefined) || 'a45bacf4-ef38-4d5b-96a3-0a160015941f'
-      const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ access_key: key, subject: `Pulse song request: ${t}`, from_name: 'Pulse', request: t, botcheck: '' }) })
+      // FormData + only safelisted headers = a "simple" CORS request, so no preflight is needed
+      const fd = new FormData()
+      for (const [k2, v] of Object.entries({ access_key: key, subject: `Pulse song request: ${t}`, from_name: 'Pulse', request: t })) fd.append(k2, v)
+      const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
       const j = await r.json().catch(() => ({})) as { success?: string | boolean }
       if (!r.ok || String(j.success) === 'false') throw new Error(String(r.status))
       setState('sent'); setText('')
