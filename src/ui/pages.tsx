@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { RHYTHMS, PATTERNS } from '../data/rhythms'
 import { STORY_ARRANGEMENT } from '../data/story'
 import { HISTORY, SOURCES } from '../data/history'
@@ -65,6 +65,27 @@ function SongButtons({ song }: { song: Song }) {
   </div>
 }
 
+const REQ_PH = 'Request a song, it will be added within minutes'
+/** One-line box that grows to fit: wraps the placeholder to two lines on narrow screens, and grows as you type. */
+function AutoText({ value, onChange, onEnter }: { value: string; onChange: (v: string) => void; onEnter: () => void }) {
+  const r = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const el = r.current; if (!el) return
+    const fit = () => {
+      const cs = getComputedStyle(el); el.style.height = 'auto'
+      const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+      const c = document.createElement('canvas').getContext('2d')!; c.font = `${cs.fontSize} ${cs.fontFamily}`
+      const lh = parseFloat(cs.lineHeight) || 18, pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
+      const phLines = value ? 1 : Math.ceil(c.measureText(REQ_PH).width / Math.max(1, inner))
+      el.style.height = `${Math.max(40, value ? el.scrollHeight + 2 : phLines * lh + pad + 2)}px`
+    }
+    fit(); window.addEventListener('resize', fit); return () => window.removeEventListener('resize', fit)
+  }, [value])
+  return <textarea ref={r} rows={1} className="flex-1 min-w-0 resize-none overflow-hidden py-[10px] px-3 leading-[18px] rounded-xl bg-white/[0.05] border border-white/[0.06] text-[13px] placeholder:text-mute outline-none focus:border-amber/60"
+    placeholder={REQ_PH} aria-label="Request a song" value={value} onChange={e => onChange(e.target.value.replace(/\n/g, ' '))}
+    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onEnter() } }} />
+}
+
 function RequestSong() {
   const [text, setText] = useState(''); const [hp, setHp] = useState('')
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
@@ -86,9 +107,9 @@ function RequestSong() {
   }
   return <form onSubmit={submit} className="mb-10 mx-auto max-w-sm">
     <input type="text" name="_honey" tabIndex={-1} autoComplete="off" aria-hidden="true" value={hp} onChange={e => setHp(e.target.value)} className="hidden" />
-    <div className="flex gap-2">
-      <input className="flex-1 min-w-0 h-10 px-2.5 rounded-xl bg-white/[0.05] border border-white/[0.06] text-[13px] placeholder:text-[12px] placeholder:text-mute outline-none focus:border-amber/60" placeholder="Request a song, it will be added in minutes" aria-label="Request a song" value={text} onChange={e => { setText(e.target.value); setState('idle') }} />
-      <button disabled={!text.trim() || state === 'sending'} className="h-10 px-3.5 rounded-xl bg-amber text-ink text-sm font-medium disabled:opacity-30">{state === 'sending' ? '…' : 'Send'}</button>
+    <div className="flex gap-2 items-end">
+      <AutoText value={text} onChange={v => { setText(v); setState('idle') }} onEnter={() => (document.activeElement as HTMLElement)?.closest('form')?.requestSubmit()} />
+      <button disabled={!text.trim() || state === 'sending'} className="h-10 px-3 rounded-xl bg-amber text-ink text-sm font-medium disabled:opacity-30">{state === 'sending' ? '…' : 'Send'}</button>
     </div>
     {state === 'sent' && <p className="mt-1.5 text-[11px] text-amber">Thanks, request sent.</p>}
     {state === 'error' && <p className="mt-1.5 text-[11px] text-mute">Couldn't send. Try again in a moment.</p>}
