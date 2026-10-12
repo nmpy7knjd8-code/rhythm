@@ -124,6 +124,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     subscribe: l => e().subscribe(l),
   }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload])
   useEffect(() => { (window as unknown as { __pulseLoadSong?: (id: string, sec?: number) => Promise<void> }).__pulseLoadSong = async (id, sec) => { const sg = SONGS.find(x => x.raw.id === id); if (sg) await value.loadSong(sg, sec) } }, [value])
+  useEffect(() => { (window as unknown as { __pulseLoadPattern?: (id: string) => boolean }).__pulseLoadPattern = id => { const pt = Object.values(PATTERNS).find(x => x.id === id || x.id.endsWith('-' + id)); if (pt) value.load(pt, false); return !!pt } }, [value]) // used by tests
   return <C.Provider value={value}>{children}</C.Provider>
 }
 
