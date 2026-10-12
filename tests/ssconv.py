@@ -18,6 +18,9 @@ def expand(ms):
             else: passes[start]=1
         i+=1
     return order
+# GM note -> (row voice override, variant id); the row keeps the grid compact, the variant keeps the real instrument/pitch
+VAR={55:('crash1','splash'),59:('ride','ride2'),67:('cowbell','agogoHi'),68:('cowbell','agogoLo'),48:('tomHi','tomHi2'),45:('tomMid','tomMid2'),41:('tomFloor','tomFloor2'),
+     30:('china','chinaSmall'),94:('china','chinaSmall'),34:('rideBell','bellBig'),81:('rideBell','bellBig'),96:('crash1','splash'),28:('crash1','crash16')}
 def bar_events(m,sig):
     num,den=sig; barLen=Fr(num,den)  # in whole notes
     ev=[];unknown=set()
@@ -37,46 +40,64 @@ def bar_events(m,sig):
                     vv=vel
                     if nt.get('ghost'): vv=0.3
                     if nt.get('accentuated') or nt.get('accent'): vv=1.0 if nt.get('accentuated')!=1 else 0.95
-                    ev.append((pos,vo,vv,'f' if pend_grace and vo in pend_grace else ''))
+                    fr=nt.get('fret'); va=None
+                    if fr in VAR: vo,va=VAR[fr]
+                    ev.append((pos,vo,vv,'f' if pend_grace and vo in pend_grace else '',va))
             pend_grace=False
             pos+=d
     return barLen,ev,unknown
 def grid(barLen,ev):
-    # choose finest needed: units of 1/96 whole? use quarter=12 ticks -> whole=48 ticks
-    best=None
-    for tps in (3,4,2,1):
-        step=Fr(tps,48); ok=all((p/step).denominator==1 for p,*_ in ev)
-        if ok: best=tps;break
-    if best is None: best=1
+    """Pick a base grid (16ths, 8th-triplets or 16th-triplets) that fits most onsets.
+    Onsets between grid steps (32nds, sextuplets, quintuplets, rolls) become sub-hits:
+    _sub[voice][step] = [[fraction_of_step, velocity], ...], scheduled at their exact time."""
+    best=None;bestScore=-1
+    for tps in (3,4,2):
+        step=Fr(tps,48); sc=sum(1 for p,*_ in ev if (p/step).denominator==1)
+        if sc>bestScore or (sc==bestScore and best is None): best,bestScore=tps,sc
     step=Fr(best,48); steps=int(barLen/step)
-    tr={}
-    for p,vo,vv,fl in ev:
-        i=int(round(p/step))
+    tr={};sub={}
+    var={}
+    for p,vo,vv,fl,va in ev:
+        q=p/step; i=int(q); frac=q-i
         if i>=steps: continue
         a=tr.setdefault(vo,['.']*steps)
         c='f' if fl else str(max(1,min(9,round(vv*9))))
-        if a[i]=='.' or c=='f' or c>a[i]: a[i]=c
+        if frac==0:
+            if a[i]=='.' or c=='f' or c>a[i]:
+                a[i]=c
+                if va: var.setdefault(vo,{})[str(i)]=va
+                else: var.get(vo,{}).pop(str(i),None)
+        else:
+            l=sub.setdefault(vo,{}).setdefault(str(i),[]); fr=f'{frac.numerator}/{frac.denominator}'  # exact rational offset within the step
+            same=[x for x in l if x[0]==fr]  # two notes on one row at one instant (e.g. both mid toms) = one stroke
+            if same: same[0][1]=max(same[0][1],round(vv,2))
+            else: l.append([fr,round(vv,2)])
     if not tr: tr={'kick':['.']*steps}
-    return best,steps,{k:''.join(v) for k,v in tr.items()}
+    out={k:''.join(v) for k,v in tr.items()}
+    if sub: out['_sub']=sub
+    var={k:v for k,v in var.items() if v}
+    if var: out['_var']=var
+    return best,steps,out
 def convert(path):
     d=json.load(open(path)); p=d['part']; ms=p['measures']
-    sig=(4,4); sigs=[]
+    sig=(4,4); sigs=[]; feel=None; feels=[]
     for m in ms:
         if m.get('signature'): sig=tuple(m['signature'])
-        sigs.append(sig)
+        if 'tripletFeel' in m: feel=m['tripletFeel'] if m['tripletFeel'] not in ('none','off',False,None) else None
+        sigs.append(sig); feels.append(feel)
     order=expand(ms)
     tempo=p.get('automations',{}).get('tempo',[{'bpm':100,'type':4}])
     t0=tempo[0]; bpm=t0['bpm']*(4/t0.get('type',4)) if t0.get('type',4)!=4 else t0['bpm']
     if t0.get('type')==8: bpm=t0['bpm']/2
     if t0.get('type')==2: bpm=t0['bpm']*2
     def qbpm(t):
-        b=t['bpm']; ty=t.get('type',4)
+        b=t['bpm']*(1.5 if t.get('dotted') else 1); ty=t.get('type',4)  # a dotted beat unit (e.g. dotted quarter in 12/8) is 1.5 of that note
         return b*4/ty if ty else b
     tm=sorted(tempo,key=lambda t:(t.get('measure',0),t.get('position',0)))
     def bpmAt(idx):
         cur=tm[0]
         for t in tm:
-            if t.get('measure',0)<=idx: cur=t
+            if t.get('measure',0)<idx or (t.get('measure',0)==idx and not t.get('position',0)): cur=t
         return round(qbpm(cur),2)
     secs=[];cur=None;unk=set();marker='Intro'
     for idx in order:
@@ -86,7 +107,18 @@ def convert(path):
         if cur is None or mk:
             cur={'name':marker,'bars':[],'ticksPerStep':[],'timeSig':[],'bpm':[]}; secs.append(cur)
         bl,ev,u=bar_events(m,sigs[idx]); unk|=u
+        # Songsterr 'tripletFeel' (shuffle): notated straight pairs play as triplet long-short.
+        # The off-beat of each pair moves from 1/2 to 2/3 of the pair; real tuplets are left alone.
+        f=feels[idx]
+        if f in ('16th','8th'):
+            u_=Fr(1,8) if f=='16th' else Fr(1,4)
+            tr_feel=f
+            ev=[(p-(p%u_)+u_*Fr(2,3) if p%u_==u_/2 else p,)+tuple(r) for p,*r in ev]
         tps,steps,tr=grid(bl,ev)
+        if f in ('16th','8th'): tr['_feel']=f
+        # tempo changes inside the bar: [fraction of the bar, quarter-note BPM], applied at that exact point
+        mid=[[str(Fr(t['position']).limit_denominator(192)),round(qbpm(t),2)] for t in tm if t.get('measure',0)==idx and t.get('position',0)]
+        if mid: tr['_tempo']=mid
         cur['bars'].append(tr); cur['ticksPerStep'].append(tps); cur['timeSig'].append('%d/%d'%sigs[idx]); cur['bpm'].append(bpmAt(idx))
     return dict(bpm=round(qbpm(tm[0])),tempos=tempo,sections=secs,unknown=sorted(x for x in unk if x is not None),nbars=len(order),title=d['meta']['title'],artist=d['meta']['artist'],songId=d['meta']['songId'],revisionId=d['meta']['revisionId'],track=d['meta']['tracks'][d['track']]['name'])
 if __name__=='__main__':
@@ -97,8 +129,8 @@ if __name__=='__main__':
 def autosection(bars, tps, ts, bpm, title):
     """Split an unmarked tab into parts where the drum texture changes."""
     def feat(b):
-        on={k for k,v in b.items() if any(c!='.' for c in v)}
-        if not on or on=={'kick'} and not any(c!='.' for c in b.get('kick','')): return 'no drums'
+        on={k for k,v in b.items() if k!='_sub' and any(c!='.' for c in v)}|set(b.get('_sub',{}))
+        if not on or on=={'kick'} and False: return 'no drums'
         cym='ride' if on&{'ride','rideBell'} else 'open hat' if 'openHat' in on and 'closedHat' not in on else 'hi-hat' if on&{'closedHat','openHat','pedalHat'} else 'rim' if 'crossStick' in on else 'toms' if on&{'tomHi','tomMid','tomFloor'} else 'drums'
         return cym
     f=[feat(b) for b in bars]

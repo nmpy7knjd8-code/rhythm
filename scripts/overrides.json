@@ -63,6 +63,18 @@
     }
    ],
    "firstDrumBar": 4
+  },
+  "holdtheline": {
+   "bpmDisplay": 0.6666666666666666,
+   "bpmNote": "The tab counts dotted quarters in 12/8 (97, matching the record); Pulse plays it at that pulse."
+  },
+  "africa": {
+   "bpmDisplay": 0.5,
+   "bpmNote": "The tab is in cut time (half note = 92, matching the record at about 92); Pulse shows 92 and plays it as written."
+  },
+  "shookme": {
+   "bpm": 130,
+   "bpmNote": "Intro about 120, main groove about 130 (record listed around 127–128)."
   }
  },
  "pinnedFiles": [
