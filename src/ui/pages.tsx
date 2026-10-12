@@ -65,7 +65,7 @@ function SongButtons({ song }: { song: Song }) {
   </div>
 }
 
-const REQ_PH = 'Request a song, it will be added within minutes'
+const REQ_PH = 'Request a song to be added within minutes'
 /** One-line box that grows to fit: wraps the placeholder to two lines on narrow screens, and grows as you type. */
 function AutoText({ value, onChange, onEnter }: { value: string; onChange: (v: string) => void; onEnter: () => void }) {
   const r = useRef<HTMLTextAreaElement>(null)
