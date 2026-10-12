@@ -82,7 +82,11 @@ export const KITS: Kit[] = [
     shaker: { kind: 'noise', tone: 9000, decay: 0.05, gain: 0.25 } }) },
 ]
 
-// Rim / cross-stick sits about 3 dB lower in every kit (×0.708).
-for (const k of KITS) { const a = k.voices.accent; if (a) { a.gain = (a.gain ?? 1) * 0.708; if (a.fallback) a.fallback.gain = (a.fallback.gain ?? 1) * 0.708 } }
-// Open hi-hat about 3.5 dB lower in every kit (×0.668); closed hat and pedal unchanged.
-for (const k of KITS) { const o = k.voices.open; if (o) { o.gain = (o.gain ?? 1) * 0.668; if (o.fallback) o.fallback.gain = (o.fallback.gain ?? 1) * 0.668 } }
+// Level trims (dB), applied to per-kit copies so shared synth voices/fallbacks are trimmed exactly once per kit:
+// rim/cross-stick -3 dB, open hi-hat -3.5 dB, crash 2 -3 dB. Closed hat and pedal unchanged.
+const TRIM_DB: Partial<Record<Voice, number>> = { accent: -3, open: -3.5, crash2: -3 }
+for (const k of KITS) for (const [v, db] of Object.entries(TRIM_DB) as [Voice, number][]) {
+  const kv = k.voices[v]; if (!kv) continue
+  const f = 10 ** (db / 20)
+  k.voices[v] = { ...kv, gain: (kv.gain ?? 1) * f, fallback: kv.fallback && { ...kv.fallback, gain: (kv.fallback.gain ?? 1) * f } }
+}

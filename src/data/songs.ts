@@ -19,7 +19,7 @@ export const VOICE_ALIASES: Record<string, Voice> = {
   kick: 'low', snare: 'back', closedHat: 'tick', hihat: 'tick', openHat: 'open', pedalHat: 'pedal',
   ride: 'ride', rideBell: 'rideBell', crash: 'crash1', crash1: 'crash1', crash2: 'crash2', china: 'china', splash: 'china',
   tomHi: 'tomHi', tomMid: 'tomMid', tomFloor: 'tomLo', tomLo: 'tomLo', crossStick: 'accent', rim: 'accent',
-  cowbell: 'bell', shaker: 'shaker',
+  cowbell: 'bell', bell: 'bell', agogo: 'bell', shaker: 'shaker',
 }
 
 export interface SongSection { name: string; start: number; bars: number; confidence?: string; timeSig?: string }

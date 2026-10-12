@@ -1,0 +1,1272 @@
+{
+ "version": 1,
+ "generated": "2026-10-12",
+ "title": "Storytelling",
+ "subtitle": "How drummers tell stories: arc, tension, voice, language and form.",
+ "keep": {
+  "demoArrangement": "STORY_ARRANGEMENT (18-bar five-scene demo) stays at the top",
+  "lists": [
+   "Drum journeys",
+   "Style studies"
+  ],
+  "placement": "After the chapters, unchanged"
+ },
+ "chapters": [
+  {
+   "id": "grammar",
+   "title": "The grammar of a drum story",
+   "summary": "Expectation, tension and release: the mechanics every other chapter builds on.",
+   "sections": [
+    {
+     "h": "A groove is a promise",
+     "paragraphs": [
+      {
+       "text": "Repetition teaches a listener what to expect. Once a pattern has repeated a few times, every later choice (keep it, thin it, thicken it, break it) is heard against that expectation. David Huron's Sweet Anticipation (MIT Press, 2006) frames musical pleasure as prediction followed by confirmation or surprise. A drum part is the most explicit prediction engine in a band.",
+       "sources": [
+        "huron"
+       ],
+       "confidence": "medium"
+      },
+      {
+       "text": "Practical rule: the more firmly a pattern is established, the less it takes to make a change register. One missing kick or one open hat can carry the weight of a fill if the bars before were strict.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Tension",
+     "paragraphs": [
+      {
+       "text": "Tension comes from anything that makes the ear lean forward: rising density (8ths to 16ths to 32nds), rising pitch (floor tom up to high tom), sustained cymbal wash, withholding the backbeat, odd groupings that delay the downbeat, or plain silence where a hit is expected.",
+       "sources": [],
+       "confidence": "high"
+      },
+      {
+       "text": "Withholding is the strongest tool. A part that keeps the kit out, or keeps the snare off 2 and 4, builds pressure the whole time it is absent. In the Air Tonight is the textbook case (chapter 9).",
+       "sources": [
+        "airtonight"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Release",
+     "paragraphs": [
+      {
+       "text": "Release is the arrival: a crash and kick together on a downbeat, the return of the backbeat, a switch from closed hat to ride or open hat, a drop to half-time. Release is relative. A plain backbeat feels huge if it was denied for minutes.",
+       "sources": [],
+       "confidence": "high"
+      },
+      {
+       "text": "Good parts ration release. If every four bars ends in a crash, crashes stop meaning anything. Save the biggest arrival for the biggest moment in the song.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "The five scenes",
+     "paragraphs": [
+      {
+       "text": "Pulse's 18-bar demo walks through the arc most songs use: Introduce, Establish, Develop, Interact, Release. Keep that demo at the top of Story as the entry point; the chapters below show the same arc in real recordings.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "dynamics",
+   "title": "Dynamics and touch",
+   "summary": "Volume, accent and ghost notes as the drummer's tone of voice.",
+   "sections": [
+    {
+     "h": "Three volumes inside one bar",
+     "paragraphs": [
+      {
+       "text": "Most grooves live on three levels: accents (backbeat, crash, downbeat kick), normal strokes (time on hat or ride) and ghost notes (very soft snare strokes between the backbeats). The ratio between them is what makes a part sound relaxed, urgent or menacing.",
+       "sources": [],
+       "confidence": "high"
+      },
+      {
+       "text": "Ghost notes add motion without adding volume. The Rosanna half-time shuffle is built on them: the backbeat lands on beat 3 (half-time), and soft snare triplet partials fill the gaps, so the groove feels busy and calm at the same time.",
+       "sources": [
+        "rosanna"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Macro dynamics",
+     "paragraphs": [
+      {
+       "text": "Across a song, dynamics map to plot. Verses sit lower so the voice can tell the story; choruses lift. The cleanest drummer-made lift is often a change of surface (closed hat to ride or open hat, sidestick to full snare) rather than playing harder.",
+       "sources": [],
+       "confidence": "high"
+      },
+      {
+       "text": "Ravel's Boléro is the extreme case: one snare ostinato, repeated throughout the piece, starting pianissimo and rising in a single crescendo to fortissimo. The rhythm never changes; only volume and orchestration do.",
+       "sources": [
+        "bolero"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Room and sound as dynamics",
+     "paragraphs": [
+      {
+       "text": "Recording choices change the story too. When the Levee Breaks was tracked in the stairwell lobby of Headley Grange with two microphones hung above the stairs and heavily compressed, giving the drums a huge, breathing sound. The part is simple; the space makes it monumental.",
+       "sources": [
+        "levee"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "In the Air Tonight's drum entry is famous for its gated-reverb sound: big, then abruptly cut off. The sound itself reads as sudden force.",
+       "sources": [
+        "airtonight"
+       ],
+       "confidence": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "orchestration",
+   "title": "Orchestration around the kit",
+   "summary": "Each voice on the kit has a role; moving a figure to a different voice changes its meaning.",
+   "sections": [
+    {
+     "h": "Roles",
+     "paragraphs": [
+      {
+       "text": "Hat or ride sets the clock (the subdivision). Kick sets weight and the downbeat. Snare sets the backbeat, the point the body answers. Toms are melody and drama. Cymbals mark structure: crashes say 'new section', ride says 'open space', china says 'danger'.",
+       "sources": [],
+       "confidence": "high"
+      },
+      {
+       "text": "The same rhythm means different things on different voices. Play a figure on the floor tom and it reads as ominous; move it to the hat and it becomes texture.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Timbre as character",
+     "paragraphs": [
+      {
+       "text": "Sing, Sing, Sing gives the tom-toms the lead role. In the Goodman recording, the Pulse transcription has whole passages on toms and snare only (bars 105 to 112 and 129 to 136), with the ride and kit returning in between. The drums are the main character, not the accompaniment.",
+       "sources": [
+        "singsing"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "YYZ starts with the Morse code for Y-Y-Z. Peart played that rhythm on crotales on the record, and the band then restated it across the arrangement: one motif, orchestrated several ways.",
+       "sources": [
+        "yyz"
+       ],
+       "confidence": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "motif",
+   "title": "Motif and development",
+   "summary": "A short idea, stated, varied and returned to.",
+   "sections": [
+    {
+     "h": "State it clearly",
+     "paragraphs": [
+      {
+       "text": "A motif is a short, recognizable rhythmic cell. It needs to be stated plainly before it can be developed. Steve Gadd's 50 Ways to Leave Your Lover verse groove is a motif: a linear, march-like figure split between hat, snare and kick, repeated almost unchanged so it becomes the song's identity.",
+       "sources": [
+        "50ways"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Develop it",
+     "paragraphs": [
+      {
+       "text": "Classic development moves: change the voice (snare to toms), change the length (augment or cut short), displace it (start it an 8th later), fragment it (repeat only its last two notes), or layer it against a different meter.",
+       "sources": [],
+       "confidence": "high"
+      },
+      {
+       "text": "Development works best when the skeleton stays put. Keep the downbeat kick and the backbeat; vary the surface.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Return",
+     "paragraphs": [
+      {
+       "text": "Returning to the motif after a contrast gives closure. In 50 Ways, the verse figure comes back after each chorus (Pulse bars 38 onward and 73 onward), and the return feels like coming home.",
+       "sources": [
+        "50ways"
+       ],
+       "confidence": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "dialogue",
+   "title": "Call and response",
+   "summary": "Drums in conversation with the band, the singer and themselves.",
+   "sections": [
+    {
+     "h": "Inside the kit",
+     "paragraphs": [
+      {
+       "text": "Kick and snare can play question and answer: a busy kick phrase answered by one clean snare. Toms can answer the hat. When two voices trade, the part stops being a loop and becomes a dialogue.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "With the band",
+     "paragraphs": [
+      {
+       "text": "Trading fours or eights (soloist, then drums, then soloist) is the jazz form of this. Sing, Sing, Sing grew out of it. Singer Helen Ward described how the extended version began on the bandstand (quote below).",
+       "sources": [
+        "singsing"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "Leaving space for the voice is also a response. A drummer who stops filling every gap in the vocal line lets the singer finish a sentence.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Across distance",
+     "paragraphs": [
+      {
+       "text": "Talking drums and military calls (chapters 6 and 7) are call and response at the scale of villages and armies: a signal sent, received and relayed.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "talking",
+   "title": "Talking drums and drum languages",
+   "summary": "Drums that carry speech by imitating the tones of tonal languages.",
+   "sections": [
+    {
+     "h": "How a drum can talk",
+     "paragraphs": [
+      {
+       "text": "Many West African languages are tonal: pitch changes meaning. A pressure drum can follow those pitch contours and the rhythm of syllables, though it cannot produce vowels or consonants. Yoruba has three main tones (low, mid, high), and the drum language uses the same three levels.",
+       "sources": [
+        "talking"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "The hourglass talking drum has two heads joined by tension cords. Squeezing the cords between arm and body tightens the heads and raises the pitch, even in the middle of a note, which produces the characteristic glide.",
+       "sources": [
+        "talking"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Yoruba dùndún",
+     "paragraphs": [
+      {
+       "text": "The dùndún is the Yoruba talking drum; the lead drum is the ìyáàlù ('mother drum'). It imitates the Ọ̀yọ́ dialect, regarded as standard Yoruba. A curved stick plays one head while the other hand and the body work the cords.",
+       "sources": [
+        "dundun"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "A 2021 acoustic study (Durojaye et al., Frontiers in Communication) recorded three professional dùndún drummers and compared four modes: dance rhythm, drum singing, performative drum talking and direct drum talking. When drummers imitated speech directly, drum timing correlated with speech timing at r = 0.72; in performative talking it fell to 0.37, and in drum singing to 0.25. The more musical the context, the more the drummer adds embellishments such as flams and àfikún (paired fast notes) and time-keeping figures between phrases.",
+       "sources": [
+        "dundun"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "The storytelling lesson for kit players: the same phrase can be played as pure speech rhythm, as song or as dance, and players choose how far to bend speech toward groove.",
+       "sources": [
+        "dundun"
+       ],
+       "confidence": "medium"
+      }
+     ]
+    },
+    {
+     "h": "Ashanti atumpan",
+     "paragraphs": [
+      {
+       "text": "The atumpan is an Asante (Ashanti) talking drum from Ghana, played in pairs: a higher 'female' drum and a lower 'male' drum, struck with hooked or L-shaped sticks or with the hands. Pairs provide the bass part in adowa ensembles and also appear in fontomfrom ensembles. In procession, one person can carry the drum on their head while another plays it from behind.",
+       "sources": [
+        "atumpan"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Redundancy: why drum phrases are long",
+     "paragraphs": [
+      {
+       "text": "Because many words share the same tone pattern, drummers add stock phrases to remove ambiguity. John F. Carrington's The Talking Drums of Africa (1949) describes this. In a well-known example, 'come back home' is drummed as a longer formula about feet and legs coming back the way they went, to the village that belongs to us.",
+       "sources": [
+        "talking"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "Drum language was not only for news. Ruth Finnegan's work on oral literature notes proverbs, praise poems, historical poems and dirges in drum language, especially among the Asante and Yoruba.",
+       "sources": [
+        "talking"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Range",
+     "paragraphs": [
+      {
+       "text": "Wikipedia cites Walter Ong (1977) for messages carrying 4 to 5 miles. Its claim of relays up to 20 miles is marked 'citation needed', so treat the larger figure as unverified.",
+       "sources": [
+        "talking"
+       ],
+       "confidence": "medium"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "military",
+   "title": "Military signaling and the rudiments",
+   "summary": "Where snare vocabulary came from: commands on the battlefield.",
+   "sections": [
+    {
+     "h": "Drums as command",
+     "paragraphs": [
+      {
+       "text": "Rudimental snare drumming grew out of military drumming. Before radio, drum patterns set marching tempo and passed orders. The Swiss are often cited as the earliest example of fife and drum in battle (Sempach, 1386), with evidence that drums were in use at Morgarten in 1315.",
+       "sources": [
+        "rudiment"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "Each call had a fixed rhythm and meaning, so the vocabulary had to be standardized. That is why rudiments have fixed stickings, accents and names. One modern definition treats a rudiment as an excerpt from a military call with a definite rhythm, sticking, dynamic structure and name.",
+       "sources": [
+        "rudiment"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "From camp duty to the standard lists",
+     "paragraphs": [
+      {
+       "text": "Charles Stewart Ashworth was the first to label short exercises 'rudiments', in 1812. Gardiner Strube's 1870 manual distilled Civil War practice into 25 rudiments. NARD (the National Association of Rudimental Drummers) fixed the Standard 26 in 1933, and in 1984 the Percussive Arts Society expanded the list to today's 40 International Snare Drum Rudiments.",
+       "sources": [
+        "rudiment"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "After the Civil War, bugles replaced fifes and drums for official US signals, and drums kept a ceremonial role. After World War I, radio made field-music signaling obsolete, and surplus instruments went to veterans' groups that founded civilian drum and bugle corps.",
+       "sources": [
+        "rudiment",
+        "dci"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "What the kit inherited",
+     "paragraphs": [
+      {
+       "text": "Flams, drags, ruffs and rolls all exist to make a single stroke sound bigger, more urgent or more ceremonial. On a kit, a flam on a downbeat still reads as command, and a drag into a backbeat still reads as a call to attention. That is the military grammar surviving inside pop.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "corps",
+   "title": "Drum lines and corps: show design",
+   "summary": "Rudimental storytelling at the scale of a 12-minute field show.",
+   "sections": [
+    {
+     "h": "The ensemble",
+     "paragraphs": [
+      {
+       "text": "A modern drum corps percussion section has two parts. The battery marches: typically 7 to 10 snares, 3 to 6 tenors (quads or quints), 5 to 6 tuned bass drums, and sometimes cymbals. The front ensemble, or pit, stays near the 50-yard line with mallets, timpani, electronics and auxiliary percussion.",
+       "sources": [
+        "dci"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "Tuned bass drums play melodic 'split' lines, with each player covering one pitch. A run that passes down the line moves sound across the field, so the storytelling is spatial as well as rhythmic.",
+       "sources": [
+        "dci"
+       ],
+       "confidence": "medium"
+      }
+     ]
+    },
+    {
+     "h": "The show is the story",
+     "paragraphs": [
+      {
+       "text": "Corps build a new show of roughly 8 to 12 minutes each year and refine it all summer. Programs have become increasingly conceptual, with overarching themes rather than loose collections of tunes.",
+       "sources": [
+        "dci"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "Judging rewards narrative directly. In the DCI system, General Effect carries 40 of 100 points, against 30 for Visual and 30 for Music. A drum line therefore writes for effect: impacts that land with drill hits, solo features, and contrast between battery and pit.",
+       "sources": [
+        "dci"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Cadences and hybrids",
+     "paragraphs": [
+      {
+       "text": "A cadence is a drum line's marching piece: a repeating groove with built-in features for each section. Since DCI's founding in the early 1970s, lines have extended the military rudiments with Swiss and hybrid rudiments, which are combinations of rudiments (more than 500 are documented). Hybrids such as 'cheese' (a diddle with a grace note) give lines new textures to tell stories with.",
+       "sources": [
+        "rudiment"
+       ],
+       "confidence": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "form",
+   "title": "Song-form drumming",
+   "summary": "How one drum part changes across intro, verse, chorus, bridge and outro.",
+   "sections": [
+    {
+     "h": "A map",
+     "paragraphs": [
+      {
+       "text": "Intro: state the clock and the mood. Verse: support the words; low density, often closed hat or sidestick. Pre-chorus: build with more density, a hat that opens or a tom pulse. Chorus: arrive with crash on 1, ride or open hat, full backbeat. Bridge: change the angle with half-time, new timbre or a meter change. Final chorus: biggest version. Outro: dissolve or stop cleanly.",
+       "sources": [],
+       "confidence": "high"
+      },
+      {
+       "text": "Each of these changes is small, but they stack. A listener rarely notices the hat opening at a pre-chorus; they only notice that the chorus feels bigger.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Fills as transitions",
+     "paragraphs": [
+      {
+       "text": "A fill is punctuation between sections. Short fills (a beat or less) act as commas, while a full bar is a full stop. A fill that falls in pitch, from snare to high tom to floor tom, works like a musical cadence and points to the downbeat that follows.",
+       "sources": [],
+       "confidence": "high"
+      },
+      {
+       "text": "Placement matters more than speed. A fill that ends early and leaves a beat of silence before the downbeat can hit harder than a bar of 32nds.",
+       "sources": [],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Meter as plot",
+     "paragraphs": [
+      {
+       "text": "A change of meter is a change of scene. Tom Sawyer moves from 4/4 into 7/8 for the synth break (Pulse bars 35 to 44) and threads 13/16 and 15/16 bars through the solo. The groove limps forward and the ground shifts under the listener.",
+       "sources": [
+        "tomsawyer"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "Lateralus uses meter as its theme. The chorus cycles 9/8, 8/8 and 7/8 (Pulse bars 35 to 43), and Danny Carey said the song was originally titled after that sequence (quote below).",
+       "sources": [
+        "lateralus"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "h": "Overlapping pulses",
+     "paragraphs": [
+      {
+       "text": "Polyrhythm is two subdivisions at once, such as toms in groups of 4 against a kick implying 3. It reads as tension because the ear cannot settle on one grid; when both layers meet on a shared downbeat, that point lands as release. Use it like a pre-chorus device: stack the cross-rhythm, then resolve it on the 1.",
+       "sources": [],
+       "confidence": "medium"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "screen",
+   "title": "Film and theater",
+   "summary": "Drums as the pulse of picture and stage.",
+   "sections": [
+    {
+     "h": "Birdman: a score made of drums",
+     "paragraphs": [
+      {
+       "text": "For Birdman (2014), jazz drummer Antonio Sánchez composed a score mostly of solo drums. Director Alejandro González Iñárritu guided his improvisations in demo sessions, raising a hand to mark events such as a door opening or vocalizing rhythms. The roughly seventy demos shaped pacing on set, and the drums were re-recorded against the edited film. Iñárritu wanted the score to grow wilder through the film, so the late cues layer up to four drum tracks. He also wanted a kit that sounded neglected, so Sánchez detuned the drums and stacked cymbals.",
+       "sources": [
+        "birdman"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "Lesson: in scoring, the drummer is following the picture, not the bar line. Hits land on actions and lines of dialogue, and density tracks a character's state of mind.",
+       "sources": [
+        "birdman"
+       ],
+       "confidence": "medium"
+      }
+     ]
+    },
+    {
+     "h": "Boléro: a crescendo as the entire plot",
+     "paragraphs": [
+      {
+       "text": "Ravel's Boléro (1928) was written as a ballet score. A snare ostinato runs from the first bar to the last (one source counts 169 statements) while the orchestra thickens. In the last bars, the whole orchestra beats out the snare rhythm. The entire narrative is one controlled crescendo.",
+       "sources": [
+        "bolero"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "Ravel resisted conductors who sped up the ending. One account has him stopping a recording session for exactly that, telling the conductor 'not so fast'. Holding tempo while the music grows is the discipline.",
+       "sources": [
+        "bolero"
+       ],
+       "confidence": "high"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "studies",
+   "title": "Case studies",
+   "summary": "Bar-by-bar readings of famous drum parts, playable in Pulse.",
+   "studies": [
+    {
+     "songId": "airtonight",
+     "title": "In the Air Tonight · Phil Collins (1981)",
+     "arc": "Withholding, then release.",
+     "beats": [
+      {
+       "songId": "airtonight",
+       "barStart": 1,
+       "barEnd": 20,
+       "label": "Machine pulse",
+       "note": "Only drum-machine voices for the first section. There is no backbeat, just a clock and a mood."
+      },
+      {
+       "songId": "airtonight",
+       "barStart": 37,
+       "barEnd": 52,
+       "label": "Verse 1",
+       "note": "Same machine. The voice carries the story and the drums deliberately stay out."
+      },
+      {
+       "songId": "airtonight",
+       "barStart": 73,
+       "barEnd": 87,
+       "label": "Verse 2",
+       "note": "Tension peaks: by now the listener has waited a long time for real drums."
+      },
+      {
+       "songId": "airtonight",
+       "barStart": 88,
+       "barEnd": 88,
+       "label": "The fill",
+       "note": "In the Pulse transcription, a run moves from high tom to mid tom to floor tom over kick 16ths: falling pitch, rising density, ending on the downbeat."
+      },
+      {
+       "songId": "airtonight",
+       "barStart": 89,
+       "barEnd": 112,
+       "label": "Release",
+       "note": "The kit arrives with kick and snare on a sustained groove. It sounds enormous because it was denied for so long."
+      }
+     ],
+     "notes": [
+      {
+       "text": "According to Wikipedia's account, the song runs on a Roland CR-78 pattern and the mood is restrained until an explosive burst of drums releases the tension for the final chorus. The US single added extra drums earlier at Ahmet Ertegun's suggestion, which shows how much the delay was the point of the original.",
+       "sources": [
+        "airtonight"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "songId": "levee",
+     "title": "When the Levee Breaks · Led Zeppelin (1971)",
+     "arc": "One groove made monumental by space, then built into a trance.",
+     "beats": [
+      {
+       "songId": "levee",
+       "barStart": 1,
+       "barEnd": 2,
+       "label": "The break",
+       "note": "John Bonham's opening groove: a simple 16th-feel kick pattern, snare on 2 and 4 and 8th hats. This is the much-sampled two-bar break."
+      },
+      {
+       "songId": "levee",
+       "barStart": 1,
+       "barEnd": 20,
+       "label": "Intro",
+       "note": "The groove repeats unchanged. Its weight comes from the room and compression, not from added notes."
+      },
+      {
+       "songId": "levee",
+       "barStart": 44,
+       "barEnd": 74,
+       "label": "Bridge",
+       "note": "Same skeleton under a changing band. The drums are the levee, holding back the flood."
+      },
+      {
+       "songId": "levee",
+       "barStart": 105,
+       "barEnd": 131,
+       "label": "Outro to free time",
+       "note": "The groove keeps going while the mix moves around it, then dissolves into free time."
+      }
+     ],
+     "notes": [
+      {
+       "text": "Recorded in the Headley Grange lobby with two Beyerdynamic M 160 microphones above the stairwell, Helios compressors set to 'breathe' and a Binson Echorec delay.",
+       "sources": [
+        "levee"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "songId": "rosanna",
+     "title": "Rosanna · Toto (1982)",
+     "arc": "A groove whose detail does the talking.",
+     "beats": [
+      {
+       "songId": "rosanna",
+       "barStart": 1,
+       "barEnd": 7,
+       "label": "Intro",
+       "note": "Drums alone. Jeff Porcaro's half-time shuffle sets triplet time, ghost notes and backbeat on 3 before the band enters."
+      },
+      {
+       "songId": "rosanna",
+       "barStart": 8,
+       "barEnd": 19,
+       "label": "Verse",
+       "note": "Shuffle under the vocal; the ghost notes keep it moving at low volume."
+      },
+      {
+       "songId": "rosanna",
+       "barStart": 20,
+       "barEnd": 26,
+       "label": "Pre-chorus",
+       "note": "The section ends in a 2/4 bar, a shortened bar that pulls the chorus in early."
+      },
+      {
+       "songId": "rosanna",
+       "barStart": 27,
+       "barEnd": 35,
+       "label": "Chorus",
+       "note": "Arrival, again cut short by a 2/4 bar, so the chorus never settles."
+      },
+      {
+       "songId": "rosanna",
+       "barStart": 101,
+       "barEnd": 119,
+       "label": "Outro jam",
+       "note": "Unplanned ending: the song was meant to stop, but Porcaro kept playing."
+      }
+     ],
+     "notes": [
+      {
+       "text": "The groove is described as a half-time shuffle drawing on Bernard Purdie's shuffle, Bonham's 'Fool in the Rain' and the Bo Diddley beat.",
+       "sources": [
+        "rosanna"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "songId": "tomsawyer",
+     "title": "Tom Sawyer · Rush (1981)",
+     "arc": "A rebel's portrait told through meter.",
+     "beats": [
+      {
+       "songId": "tomsawyer",
+       "barStart": 1,
+       "barEnd": 17,
+       "label": "Intro and chorus",
+       "note": "Steady 4/4 with heavy tom and cymbal punctuation."
+      },
+      {
+       "songId": "tomsawyer",
+       "barStart": 35,
+       "barEnd": 44,
+       "label": "Synth break in 7/8",
+       "note": "The meter changes, and the feel tips forward as the story turns restless."
+      },
+      {
+       "songId": "tomsawyer",
+       "barStart": 45,
+       "barEnd": 58,
+       "label": "Solo",
+       "note": "Mostly 7/8 with 13/16 and 15/16 bars inserted. The ground keeps shifting."
+      },
+      {
+       "songId": "tomsawyer",
+       "barStart": 59,
+       "barEnd": 62,
+       "label": "Drum break",
+       "note": "Neil Peart's tom run back into 4/4: crash, kick and cymbal accents, then high tom to mid tom to floor tom."
+      },
+      {
+       "songId": "tomsawyer",
+       "barStart": 90,
+       "barEnd": 104,
+       "label": "Outro",
+       "note": "7/8 returns and the song fades without resolving."
+      }
+     ],
+     "notes": [
+      {
+       "text": "Peart described the lyric (co-written with Pye Dubois) as a portrait of a modern-day rebel, with his own themes of reconciling the boy and the man.",
+       "sources": [
+        "tomsawyer"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "songId": "lateralus",
+     "title": "Lateralus · Tool (2001)",
+     "arc": "A spiral: meter, density and Fibonacci-shaped growth.",
+     "beats": [
+      {
+       "songId": "lateralus",
+       "barStart": 1,
+       "barEnd": 34,
+       "label": "Intro in 6/8",
+       "note": "Space and atmosphere."
+      },
+      {
+       "songId": "lateralus",
+       "barStart": 35,
+       "barEnd": 43,
+       "label": "Chorus 9/8, 8/8, 7/8",
+       "note": "Each bar is an 8th shorter than the one before, so the chorus feels like it is contracting."
+      },
+      {
+       "songId": "lateralus",
+       "barStart": 44,
+       "barEnd": 67,
+       "label": "Verse in 5/8",
+       "note": "Odd, compact cycles under the vocal."
+      },
+      {
+       "songId": "lateralus",
+       "barStart": 141,
+       "barEnd": 194,
+       "label": "Bridge",
+       "note": "Starts from a single kick, crash and china hit (bar 141) and grows over 54 bars into a full groove."
+      },
+      {
+       "songId": "lateralus",
+       "barStart": 243,
+       "barEnd": 265,
+       "label": "'Spiral out' to the end",
+       "note": "The climb peaks, and the last bars change from 6/8 to 9/8."
+      }
+     ],
+     "notes": [
+      {
+       "text": "The vocal syllables follow the Fibonacci sequence (1, 1, 2, 3, 5, 8 ...), and 987, the original 9-8-7 title, is itself a Fibonacci number.",
+       "sources": [
+        "lateralus"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "songId": "singsing",
+     "title": "Sing, Sing, Sing · Benny Goodman, Gene Krupa (1937)",
+     "arc": "The drummer as the main character.",
+     "beats": [
+      {
+       "songId": "singsing",
+       "barStart": 3,
+       "barEnd": 13,
+       "label": "Tom-tom and rim",
+       "note": "Krupa's floor-tom pulse sets a tribal, insistent mood."
+      },
+      {
+       "songId": "singsing",
+       "barStart": 14,
+       "barEnd": 36,
+       "label": "Band in",
+       "note": "Full drums under the ensemble."
+      },
+      {
+       "songId": "singsing",
+       "barStart": 105,
+       "barEnd": 112,
+       "label": "Drum feature",
+       "note": "Toms and snare only. The band drops out and the drums carry the story."
+      },
+      {
+       "songId": "singsing",
+       "barStart": 129,
+       "barEnd": 136,
+       "label": "Second drum feature",
+       "note": "Another tom-and-snare-only passage, answering the first."
+      },
+      {
+       "songId": "singsing",
+       "barStart": 155,
+       "barEnd": 168,
+       "label": "Finale",
+       "note": "Everyone returns for the ending."
+      }
+     ],
+     "notes": [
+      {
+       "text": "The 1937 recording runs 8:43 across both sides of a 12-inch 78. Wikipedia notes that Krupa recorded the first extended drum solos released commercially.",
+       "sources": [
+        "singsing"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "songId": "50ways",
+     "title": "50 Ways to Leave Your Lover · Paul Simon, Steve Gadd (1975)",
+     "arc": "A motif that is the song's identity.",
+     "beats": [
+      {
+       "songId": "50ways",
+       "barStart": 1,
+       "barEnd": 8,
+       "label": "Intro and verse figure",
+       "note": "Gadd's linear, march-like pattern across hat, snare, kick and tom, with soft ghost strokes."
+      },
+      {
+       "songId": "50ways",
+       "barStart": 23,
+       "barEnd": 37,
+       "label": "Chorus",
+       "note": "The texture switches to a plain backbeat with open hats. The chorus feels lighter and more open."
+      },
+      {
+       "songId": "50ways",
+       "barStart": 38,
+       "barEnd": 57,
+       "label": "Verse returns",
+       "note": "The motif returns unchanged."
+      },
+      {
+       "songId": "50ways",
+       "barStart": 58,
+       "barEnd": 72,
+       "label": "Second chorus",
+       "note": "Same switch, same lift."
+      }
+     ],
+     "notes": [
+      {
+       "text": "Gadd recalled that the groove was originally the same throughout; Simon and producer Phil Ramone asked for a different verse feel, and Ramone heard Gadd practicing hi-hat-focused patterns between takes and asked him to use them.",
+       "sources": [
+        "50ways"
+       ],
+       "confidence": "high"
+      },
+      {
+       "text": "Simon built the track around percussion, and 'martial drums' in particular, to 'avoid clutter' (SuperSeventies via Wikipedia).",
+       "sources": [
+        "50ways"
+       ],
+       "confidence": "medium"
+      }
+     ]
+    },
+    {
+     "songId": "mobydick",
+     "title": "Moby Dick · Led Zeppelin (1969)",
+     "arc": "A solo as a journey out and back.",
+     "beats": [
+      {
+       "songId": "mobydick",
+       "barStart": 3,
+       "barEnd": 24,
+       "label": "Head",
+       "note": "The band states the riff; drums support it with cowbell and crash."
+      },
+      {
+       "songId": "mobydick",
+       "barStart": 28,
+       "barEnd": 33,
+       "label": "Departure",
+       "note": "The solo begins with toms over kick and hi-hat."
+      },
+      {
+       "songId": "mobydick",
+       "barStart": 34,
+       "barEnd": 78,
+       "label": "Deep water",
+       "note": "In the Pulse transcription, these bars use only toms and kick, with no snare or cymbals. This is the darkest, most melodic stretch."
+      },
+      {
+       "songId": "mobydick",
+       "barStart": 79,
+       "barEnd": 112,
+       "label": "Rising",
+       "note": "Snare and cymbals return and density climbs toward the riff."
+      },
+      {
+       "songId": "mobydick",
+       "barStart": 113,
+       "barEnd": 122,
+       "label": "Homecoming",
+       "note": "The head returns, then the ending."
+      }
+     ],
+     "notes": [
+      {
+       "text": "Live, the solo ran anywhere from about 6 minutes to 30, while the rest of the band left the stage. The studio version was edited from longer improvisations.",
+       "sources": [
+        "mobydick"
+       ],
+       "confidence": "high"
+      }
+     ]
+    },
+    {
+     "songId": "yyz",
+     "title": "YYZ · Rush (1981)",
+     "arc": "A message encoded in rhythm.",
+     "beats": [
+      {
+       "songId": "yyz",
+       "barStart": 3,
+       "barEnd": 19,
+       "label": "Morse intro",
+       "note": "Y-Y-Z in Morse code (-.-- -.-- --..) set in 10/8 and passed across the band."
+      },
+      {
+       "songId": "yyz",
+       "barStart": 95,
+       "barEnd": 111,
+       "label": "Keyboard break",
+       "note": "The 'grand emotion' middle section Peart describes."
+      },
+      {
+       "songId": "yyz",
+       "barStart": 143,
+       "barEnd": 152,
+       "label": "Outro",
+       "note": "Arrival."
+      }
+     ],
+     "notes": [
+      {
+       "text": "YYZ is the airport code for Toronto Pearson. Its VOR beacon transmits the identifier in Morse code, and Peart said the rhythm stuck with them.",
+       "sources": [
+        "yyz"
+       ],
+       "confidence": "high"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "quotes": [
+  {
+   "quote": "It's the drum sound in particular that's amazing. You don't hear it at all for the first two minutes of the song ... then there's that great doo-dom doo-dom doo-dom comes in, and the drums come in half way through the song, setting the template for all the Eighties drum songs after that.",
+   "speaker": "Stuart Maconie",
+   "source": "BBC, Sold on Song",
+   "via": "https://en.wikipedia.org/wiki/In_the_Air_Tonight",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "The drums don't come in until the end but Ahmet didn't know that at this point, because on the demo the drums hadn't come in at all; it was only drum machine all the way.",
+   "speaker": "Phil Collins",
+   "source": "Genesis: Chapter and Verse (2007), pp. 220–221",
+   "via": "https://en.wikipedia.org/wiki/In_the_Air_Tonight",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "dramatic drum break alone makes the record a standout.",
+   "speaker": "Cashbox (30 May 1981)",
+   "source": "Cashbox review",
+   "via": "https://en.wikipedia.org/wiki/In_the_Air_Tonight",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "The two-bar break that opens \"When the Levee Breaks\" is one of the most monumental pieces of rock drumming ever recorded, and one of the most widely sampled pieces of music ever",
+   "speaker": "Miles Raymer",
+   "source": "Esquire, 6 Dec 2013",
+   "via": "https://en.wikipedia.org/wiki/When_the_Levee_Breaks",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "when everything starts moving around except for the voice, which remains stationary",
+   "speaker": "Jimmy Page",
+   "source": "Tolinski, Light and Shade (2012)",
+   "via": "https://en.wikipedia.org/wiki/When_the_Levee_Breaks",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "its seismic rhythms and layered dynamics illustrate why none of their imitators could ever equal them.",
+   "speaker": "Stephen Thomas Erlewine",
+   "source": "AllMusic review",
+   "via": "https://en.wikipedia.org/wiki/When_the_Levee_Breaks",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "... the song was supposed to end but Jeff carried on and Dave started playing the honky-tonk piano and we all just followed on",
+   "speaker": "Steve Lukather",
+   "source": "Toto Encyclopedia (toto99.com)",
+   "via": "https://en.wikipedia.org/wiki/Rosanna_(song)",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "It was originally titled 9-8-7. For the time signatures. Then it turned out that 987 was the 16th number of the Fibonacci sequence. So that was cool.",
+   "speaker": "Danny Carey",
+   "source": "Chris Norris, 'Hammer of the Gods' (2001)",
+   "via": "https://en.wikipedia.org/wiki/Lateralus_(song)",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "One night Gene just refused to stop drumming when he got to the end of the third chorus, where the tune was supposed to end, so Benny blithely picked up the clarinet and noodled along with him. Then someone else stood up and took it, and it went on from there.",
+   "speaker": "Helen Ward",
+   "source": "Firestone, Sing Sing Sing (1993), p. 161",
+   "via": "https://en.wikipedia.org/wiki/Sing,_Sing,_Sing_(With_a_Swing)",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "essentially, a drum solo bookended by a token blues-rock riff.",
+   "speaker": "Steve Pilkington",
+   "source": "On Track: Led Zeppelin, pp. 31–32",
+   "via": "https://en.wikipedia.org/wiki/Moby_Dick_(instrumental)",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "But there is a sense of bustling and coming and going and the grand emotion of that middle section of what airports can be.",
+   "speaker": "Neil Peart",
+   "source": "Popoff, Contents Under Pressure (2004)",
+   "via": "https://en.wikipedia.org/wiki/YYZ_(instrumental)",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "defining piece ... from the early '80s",
+   "speaker": "Geddy Lee",
+   "source": "Rush, Puerto Rico press conference (2011)",
+   "via": "https://en.wikipedia.org/wiki/Tom_Sawyer_(song)",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "the signals represent the tones of the syllables of conventional phrases of a traditional and highly poetic character.",
+   "speaker": "Roger T. Clarke",
+   "source": "Gleick, The Information (2011), p. 15",
+   "via": "https://en.wikipedia.org/wiki/Talking_drum",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "the dùndún can very accurately mimic microstructural acoustic temporal, fundamental frequency, and intensity characteristics of Yorùbá vocalization when doing so directly",
+   "speaker": "Durojaye, Knowles, Patten, Garcia, McBeath",
+   "source": "Frontiers in Communication (2021), abstract",
+   "via": "https://www.frontiersin.org/articles/10.3389/fcomm.2021.652690/full",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim from the primary article."
+  },
+  {
+   "quote": "The drums, for me, was a great way to find the rhythm of the film... In comedy, rhythm is king",
+   "speaker": "Alejandro González Iñárritu",
+   "source": "Thompson on Hollywood (2014)",
+   "via": "https://en.wikipedia.org/wiki/Birdman_(soundtrack)",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "The movie fed on the drums and the drums fed on the imagery.",
+   "speaker": "Antonio Sánchez",
+   "source": "HitFix (2014)",
+   "via": "https://en.wikipedia.org/wiki/Birdman_(soundtrack)",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  },
+  {
+   "quote": "Don't you think this theme has an insistent quality? I'm going to try and repeat it a number of times without any development, gradually increasing the orchestra as best I can.",
+   "speaker": "Maurice Ravel",
+   "source": "Orenstein, Ravel: Man and Musician, p. 98",
+   "via": "https://en.wikipedia.org/wiki/Boléro",
+   "verbatimVerified": true,
+   "confidence": "high",
+   "note": "Verbatim as it appears at the 'via' URL (Wikipedia), which cites the 'source'. The original source was not checked directly."
+  }
+ ],
+ "sources": [
+  {
+   "id": "airtonight",
+   "url": "https://en.wikipedia.org/wiki/In_the_Air_Tonight"
+  },
+  {
+   "id": "levee",
+   "url": "https://en.wikipedia.org/wiki/When_the_Levee_Breaks"
+  },
+  {
+   "id": "rosanna",
+   "url": "https://en.wikipedia.org/wiki/Rosanna_(song)"
+  },
+  {
+   "id": "lateralus",
+   "url": "https://en.wikipedia.org/wiki/Lateralus_(song)"
+  },
+  {
+   "id": "singsing",
+   "url": "https://en.wikipedia.org/wiki/Sing,_Sing,_Sing_(With_a_Swing)"
+  },
+  {
+   "id": "50ways",
+   "url": "https://en.wikipedia.org/wiki/50_Ways_to_Leave_Your_Lover"
+  },
+  {
+   "id": "mobydick",
+   "url": "https://en.wikipedia.org/wiki/Moby_Dick_(instrumental)"
+  },
+  {
+   "id": "tomsawyer",
+   "url": "https://en.wikipedia.org/wiki/Tom_Sawyer_(song)"
+  },
+  {
+   "id": "yyz",
+   "url": "https://en.wikipedia.org/wiki/YYZ_(instrumental)"
+  },
+  {
+   "id": "talking",
+   "url": "https://en.wikipedia.org/wiki/Talking_drum"
+  },
+  {
+   "id": "atumpan",
+   "url": "https://en.wikipedia.org/wiki/Atumpan_(drum)"
+  },
+  {
+   "id": "dundun",
+   "url": "https://www.frontiersin.org/articles/10.3389/fcomm.2021.652690/full"
+  },
+  {
+   "id": "rudiment",
+   "url": "https://en.wikipedia.org/wiki/Drum_rudiment"
+  },
+  {
+   "id": "dci",
+   "url": "https://en.wikipedia.org/wiki/Drum_and_bugle_corps_(modern)"
+  },
+  {
+   "id": "birdman",
+   "url": "https://en.wikipedia.org/wiki/Birdman_(soundtrack)"
+  },
+  {
+   "id": "bolero",
+   "url": "https://en.wikipedia.org/wiki/Boléro"
+  },
+  {
+   "id": "huron",
+   "url": "https://mitpress.mit.edu/9780262582780/sweet-anticipation/"
+  }
+ ],
+ "playback": "Each example has songId (public/songs/<id>.json), barStart and barEnd (1-based, inclusive, counted across all sections in order). Bars were checked against the current JSON files.",
+ "gaps": [
+  "Huron/Sweet Anticipation: MIT Press page timed out; claim kept from existing app text, confidence medium.",
+  "No verbatim quotes from Gadd, Porcaro, Bonham or Krupa themselves; quotes are about them, or (for Collins, Carey, Peart) taken via Wikipedia, which cites the original.",
+  "Talking-drum 20-mile relay figure is unverified ('citation needed' on Wikipedia); only the 4–5 mile figure (Ong 1977) is used.",
+  "Corps bass-drum 'split' spatial claim is general knowledge, confidence medium; no DCI primary source fetched.",
+  "Polyrhythm paragraph has no source and no song example yet; add one after the timing audit confirms which Pulse songs contain true overlapping polyrhythms.",
+  "Per-section drum descriptions in case studies (e.g. Levee beyond bars 1–2, Moby Dick, Sing Sing Sing) drum details beyond bars 1–2 are inferred from Pulse transcriptions, not from external sources.",
+  "Military signaling: no specific named calls (e.g. Three Camps, tattoo) are given with rhythms; can be added."
+ ]
+}

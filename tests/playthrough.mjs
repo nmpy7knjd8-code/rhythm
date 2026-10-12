@@ -7,7 +7,10 @@ const only = process.argv[5]?.split(',')
 const ids = (only ?? readdirSync('public/songs').map(f => f.replace('.json', ''))).sort()
 const expected = id => { const d = JSON.parse(readFileSync(`public/songs/${id}.json`)); let n = 0, bars = 0, sec = 0
   for (const s of d.sections) s.bars.forEach((b, i) => { bars++; const [a, c] = s.timeSig[i].split('/').map(Number); sec += a / c * 240 / s.bpm[i]
-    for (const [k, v] of Object.entries(b)) { if (k === '_sub') for (const m of Object.values(v)) for (const l of Object.values(m)) n += l.length; else if (!k.startsWith('_')) n += [...v].filter(c => c !== '.').length } })
+    // rows that map to the same drum (tomLo/tomFloor) merge, like the app's loader
+    const A = { tomFloor: 'tomLo', crash: 'crash1', hihat: 'closedHat', splash: 'china', rim: 'crossStick', cowbell: 'bell', agogo: 'bell' }; const on = {}
+    for (const [k, v] of Object.entries(b)) { if (k === '_sub') { for (const m of Object.values(v)) for (const l of Object.values(m)) n += l.length } else if (!k.startsWith('_')) { const r = A[k] ?? k; on[r] ??= new Set(); [...v].forEach((c, j) => { if (c !== '.') on[r].add(j) }) } }
+    for (const st of Object.values(on)) n += st.size })
   return { n, bars, sec } }
 const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] })
 let bad = 0; const queue = [...ids]

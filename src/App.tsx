@@ -14,7 +14,7 @@ export default function App() {
     <PlayerProvider>
       <div className="max-w-xl mx-auto px-6 pb-16">
         <nav className="pt-5 pb-2">
-          <a href="#/library" className="flex items-center gap-2 font-semibold tracking-tight"><span className="w-2 h-2 rounded-full bg-amber" />Pulse</a>
+          <a href="#/library" className="flex items-center gap-2 text-[17.6px] font-semibold tracking-tight"><span className="w-[8.8px] h-[8.8px] rounded-full bg-amber" />Pulse</a>
           <div className="mt-3 flex flex-nowrap justify-between gap-x-3 whitespace-nowrap">{NAV.map(([k, l]) => <a key={k} href={`#/${k}`} aria-current={page === k ? 'page' : undefined} className={`py-1 text-[15px] ${page === k ? 'text-amber' : 'text-bone/80'}`}>{l}</a>)}</div>
         </nav>
         <PlayerBar />

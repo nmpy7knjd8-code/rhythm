@@ -14,6 +14,7 @@ const SONGS = ALL_SONGS.filter(isRealSong)
 const JOURNEYS = ALL_SONGS.filter(isJourney)
 const STUDIES = ALL_SONGS.filter(s => !isRealSong(s) && !isJourney(s))
 import LENS from '../data/lens-deep.json'
+import STORY from '../data/story-deep.json'
 import { videosFor, type Video } from '../data/videos'
 import type { Pattern, Voice } from '../engine/types'
 import { PITCHED, noteName, midiToHz } from '../engine/pitch'
@@ -120,13 +121,56 @@ function Songs() {
   </div>
 }
 
+type StoryPara = { text: string; sources?: string[]; confidence?: string }
+type StoryBeat = { songId: string; barStart: number; barEnd: number; label: string; note?: string }
+type StoryChapter = { id: string; title: string; summary: string; sections?: { h: string; paragraphs: StoryPara[] }[]; studies?: { songId: string; title: string; arc: string; beats: StoryBeat[]; notes?: StoryPara[] }[] }
+const SRC = Object.fromEntries((STORY.sources as { id: string; url: string }[]).map(x => [x.id, x.url]))
+function Cite({ p }: { p: StoryPara }) {
+  if (!p.sources?.length && !p.confidence) return null
+  return <span className="block mt-1 text-[11px] text-mute">{p.confidence && <>confidence: {p.confidence}</>}{p.sources?.map(id => <a key={id} href={SRC[id]} target="_blank" rel="noreferrer" className="ml-2 underline underline-offset-2">{SRC[id] ? decodeURIComponent(SRC[id].replace(/^https?:\/\/(www\.)?/, '').split('/').slice(-1)[0] || SRC[id]).replace(/_/g, ' ') : id}</a>)}</span>
+}
+function BeatRow({ b }: { b: StoryBeat }) {
+  const P = usePlayer(); const sg = ALL_SONGS.find(x => x.raw.id === b.songId)
+  if (!sg) return null
+  const live = P.song?.raw.id === b.songId && P.playing && P.songBar >= b.barStart - 1 && P.songBar <= b.barEnd - 1
+  return <li className="py-2.5 flex items-start gap-3">
+    <button aria-label={`Play ${b.label}, bars ${b.barStart}–${b.barEnd}`} onClick={() => live ? P.toggle() : P.playRange(sg, b.barStart - 1, b.barEnd)} className={`mt-0.5 w-8 h-8 shrink-0 rounded-full grid place-items-center text-[11px] ${live ? 'bg-amber text-ink' : 'bg-white/[0.08] text-bone/85'}`}>{live ? '■' : '▶'}</button>
+    <div className="min-w-0"><p className="text-sm"><span className="font-medium">{b.label}</span> <span className="text-[11px] text-mute tabular-nums">bars {b.barStart}–{b.barEnd}</span></p>{b.note && <p className="mt-0.5 text-sm text-bone/60 leading-relaxed">{b.note}</p>}</div>
+  </li>
+}
+function StoryChapters() {
+  const chapters = STORY.chapters as StoryChapter[]
+  const [ci, setCi] = useState(0); const ch = chapters[ci]
+  const quotes = STORY.quotes as { quote: string; speaker: string; source: string; via?: string; confidence?: string; note?: string }[]
+  return <section className="mb-14">
+    <div className="-mx-6 px-6 mb-8 flex gap-x-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none]" role="tablist" aria-label="Chapters">
+      {chapters.map((c, i) => <button key={c.id} role="tab" aria-selected={ci === i} onClick={() => setCi(i)} className={`py-1 text-[15px] shrink-0 ${ci === i ? 'text-amber' : 'text-bone/80'}`}>{i + 1}. {c.title}</button>)}
+      <button role="tab" aria-selected={ci === chapters.length} onClick={() => setCi(chapters.length)} className={`py-1 text-[15px] shrink-0 ${ci === chapters.length ? 'text-amber' : 'text-bone/80'}`}>In their words</button>
+    </div>
+    {ch ? <article key={ch.id} className="rise">
+      <h2 className="text-xl font-medium tracking-tight">{ch.title}</h2>
+      <p className="mt-2 text-bone/60 leading-relaxed">{ch.summary}</p>
+      {ch.sections?.map(sec => <div key={sec.h} className="mt-8"><h3 className="font-medium">{sec.h}</h3>
+        {sec.paragraphs.map((p, i) => <p key={i} className="mt-2.5 text-bone/75 leading-relaxed">{p.text}<Cite p={p} /></p>)}</div>)}
+      {ch.studies?.map(st => <div key={st.songId + st.title} className="mt-10"><h3 className="font-medium">{st.title}</h3><p className="mt-1 text-sm text-bone/60">{st.arc}</p>
+        <ul className="mt-2 divide-y divide-line">{st.beats.map((b, i) => <BeatRow key={i} b={b} />)}</ul>
+        {st.notes?.map((p, i) => <p key={i} className="mt-2 text-sm text-bone/60 leading-relaxed">{p.text}<Cite p={p} /></p>)}</div>)}
+      <div className="mt-10 flex justify-between text-sm">
+        {ci > 0 ? <button onClick={() => setCi(ci - 1)} className="text-bone/70">← {chapters[ci - 1].title}</button> : <span />}
+        <button onClick={() => setCi(ci + 1)} className="text-bone/70 text-right">{ci + 1 < chapters.length ? chapters[ci + 1].title : 'In their words'} →</button>
+      </div>
+    </article> : <article className="rise space-y-8">{quotes.map((q, i) => <figure key={i}><blockquote className="text-bone/85 leading-relaxed">“{q.quote}”</blockquote>
+      <figcaption className="mt-1.5 text-[11px] text-mute">— {q.speaker}, {q.source}{q.via && <> · <a href={q.via} target="_blank" rel="noreferrer" className="underline underline-offset-2">via</a></>}{q.confidence && <> · confidence: {q.confidence}</>}</figcaption></figure>)}</article>}
+  </section>
+}
+
 export function Story() {
   const { loadArrangement, loadSong, toggle, playing, section, arrangement } = usePlayer()
   return <>
-    <H1 t="Storytelling" sub="How a drum part introduces, develops and resolves, and how kit elements interact along the way." />
+    <H1 t={STORY.title} sub={STORY.subtitle} />
     <button className="h-11 px-5 rounded-full bg-amber text-ink text-sm font-medium mb-10" onClick={async () => { loadArrangement(STORY_ARRANGEMENT); await toggle() }}>{playing && arrangement ? 'Restart example' : 'Play the 18-bar example'}</button>
     <ol className="mb-14 space-y-3">{STORY_ARRANGEMENT.sections.map((s, i) => <li key={i} className={`text-sm ${arrangement && section === i ? 'text-amber' : 'text-bone/60'}`}><span className="font-medium">{s.name}</span> · {s.bars} bars. {s.note}</li>)}</ol>
-    {STORY_TEXT.map(t => <section key={t.h} className="mb-10"><h2 className="text-lg font-medium">{t.h}</h2><p className="mt-2 text-bone/70 leading-relaxed">{t.p}</p></section>)}
+    <StoryChapters />
     {JOURNEYS.length > 0 && <section className="mb-10"><h2 className="text-lg font-medium">Drum journeys</h2>
       <p className="mt-2 text-bone/70 leading-relaxed">Original multi-section pieces that put these ideas to work over a few minutes each.</p>
       <ul className="mt-4 divide-y divide-line">{JOURNEYS.map(j => <li key={j.raw.id} className="py-3 flex items-center gap-3">
