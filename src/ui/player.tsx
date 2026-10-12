@@ -330,7 +330,7 @@ function Sheet({ open, onClose, children, title, subtitle, head, contentPull = t
               Close <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
             </button>
           </div>
-          {head && <div className="px-4 pb-3">{head}</div>}
+          {head && <div className="px-4 pb-3 flex justify-center">{head}</div>}
         </div>
         <div ref={scroller} className="h-[min(72vh,calc(100dvh-10rem))] overflow-y-auto overscroll-contain px-4 pt-4 pb-5">{children}</div>
       </div>
