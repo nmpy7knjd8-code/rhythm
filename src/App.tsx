@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { PlayerProvider, PlayerBar } from './ui/player'
-import { Library, Story, History, Lens, Theory, About } from './ui/pages'
+import { Library, Story, Lens, Theory, About } from './ui/pages'
 
-const NAV = [['library', 'Library'], ['theory', 'Theory'], ['story', 'Story'], ['history', 'History'], ['lens', "Drummer's Lens"]] as const
+const NAV = [['library', 'Library'], ['theory', 'Theory'], ['story', 'Story'], ['lens', "Drummer's Lens"]] as const
 
 export default function App() {
   const read = () => location.hash.replace(/^#\/?/, '') || 'library'
@@ -15,11 +15,11 @@ export default function App() {
       <div className="max-w-xl mx-auto px-6 pb-16">
         <nav className="pt-5 pb-2">
           <a href="#/library" className="flex items-center gap-2 text-[17.6px] font-semibold tracking-tight"><span className="w-[8.8px] h-[8.8px] rounded-full bg-amber" />Pulse</a>
-          <div className="mt-3 flex flex-nowrap justify-between gap-x-3 whitespace-nowrap">{NAV.map(([k, l]) => <a key={k} href={`#/${k}`} aria-current={page === k ? 'page' : undefined} className={`py-1 text-[15px] ${page === k ? 'text-amber' : 'text-bone/80'}`}>{l}</a>)}</div>
+          <div className="mt-3 flex flex-nowrap justify-center gap-x-5 whitespace-nowrap">{NAV.map(([k, l]) => <a key={k} href={`#/${k}`} aria-current={page === k ? 'page' : undefined} className={`py-1 text-[15px] ${page === k ? 'text-amber' : 'text-bone/80'}`}>{l}</a>)}</div>
         </nav>
         <PlayerBar />
         <main key={route} className="pt-8 rise">
-          {page === 'about' ? <About /> : page === 'theory' ? <Theory /> : page === 'story' ? <Story /> : page === 'history' ? <History /> : page === 'lens' ? <Lens id={sub} go={go} /> : <Library />}
+          {page === 'about' ? <About /> : page === 'theory' ? <Theory /> : page === 'story' ? <Story /> : page === 'lens' ? <Lens id={sub} go={go} /> : <Library />}
         </main>
         <footer className="mt-24 mb-24 pt-8 border-t border-line flex justify-between text-xs text-mute"><span>Pulse</span><a href="#/about">About & credits</a></footer>
       </div>

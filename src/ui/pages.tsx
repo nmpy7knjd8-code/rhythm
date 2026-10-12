@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react'
 import { RHYTHMS, PATTERNS } from '../data/rhythms'
 import { STORY_ARRANGEMENT } from '../data/story'
-import { HISTORY, SOURCES } from '../data/history'
-import { CULTURES, WORDING_NOTES, INTERLOCK_PRESETS, SOURCES_VERIFIED, type Strength } from '../data/cultures'
 import { ARTISTS } from '../data/artists'
 import { THEORY } from '../data/theory'
 import { SONGS as ALL_SONGS, type Song } from '../data/songs'
@@ -218,37 +216,6 @@ export function Story() {
   </>
 }
 
-const STRENGTH: Record<Strength, string> = { strong: 'text-bone', moderate: 'text-bone/70', weak: 'text-bone/50', romanticized: 'text-amber' }
-
-export function History() {
-  const [open, setOpen] = useState<string | null>(null)
-  return <>
-    <H1 t="History" sub="Trance drumming from the Sámi noaidi to the wider shamanic world, and what the evidence can and can't support." />
-    <Note className="mb-10" line="Some popular claims here are weakly evidenced; ratings show which." more={WORDING_NOTES.join(' ')} />
-    {HISTORY.map(h => <section key={h.id} className="mb-14"><Tag c={h.confidence} /><h2 className="mt-1 text-xl font-medium">{h.title}</h2>
-      {h.body.map((b, i) => <p key={i} className="mt-3 text-bone/70 leading-relaxed">{b}</p>)}
-      <p className="mt-3 text-xs text-bone/40">Sources: {h.sources.map(s => SOURCES.find(x => x.id === s)!.cite.split('(')[0].trim()).join('; ')}</p>
-    </section>)}
-    <section className="mb-14"><Tag c="Across Europe and its neighbours" /><h2 className="mt-1 text-xl font-medium">Fifteen traditions, rated by evidence</h2>
-      <p className="mt-2 text-xs text-bone/40">{SOURCES_VERIFIED ? `Source links checked ${SOURCES_VERIFIED}.` : 'These research notes are still being checked against their sources.'}</p>
-      <div className="mt-6 divide-y divide-line">{CULTURES.map(c => <div key={c.id} className="py-4">
-        <button className="w-full flex justify-between text-left gap-4" onClick={() => setOpen(open === c.id ? null : c.id)}>
-          <span>{c.culture}</span><span className={`text-xs uppercase tracking-wider ${STRENGTH[c.evidenceStrength]}`}>{c.evidenceStrength}</span></button>
-        {open === c.id && <div className="mt-3 text-sm text-bone/70 space-y-1">
-          <p><span className="text-bone/40">Instrument</span> {c.instrument}</p><p><span className="text-bone/40">Practice</span> {c.practice}</p>
-          <p><span className="text-bone/40">Rhythm</span> {c.rhythm}</p><p><span className="text-bone/40">Group</span> {c.groupEvidence}</p>
-          {c.flags.map(f => <p key={f} className="text-amber/90">{f}</p>)}
-          <p className="text-xs text-bone/40 break-words">{c.sources.map(s => <a key={s} href={s} className="underline mr-2" target="_blank" rel="noreferrer">{decodeURIComponent(s.replace(/^https?:\/\/(www\.)?/, '')).slice(0, 48)}</a>)}</p>
-          {INTERLOCK_PRESETS.filter(p => p.culture === c.id).map(p => <div key={p.pattern.id} className="pt-2"><p className="text-bone/60">{p.note}</p><LoadButtons pattern={p.pattern} /></div>)}
-        </div>}
-      </div>)}</div>
-    </section>
-    <section className="mb-10"><Tag c="Interlocking parts" /><h2 className="mt-1 text-xl font-medium">Two players, one rhythm</h2>
-      {INTERLOCK_PRESETS.map(p => <div key={p.pattern.id} className="mt-6"><h3 className="font-medium">{p.pattern.name}</h3><p className="mt-1 text-sm text-bone/60">{p.note}</p><LoadButtons pattern={p.pattern} /></div>)}
-    </section>
-    <section><Tag c="Bibliography" /><ul className="mt-3 space-y-3 text-xs text-bone/50">{SOURCES.map(s => <li key={s.id}>{s.cite}{s.note && <span className="text-bone/35"> {s.note}</span>}</li>)}</ul></section>
-  </>
-}
 
 function VideoEmbed({ v }: { v: Video }) {
   const [play, setPlay] = useState(false)
