@@ -95,6 +95,15 @@ function RequestSong() {
   </form>
 }
 
+/** Smooth-scroll so the artist group lands 80 px from the top; re-aim as lazy content above shifts the layout. */
+function scrollToArtist(id: string) {
+  const aim = (behavior: ScrollBehavior) => { const el = document.getElementById(id); if (!el) return 0
+    const y = el.getBoundingClientRect().top + window.scrollY - 80; window.scrollTo({ top: y, behavior }); return el.getBoundingClientRect().top - 80 }
+  aim('smooth'); let n = 0
+  const t = setInterval(() => { const off = Math.abs((document.getElementById(id)?.getBoundingClientRect().top ?? 80) - 80)
+    if (++n > 12 || off < 2) { clearInterval(t); return } if (n % 3 === 0) aim(off > 600 ? 'smooth' : 'auto') }, 250)
+}
+
 function Songs() {
   // artist groups shuffled on each visit; songs inside a group keep their order
   const list = useMemo(() => {
@@ -109,7 +118,7 @@ function Songs() {
   const slug = (a: string) => 'artist-' + a.toLowerCase().replace(/[^a-z0-9]+/g, '-')
   return <div className="rise">
     <nav aria-label="Artists" className="mb-6 flex flex-wrap justify-center gap-1.5">
-      {artists.map(a => <button key={a} onClick={() => { setPicked(a); document.getElementById(slug(a))?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
+      {artists.map(a => <button key={a} onClick={() => { setPicked(a); scrollToArtist(slug(a)) }}
         className={`h-7 px-3 rounded-full text-[12px] border transition-colors ${picked === a ? 'border-amber/60 text-amber bg-amber/[0.08]' : 'border-white/[0.08] bg-white/[0.04] text-bone/75 hover:text-amber hover:border-amber/40'}`}>{a}</button>)}
     </nav>
     <RequestSong />
