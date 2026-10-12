@@ -28,3 +28,6 @@ body { font-family: Inter, ui-sans-serif, -apple-system, "SF Pro Text", "Segoe U
   .sel { @apply h-10 px-3 rounded-xl bg-white/[0.06] text-sm text-bone outline-none appearance-none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 28px; }
   .sel option, .sel optgroup { background: #141416; color: #eee; }
 }
+/* iOS Safari zooms into fields under 16px: keep every input at 16px on touch screens; placeholders may stay visually smaller */
+@media (pointer: coarse) { input:not([type=range]):not([type=checkbox]), textarea, select { font-size: 16px !important } }
+.req-input::placeholder { font-size: 14px }
