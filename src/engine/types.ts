@@ -29,9 +29,11 @@ export interface Pattern {
   /** Display time signature, e.g. '7/8'. */
   timeSig?: string
   /** Sub-step hits: per voice, per step, [fraction of the step (0–1), velocity] pairs, e.g. 32nds or roll strokes. */
-  sub?: Partial<Record<Voice, Record<string, [number, number][]>>>
+  sub?: Partial<Record<Voice, Record<string, [number | string, number][]>>>
   /** Instrument/pitch variant per hit: voice → step → variant id (see VARIANTS), e.g. splash on the crash row. */
   variant?: Partial<Record<Voice, Record<string, string>>>
+  /** Tempo changes inside the bar: [fraction of the bar ('n/d'), quarter-note BPM]. */
+  tempoAt?: [string, number][]
   /** Laid-back feel: every note later by lateMs, plus a repeatable ±jitterMs human wobble. */
   humanize?: { lateMs: number; jitterMs: number }
   /** URL for the default tempo's source. */

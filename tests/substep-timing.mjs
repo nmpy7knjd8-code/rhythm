@@ -23,7 +23,7 @@ for (const [id, sec] of songs) {
   const t0 = r[0]?.t ?? 0, firstExp = Math.min(...exp.map(x => x.t))
   const got = r.filter(x => x.t - t0 < t - firstExp - 1e-6).map(x => ({ v: x.voice, t: x.t - t0 + firstExp })).filter(x => !x.v.startsWith('crash') || true)
   let maxErr = 0, unmatched = 0
-  for (const e of exp) { const m = got.filter(g => g.v === e.v).reduce((a, g) => Math.min(a, Math.abs(g.t - e.t)), 9); if (m > 0.0025 + hum) unmatched++; else maxErr = Math.max(maxErr, m) }
+  for (const e of exp) { const m = got.filter(g => g.v === e.v).reduce((a, g) => Math.min(a, Math.abs(g.t - e.t)), 9); if (m > 0.001 + hum) unmatched++; else maxErr = Math.max(maxErr, m) }
   const ints = [...new Set(got.map(g => g.t))].sort((a, b) => a - b).slice(1).map((x, i, arr) => x - (i ? arr[i - 1] : got[0].t))
   console.log(`${id} [${s.name}]: expected ${exp.length}, scheduled ${got.length}, max timing error ${(maxErr * 1000).toFixed(3)} ms, unmatched ${unmatched}, smallest intervals ${[...new Set(ints.map(x => Math.round(x * 1000)))].sort((a, b) => a - b).slice(0, 4).join(', ')} ms`)
   if (unmatched) fail++

@@ -58,13 +58,15 @@ export function euclid(k: number, n: number, rotate = 0): string {
   return out.slice(r).concat(out.slice(0, r)).join('')
 }
 
+/** Sub-step offsets are exact rationals stored as 'n/d' strings (older data: decimals). */
+export const fracOf = (f: number | string) => typeof f === 'number' ? f : (([n, d]) => n / (d ?? 1))(f.split('/').map(Number))
 /** Sub-step hits for a step: offset as a fraction of the step plus velocity (cymbals trimmed like hitsAt). */
 export function subHitsAt(p: Pattern, step: number): (Hit & { frac: number })[] {
   if (!p.sub) return []
   const out: (Hit & { frac: number })[] = []
   for (const [voice, m] of Object.entries(p.sub) as [Voice, Record<string, [number, number][]>][]) {
     const l = m[String(step)]; if (!l) continue
-    for (const [frac, v] of l) out.push({ voice, frac, velocity: v * (CYMBAL_TRIM[voice] ?? 1) })
+    for (const [frac, v] of l) out.push({ voice, frac: fracOf(frac), velocity: v * (CYMBAL_TRIM[voice] ?? 1) })
   }
   return out
 }

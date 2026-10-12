@@ -71,13 +71,10 @@ function RequestSong() {
     if (hp) { setState('sent'); return } // honeypot filled: a bot, drop silently
     setState('sending')
     try {
-      // Web3Forms (no activation click) once an access key for pulse-requests@mail.grokbot.com is set; FormSubmit until then.
-      const w3 = import.meta.env.VITE_WEB3FORMS_KEY as string | undefined
-      const r = w3
-        ? await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ access_key: w3, subject: `Pulse song request: ${t}`, from_name: 'Pulse', request: t, botcheck: '' }) })
-        : await fetch('https://formsubmit.co/ajax/ace7abe81ae4d20d81a3316d83cc196d', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ _subject: `Pulse song request: ${t}`, _captcha: 'false', request: t }) })
+      // Web3Forms public access key for pulse-requests@mail.grokbot.com (safe to embed; it only routes mail to that inbox)
+      const key = (import.meta.env.VITE_WEB3FORMS_KEY as string | undefined) || 'a45bacf4-ef38-4d5b-96a3-0a160015941f'
+      const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ access_key: key, subject: `Pulse song request: ${t}`, from_name: 'Pulse', request: t, botcheck: '' }) })
       const j = await r.json().catch(() => ({})) as { success?: string | boolean }
       if (!r.ok || String(j.success) === 'false') throw new Error(String(r.status))
       setState('sent'); setText('')

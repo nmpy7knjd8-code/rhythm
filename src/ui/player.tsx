@@ -3,7 +3,7 @@ import { RhythmEngine, preloadKit, setSampleBase } from '../engine/audio'
 import type { Arrangement, Fill, Layer, Pattern, Voice } from '../engine/types'
 import { VOICES } from '../engine/types'
 import { KitView } from './kitview'
-import { velocityOf, ticksPerStep, VARIANTS } from '../engine/pattern'
+import { velocityOf, ticksPerStep, VARIANTS, fracOf } from '../engine/pattern'
 import { KITS } from '../data/kits'
 import { PATTERNS, RHYTHMS } from '../data/rhythms'
 import { FILLS, FILL_EVERY } from '../data/fills'
@@ -157,7 +157,7 @@ export function StepGrid({ pattern, current }: { pattern: Pattern; current: numb
                     {vel > 0 && <span className={`absolute inset-x-0 bottom-0 rounded-[3px] transition-[background-color,transform] duration-100 ${i === current ? 'bg-amber scale-y-110' : 'bg-bone/70'}`} style={{ height: `${Math.round(25 + vel * 75)}%` }} />}
                     {(c === 'f' || c === 'r') && <span className="absolute top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-ink" />}
                     {pattern.variant?.[v]?.[String(i)] && <span title={VARIANTS[pattern.variant[v]![String(i)]]?.label} className="absolute inset-0 grid place-items-center text-[7px] leading-none font-semibold text-ink/75">{VARIANTS[pattern.variant[v]![String(i)]]?.short}</span>}
-                    {pattern.sub?.[v]?.[String(i)]?.map(([fr, sv], j) => <span key={j} className={`absolute bottom-0 w-[2px] rounded-full ${i === current ? 'bg-amber' : 'bg-bone/80'}`} style={{ left: `${fr * 100}%`, height: `${Math.round(25 + sv * 75)}%` }} />)}
+                    {pattern.sub?.[v]?.[String(i)]?.map(([fr, sv], j) => <span key={j} className={`absolute bottom-0 w-[2px] rounded-full ${i === current ? 'bg-amber' : 'bg-bone/80'}`} style={{ left: `${fracOf(fr) * 100}%`, height: `${Math.round(25 + sv * 75)}%` }} />)}
                   </span>
                 )
               })}

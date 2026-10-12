@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import type { Kit, KitVoice, Layer, Voice, Arrangement, Pattern, Fill } from './types'
-import { TICKS_PER_BAR, hitsAt, stepForTick, swingOffset, audibleLayers, ticksPerStep , subHitsAt, VARIANTS } from './pattern'
+import { TICKS_PER_BAR, hitsAt, stepForTick, swingOffset, audibleLayers, ticksPerStep , subHitsAt, VARIANTS, fracOf } from './pattern'
 
 type Inst = { trigger: (t: number, v: number, r?: number) => void; choke?: (t: number) => void; dispose: () => void }
 
@@ -75,8 +75,8 @@ const FILL_ID = 'fill', FX_ID = 'fx', SONG_ID = 'song'
 /** Inner roll strokes (between grid steps) are played softer than the stroke on the step, like real sticking:
  *  the middle of a 32nd pair a bit firmer than triplet inner strokes. */
 const rollVel = (v: number, frac: number) => Math.min(1, v * (Math.abs(frac - 0.5) < 0.01 ? 0.8 : 0.72))
-/** Deterministic ±2 ms drift on inner roll strokes so rolls aren't machine-perfect. */
-const rollJitter = (bar: number, step: number, frac: number) => { const x = Math.sin((bar * 131 + step * 17 + frac * 7) * 12.9898) * 43758.5453; return ((x - Math.floor(x)) * 2 - 1) * 0.002 }
+/** Deterministic ±0.8 ms drift (kept under the 1 ms timing-audit tolerance) on inner roll strokes so rolls aren't machine-perfect. */
+const rollJitter = (bar: number, step: number, frac: number) => { const x = Math.sin((bar * 131 + step * 17 + frac * 7) * 12.9898) * 43758.5453; return ((x - Math.floor(x)) * 2 - 1) * 0.0008 }
 /** Visual hit bus: Kit view subscribes; callbacks fire via Tone.Draw at the hit's audio time. */
 export const hitBus = new Set<(voice: Voice, vel: number, variant?: string) => void>()
 
@@ -115,6 +115,7 @@ export class RhythmEngine {
       // tempo map: each bar may carry its own tempo; change it exactly on the bar line
       if (p.suggestedBpm && Math.abs(Tone.getTransport().bpm.getValueAtTime(time) - p.suggestedBpm) > 0.01) Tone.getTransport().bpm.setValueAtTime(p.suggestedBpm, time)
     }
+    if (p.tempoAt) for (const [f, bpm] of p.tempoAt) { const at = fracOf(f) * len; if (this.songTick === Math.ceil(at - 1e-9)) Tone.getTransport().bpm.setValueAtTime(bpm, time - (Math.ceil(at - 1e-9) - at) * tickSec) }
     if (this.songTick % tps === 0) {
       const step = this.songTick / tps; const stepSec = tickSec * tps
       let t = time + swingOffset(p, step, this.swing) * stepSec
