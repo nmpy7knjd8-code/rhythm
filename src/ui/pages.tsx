@@ -264,6 +264,9 @@ export function Lens({ id, go }: { id?: string; go: (h: string) => void }) {
 }
 
 export function Theory() {
+  const { load, toggle, playing } = usePlayer()
+  const loadAll = async (ps: Pattern[]) => { ps.forEach((p, i) => load(p, i > 0)); if (!playing) await toggle() }
+  const NO_COMBO = new Set(['meter', 'compound', 'odd']) // different meters: stacking them makes no musical sense
   return <>
     <H1 t="Theory" sub="The ideas underneath rhythm, from meter to tension and release. Every concept has a pattern you can play." />
     <nav className="mb-14 flex flex-wrap gap-x-4 gap-y-2 text-sm text-bone/50">{THEORY.map(c => <a key={c.id} href={`#/theory`} onClick={e => { e.preventDefault(); document.getElementById(c.id)?.scrollIntoView({ behavior: 'smooth' }) }}>{c.title.split(':')[0]}</a>)}</nav>
@@ -272,6 +275,7 @@ export function Theory() {
       <p className="mt-3 text-bone/75 leading-relaxed">{c.body}</p>
       <p className="mt-4 text-sm text-bone/50">{c.listen}</p>
       {c.patterns.map(p => <div key={p.id} className="mt-5"><h3 className="text-sm font-medium">{p.name}</h3><LoadButtons pattern={p} /></div>)}
+      {c.patterns.length > 1 && !NO_COMBO.has(c.id) && <button className="mt-4 text-sm text-amber" onClick={() => loadAll(c.patterns)}>Play all {c.patterns.length} together →</button>}
     </section>)}
   </>
 }

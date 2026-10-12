@@ -20,7 +20,7 @@ export const THEORY: Concept[] = [
     patterns: [P('tempo', 'Basic beat (try 70 vs 140 BPM)', 8, 2, 100, { low: 'X...X.x.', back: '..X...X.', tick: 'xxxxxxxx' }, { ticksPerStep: 6 })] },
   { id: 'subdivision', title: 'The subdivision hierarchy',
     body: 'Meter is nested: bar → beat → half-beat → quarter-beat. Each level is a pulse the listener can lock onto. Most grooves have one prominent level (often eighths or sixteenths, played on hats or shaker) that acts as the clock. Others are implied. Changing which level is audible changes the perceived energy without changing the tempo.',
-    listen: 'The same tempo throughout. Play each level in turn: same tempo, a faster clock each time.',
+    listen: 'The same tempo throughout. The same tempo throughout. Each layer adds one level. Mute from the top down.',
     patterns: [
       P('s-beat', 'Level 1: quarter notes', 16, 4, 90, { low: 'X...x...x...x...' }),
       P('s-8', 'Level 2: eighths', 16, 4, 90, { tick: 'x.x.x.x.x.x.x.x.' }),
@@ -57,7 +57,7 @@ export const THEORY: Concept[] = [
     ] },
   { id: 'syncopation', title: 'Syncopation and displacement',
     body: 'Syncopation is stress where the meter predicts weakness, or silence where it predicts stress: an off-beat accent, or an anticipation that arrives a 16th early and ties over the beat. Displacement takes a whole pattern and shifts it by a fixed amount (for example one 16th), so every note keeps its relation to the others but none sits where it used to. Groove studies (Witek et al. 2014) find that a moderate amount of syncopation maximises the urge to move.',
-    listen: 'Play the straight beat, then the displaced version, and compare where the accents land.',
+    listen: 'Load the straight beat, then layer the displaced version and mute the original.',
     patterns: [
       P('sy-base', 'Straight beat', 16, 4, 96, { low: 'X.......X.......', back: '....X.......X...' }),
       P('sy-antic', 'Anticipated kick (syncopated)', 16, 4, 96, { low: 'X......x..x.....', back: '....X.......X...', tick: 'x.x.x.x.x.x.x.x.' }),
