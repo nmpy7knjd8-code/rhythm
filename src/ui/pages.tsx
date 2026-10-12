@@ -6,6 +6,7 @@ import { CULTURES, WORDING_NOTES, INTERLOCK_PRESETS, SOURCES_VERIFIED, type Stre
 import { ARTISTS } from '../data/artists'
 import { THEORY } from '../data/theory'
 import { SONGS as ALL_SONGS, type Song } from '../data/songs'
+import { shownBpm } from '../data/songs'
 // Original multi-section drum journeys live on the Story page, not in Songs.
 const isJourney = (s: Song) => s.raw.id.startsWith('j-')
 /** Songs tab = real recorded songs only (transcribed parts); generic style pieces and references go to Story. */
@@ -60,7 +61,7 @@ function SongButtons({ song }: { song: Song }) {
   return <div className="flex items-center gap-2 mt-4">
     <button className="btn-primary" onClick={async () => { await P.loadSong(song); await P.toggle() }}><span className="inline-block w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-current" /> Play song</button>
     <button className="btn-ghost" onClick={async () => { P.load(song.pattern); if (!P.playing) await P.toggle() }}>Loop groove</button>
-    <span className="ml-auto text-xs text-mute tabular-nums">{song.raw.bpm} BPM</span>
+    <span className="ml-auto text-xs text-mute tabular-nums">{shownBpm(song, song.raw.bpm)} BPM</span>
   </div>
 }
 
@@ -123,7 +124,7 @@ function Songs() {
 
 type StoryPara = { text: string; sources?: string[]; confidence?: string }
 type StoryBeat = { songId: string; barStart: number; barEnd: number; label: string; note?: string }
-type StoryChapter = { id: string; title: string; summary: string; sections?: { h: string; paragraphs: StoryPara[] }[]; studies?: { songId: string; title: string; arc: string; beats: StoryBeat[]; notes?: StoryPara[] }[] }
+type StoryChapter = { id: string; title: string; summary: string; sections?: { h: string; paragraphs: StoryPara[] }[]; examples?: StoryBeat[]; studies?: { songId: string; title: string; arc: string; beats: StoryBeat[]; notes?: StoryPara[] }[] }
 const SRC = Object.fromEntries((STORY.sources as { id: string; url: string }[]).map(x => [x.id, x.url]))
 function Cite({ p }: { p: StoryPara }) {
   if (!p.sources?.length && !p.confidence) return null
@@ -152,6 +153,7 @@ function StoryChapters() {
       <p className="mt-2 text-bone/60 leading-relaxed">{ch.summary}</p>
       {ch.sections?.map(sec => <div key={sec.h} className="mt-8"><h3 className="font-medium">{sec.h}</h3>
         {sec.paragraphs.map((p, i) => <p key={i} className="mt-2.5 text-bone/75 leading-relaxed">{p.text}<Cite p={p} /></p>)}</div>)}
+      {!!ch.examples?.length && <div className="mt-10"><h3 className="text-[11px] uppercase tracking-[0.14em] text-mute">Hear it</h3><ul className="mt-1 divide-y divide-line">{ch.examples.map((b, i) => <BeatRow key={i} b={b} />)}</ul></div>}
       {ch.studies?.map(st => <div key={st.songId + st.title} className="mt-10"><h3 className="font-medium">{st.title}</h3><p className="mt-1 text-sm text-bone/60">{st.arc}</p>
         <ul className="mt-2 divide-y divide-line">{st.beats.map((b, i) => <BeatRow key={i} b={b} />)}</ul>
         {st.notes?.map((p, i) => <p key={i} className="mt-2 text-sm text-bone/60 leading-relaxed">{p.text}<Cite p={p} /></p>)}</div>)}

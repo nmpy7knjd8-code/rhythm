@@ -34,6 +34,8 @@ export interface Pattern {
   variant?: Partial<Record<Voice, Record<string, string>>>
   /** Tempo changes inside the bar: [fraction of the bar ('n/d'), quarter-note BPM]. */
   tempoAt?: [string, number][]
+  /** Tab shuffle marking for this bar: off-beats were moved to 2/3 of each 8th or 16th pair. */
+  feel?: '8th' | '16th'
   /** Laid-back feel: every note later by lateMs, plus a repeatable ±jitterMs human wobble. */
   humanize?: { lateMs: number; jitterMs: number }
   /** URL for the default tempo's source. */

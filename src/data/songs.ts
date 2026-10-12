@@ -5,7 +5,7 @@ import { registerPatterns } from './rhythms'
 
 /** Shape of research/song-patterns.json entries. Velocities 0–1 per step. */
 export interface SongEntryRaw {
-  id: string; song: string; artist: string; drummer: string; bpm: number; timeSig: string
+  id: string; song: string; artist: string; drummer: string; bpm: number; timeSig: string; bpmDisplay?: number; bpmNote?: string
   stepsPerBar: number; bars: number; voices: Record<string, number[]>
   feel?: string; whyItWorks?: string; source?: string; confidence?: string; label?: string
   sections?: { name: string; repeat: number; confidence?: string; timeSig?: string; ticksPerStep?: number; bars: Record<string, string>[] }[]
@@ -39,13 +39,13 @@ export async function loadSongBars(song: Song): Promise<Song> {
   const data = (await r.json()) as { sections: SectionFile[] }
   const bars: Pattern[] = []
   data.sections.forEach((sec, si) => sec.bars.forEach((b, i) => {
-    const { _sub, _var, _tempo, ...strs } = b as Record<string, string> & { _tempo?: [string, number][]; _sub?: Record<string, Record<string, [number | string, number][]>>; _var?: Record<string, Record<string, string>> }
+    const { _sub, _var, _tempo, _feel, ...strs } = b as Record<string, string> & { _feel?: '8th' | '16th'; _tempo?: [string, number][]; _sub?: Record<string, Record<string, [number | string, number][]>>; _var?: Record<string, Record<string, string>> }
     const variant = _var ? Object.fromEntries(Object.entries(_var).flatMap(([k, m]) => VOICE_ALIASES[k] ? [[VOICE_ALIASES[k], m]] : [])) : undefined
     const steps = Object.values(strs)[0]?.length ?? 16
     const sub = _sub ? Object.fromEntries(Object.entries(_sub).flatMap(([k, m]) => VOICE_ALIASES[k] ? [[VOICE_ALIASES[k], m]] : [])) : undefined
     const [num] = (sec.timeSig[i] ?? '4/4').split('/').map(Number)
     const spb = Math.max(1, Math.round(steps / (sec.timeSig[i]?.endsWith('/8') ? num / (num % 3 === 0 ? 3 : 1) : num)))
-    bars.push({ id: `song-${song.raw.id}-b${bars.length}`, name: song.raw.song, steps, stepsPerBeat: spb, ticksPerStep: sec.ticksPerStep[i], suggestedBpm: sec.bpm[i], timeSig: sec.timeSig[i], humanize: sec.humanize, sub, variant, tempoAt: _tempo, tracks: stringTracks(strs as Record<string, string>) })
+    bars.push({ id: `song-${song.raw.id}-b${bars.length}`, name: song.raw.song, steps, stepsPerBeat: spb, ticksPerStep: sec.ticksPerStep[i], suggestedBpm: sec.bpm[i], timeSig: sec.timeSig[i], humanize: sec.humanize, sub, variant, tempoAt: _tempo, feel: _feel, tracks: stringTracks(strs as Record<string, string>) })
     void si
   }))
   song.bars = bars
@@ -94,3 +94,6 @@ export const SONGS: Song[] = (raw as unknown as SongEntryRaw[]).map(s => {
   return { raw: s, pattern, fills, bars, sections }
 })
 registerPatterns(SONGS.flatMap(s => [s.pattern, ...s.fills.map(f => f.pattern)]))
+
+/** Displayed BPM for a song: the record's counted beat (e.g. cut-time tabs show half the written quarter tempo). */
+export const shownBpm = (s: Song | null | undefined, bpm: number) => Math.round(bpm * (s?.raw.bpmDisplay ?? 1))

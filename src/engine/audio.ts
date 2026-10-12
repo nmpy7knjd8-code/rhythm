@@ -74,7 +74,8 @@ export type StepListener = (layerSteps: Record<string, number>, bar: number) => 
 const FILL_ID = 'fill', FX_ID = 'fx', SONG_ID = 'song'
 /** Inner roll strokes (between grid steps) are played softer than the stroke on the step, like real sticking:
  *  the middle of a 32nd pair a bit firmer than triplet inner strokes. */
-const rollVel = (v: number, frac: number) => Math.min(1, v * (Math.abs(frac - 0.5) < 0.01 ? 0.8 : 0.72))
+/** Inner roll strokes softer (natural accent shape); scaled by feel (0 = exact, flat velocity). */
+const rollVel = (v: number, frac: number, feel = 1) => Math.min(1, v * (1 - feel * (Math.abs(frac - 0.5) < 0.01 ? 0.2 : 0.28)))
 /** Deterministic ±0.8 ms drift (kept under the 1 ms timing-audit tolerance) on inner roll strokes so rolls aren't machine-perfect. */
 const rollJitter = (bar: number, step: number, frac: number) => { const x = Math.sin((bar * 131 + step * 17 + frac * 7) * 12.9898) * 43758.5453; return ((x - Math.floor(x)) * 2 - 1) * 0.0008 }
 /** Visual hit bus: Kit view subscribes; callbacks fire via Tone.Draw at the hit's audio time. */
@@ -86,6 +87,16 @@ export class RhythmEngine {
   private channels = new Map<string, Channel>()
   private kit!: Kit
   private swing = 0
+  /** Song feel 0..1: 1 = as transcribed (tab shuffle + human roll feel), 0 = straight and exact. */
+  private feel = 1
+  setFeel(f: number) { this.feel = Math.max(0, Math.min(1, f)) }
+  /** Seconds to move a shuffled off-beat back toward straight (0 at feel 1). Straight bars never move. */
+  private feelShift(p: Pattern, pos: number, tps: number, stepSec: number) {
+    if (!p.feel || this.feel >= 1) return 0
+    const u = p.feel === '16th' ? 1 / 8 : 1 / 4, w = pos * tps / TICKS_PER_BAR, r = w % u
+    if (Math.abs(r - u * 2 / 3) > 1e-6) return 0
+    return -(u / 6) * (1 - this.feel) * (TICKS_PER_BAR / tps) * stepSec
+  }
   private tick = 0
   private bar = 0
   private eventId: number | null = null
@@ -130,10 +141,11 @@ export class RhythmEngine {
     if (p.tempoAt) for (const [f, bpm] of p.tempoAt) { const at = fracOf(f) * len; if (this.songTick === Math.ceil(at - 1e-9)) Tone.getTransport().bpm.setValueAtTime(bpm * this.songTempoScale, Math.max(time - (Math.ceil(at - 1e-9) - at) * tickSec, this.lastTime)) }
     if (this.songTick % tps === 0) {
       const step = this.songTick / tps; const stepSec = tickSec * tps
-      let t = time + swingOffset(p, step, this.swing) * stepSec
-      if (p.humanize) { const r = Math.sin((this.songBar * 97 + step) * 12.9898) * 43758.5453; t += (p.humanize.lateMs + ((r - Math.floor(r)) * 2 - 1) * p.humanize.jitterMs) / 1000 }
-      for (const h of hitsAt(p, step)) this.play(SONG_ID, h.voice, t, h.velocity, h.graces, stepSec, p.variant?.[h.voice]?.[step])
-      for (const h of subHitsAt(p, step)) this.play(SONG_ID, h.voice, t + h.frac * stepSec + rollJitter(this.songBar, step, h.frac), rollVel(h.velocity, h.frac), 0, stepSec)
+      let t = time
+      const fl = this.feel
+      if (p.humanize) { const r = Math.sin((this.songBar * 97 + step) * 12.9898) * 43758.5453; t += fl * (p.humanize.lateMs + ((r - Math.floor(r)) * 2 - 1) * p.humanize.jitterMs) / 1000 }
+      for (const h of hitsAt(p, step)) this.play(SONG_ID, h.voice, t + this.feelShift(p, step, tps, stepSec), h.velocity, h.graces, stepSec, p.variant?.[h.voice]?.[step])
+      for (const h of subHitsAt(p, step)) this.play(SONG_ID, h.voice, t + h.frac * stepSec + this.feelShift(p, step + h.frac, tps, stepSec) + fl * rollJitter(this.songBar, step, h.frac), rollVel(h.velocity, h.frac, fl), 0, stepSec)
       const b = this.songBar; Tone.getDraw().schedule(() => this.listeners.forEach(f => f({ [SONG_ID]: step }, b)), time)
     }
     if (++this.songTick >= len) {

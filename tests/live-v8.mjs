@@ -1,0 +1,15 @@
+import { chromium } from 'playwright'
+const URL = 'https://nmpy7knjd8-code.github.io/rhythm/'
+const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] }); const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })
+await p.goto(URL + '?v=' + Date.now() + '#/story', { waitUntil: 'networkidle' }); await p.waitForTimeout(600)
+console.log('chapters:', await p.locator('[aria-label=Chapters] button').count())
+await p.screenshot({ path: '/workspace/screenshots/v8-story.png' })
+await p.locator('[aria-label=Chapters] button').nth(10).click(); await p.waitForTimeout(400)
+const plays = p.locator('main button[aria-label^="Play "]'); console.log('example play buttons in case studies:', await plays.count())
+await plays.first().click(); await p.waitForTimeout(2500)
+console.log('playing example:', await p.evaluate(() => ({ bar: window.__pulseEngine.songBar, playing: window.__pulseEngine.playing })))
+await p.screenshot({ path: '/workspace/screenshots/v8-story-case.png' }); await p.evaluate(() => window.__pulseEngine.stop())
+const head = await p.evaluate(async () => { const h = document.head.innerHTML; const m = await (await fetch('/rhythm/manifest.webmanifest')).json(); const i = await fetch('/rhythm/icons/apple-touch-icon.png'); return { title: /apple-mobile-web-app-title" content="Pulse"/.test(h), touch: /apple-touch-icon/.test(h), icons: m.icons.length, png: i.status } })
+console.log('icons:', JSON.stringify(head))
+console.log('logo font-size:', await p.locator('nav > a').evaluate(e => getComputedStyle(e).fontSize))
+await b.close()

@@ -76,6 +76,22 @@
       }
      ]
     }
+   ],
+   "examples": [
+    {
+     "songId": "airtonight",
+     "barStart": 88,
+     "barEnd": 88,
+     "label": "In the Air Tonight: The fill",
+     "note": "In the Pulse transcription, a run moves from high tom to mid tom to floor tom over kick 16ths: falling pitch, rising density, ending on the downbeat."
+    },
+    {
+     "songId": "airtonight",
+     "barStart": 89,
+     "barEnd": 112,
+     "label": "In the Air Tonight: Release",
+     "note": "The kit arrives with kick and snare on a sustained groove. It sounds enormous because it was denied for so long."
+    }
    ]
   },
   {
@@ -136,6 +152,22 @@
       }
      ]
     }
+   ],
+   "examples": [
+    {
+     "songId": "rosanna",
+     "barStart": 1,
+     "barEnd": 7,
+     "label": "Rosanna: Intro",
+     "note": "Drums alone. Jeff Porcaro's half-time shuffle sets triplet time, ghost notes and backbeat on 3 before the band enters."
+    },
+    {
+     "songId": "mobydick",
+     "barStart": 34,
+     "barEnd": 78,
+     "label": "Moby Dick: Deep water",
+     "note": "In the Pulse transcription, these bars use only toms and kick, with no snare or cymbals. This is the darkest, most melodic stretch."
+    }
    ]
   },
   {
@@ -176,6 +208,22 @@
        "confidence": "high"
       }
      ]
+    }
+   ],
+   "examples": [
+    {
+     "songId": "tomsawyer",
+     "barStart": 59,
+     "barEnd": 62,
+     "label": "Tom Sawyer: Drum break",
+     "note": "Neil Peart's tom run back into 4/4: crash, kick and cymbal accents, then high tom to mid tom to floor tom."
+    },
+    {
+     "songId": "mobydick",
+     "barStart": 28,
+     "barEnd": 33,
+     "label": "Moby Dick: Departure",
+     "note": "The solo begins with toms over kick and hi-hat."
     }
    ]
   },
@@ -223,6 +271,22 @@
       }
      ]
     }
+   ],
+   "examples": [
+    {
+     "songId": "50ways",
+     "barStart": 1,
+     "barEnd": 8,
+     "label": "50 Ways to Leave Your Lover: Intro and verse figure",
+     "note": "Gadd's linear, march-like pattern across hat, snare, kick and tom, with soft ghost strokes."
+    },
+    {
+     "songId": "50ways",
+     "barStart": 38,
+     "barEnd": 57,
+     "label": "50 Ways to Leave Your Lover: Verse returns",
+     "note": "The motif returns unchanged."
+    }
    ]
   },
   {
@@ -266,6 +330,22 @@
        "confidence": "high"
       }
      ]
+    }
+   ],
+   "examples": [
+    {
+     "songId": "singsing",
+     "barStart": 105,
+     "barEnd": 112,
+     "label": "Sing, Sing, Sing: Drum feature",
+     "note": "Toms and snare only. The band drops out and the drums carry the story."
+    },
+    {
+     "songId": "singsing",
+     "barStart": 129,
+     "barEnd": 136,
+     "label": "Sing, Sing, Sing: Second drum feature",
+     "note": "Another tom-and-snare-only passage, answering the first."
     }
    ]
   },
@@ -361,6 +441,15 @@
        "confidence": "medium"
       }
      ]
+    }
+   ],
+   "examples": [
+    {
+     "songId": "yyz",
+     "barStart": 3,
+     "barEnd": 19,
+     "label": "YYZ: Morse intro",
+     "note": "Y-Y-Z in Morse code (-.-- -.-- --..) set in 10/8 and passed across the band."
     }
    ]
   },
@@ -541,6 +630,22 @@
       }
      ]
     }
+   ],
+   "examples": [
+    {
+     "songId": "rosanna",
+     "barStart": 20,
+     "barEnd": 26,
+     "label": "Rosanna: Pre-chorus",
+     "note": "The section ends in a 2/4 bar, a shortened bar that pulls the chorus in early."
+    },
+    {
+     "songId": "lateralus",
+     "barStart": 35,
+     "barEnd": 43,
+     "label": "Lateralus: Chorus 9/8, 8/8, 7/8",
+     "note": "Each bar is an 8th shorter than the one before, so the chorus feels like it is contracting."
+    }
    ]
   },
   {
@@ -585,6 +690,15 @@
        "confidence": "high"
       }
      ]
+    }
+   ],
+   "examples": [
+    {
+     "songId": "airtonight",
+     "barStart": 1,
+     "barEnd": 20,
+     "label": "In the Air Tonight: Machine pulse",
+     "note": "Only drum-machine voices for the first section. There is no backbeat, just a clock and a mood."
     }
    ]
   },

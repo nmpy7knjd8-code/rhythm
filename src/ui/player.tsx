@@ -7,14 +7,15 @@ import { velocityOf, ticksPerStep, VARIANTS, fracOf } from '../engine/pattern'
 import { KITS } from '../data/kits'
 import { PATTERNS, RHYTHMS } from '../data/rhythms'
 import { FILLS, FILL_EVERY } from '../data/fills'
-import { SONGS, loadSongBars, type Song } from '../data/songs'
+import { SONGS, loadSongBars, shownBpm, type Song } from '../data/songs'
+import * as Tone from 'tone'
 import { applyTuning, applyShift, type Tuning } from '../engine/pitch'
 
 setSampleBase(`${import.meta.env.BASE_URL}samples/acoustic/`)
 export const ALL_FILLS: Fill[] = [...FILLS, ...SONGS.flatMap(s => s.fills.map(f => ({ ...f, category: 'Song fills' })))]
 
 interface Ctx {
-  layers: Layer[]; playing: boolean; bpm: number; swing: number; kitId: string; section: number | null; arrangement: Arrangement | null
+  layers: Layer[]; playing: boolean; bpm: number; swing: number; feel: number; setFeel: (f: number) => void; kitId: string; section: number | null; arrangement: Arrangement | null
   tuning: Tuning; setTuning: (t: Tuning) => void
   fillId: string | null; fillEvery: number; setFill: (id: string | null, every?: number) => void; inFill: boolean
   kitProgress: number // 0..1 sample loading
@@ -38,6 +39,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState(false)
   const [bpm, setBpmS] = useState(100)
   const [swing, setSwingS] = useState(0)
+  const [feel, setFeelS] = useState(1)
   const [kitId, setKitId] = useState('acoustic')
   const [arrangement, setArr] = useState<Arrangement | null>(null)
   const [section, setSection] = useState<number | null>(null)
@@ -73,13 +75,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<Ctx>(() => ({
-    layers, playing, bpm, swing, kitId, section, arrangement, tuning, setTuning, fillId, fillEvery, inFill, kitProgress,
+    layers, playing, bpm, swing, feel, setFeel: (f: number) => { setFeelS(f); e().setFeel(f) }, kitId, section, arrangement, tuning, setTuning, fillId, fillEvery, inFill, kitProgress,
     setFill: (id, every) => { setFillId(id); if (every !== undefined) setFillEvery(every) },
     song, songBar, loopSection,
     loadSong: async (sg, sec) => {
       await loadSongBars(sg)
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); setArr(null); setSection(null); setLayers([])
-      en.setSong(sg.bars); const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0)
+      en.setSong(sg.bars); const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0); setFeelS(1); en.setFeel(1)
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
     },
     /** Play bars [start, end) of a song (0-based), looping that range. */
@@ -87,7 +89,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       await loadSongBars(sg)
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); setArr(null); setSection(null); setLayers([])
       const n = sg.bars.length; const st = Math.max(0, Math.min(a, n - 1)), end = Math.max(st + 1, Math.min(b, n))
-      en.setSong(sg.bars); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0)
+      en.setSong(sg.bars); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0); setFeelS(1); en.setFeel(1)
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm); en.setSongLoop([st, end])
       preload(kitId); await en.start(); setPlaying(true)
     },
@@ -120,7 +122,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setSwing: v => { setSwingS(v); e().setSwing(v) },
     setKit: id => { setKitId(id); setKitProgress(0); preload(id) },
     subscribe: l => e().subscribe(l),
-  }), [layers, playing, bpm, swing, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload])
+  }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload])
   useEffect(() => { (window as unknown as { __pulseLoadSong?: (id: string, sec?: number) => Promise<void> }).__pulseLoadSong = async (id, sec) => { const sg = SONGS.find(x => x.raw.id === id); if (sg) await value.loadSong(sg, sec) } }, [value])
   return <C.Provider value={value}>{children}</C.Provider>
 }
@@ -229,7 +231,7 @@ function useCatalog(): Item[] {
   return useMemo(() => {
     const out: Item[] = []
     for (const r of RHYTHMS) out.push({ id: r.pattern.id, name: r.pattern.name, cat: r.family, meter: meterOf(r.pattern), bpm: r.pattern.suggestedBpm, pattern: r.pattern })
-    for (const sg of SONGS) out.push({ id: `song:${sg.raw.id}`, name: sg.raw.song, cat: sg.raw.category === 'Journeys' ? 'Journeys' : 'Songs', meter: sg.raw.timeSig, bpm: sg.raw.bpm, song: sg, pattern: sg.pattern })
+    for (const sg of SONGS) out.push({ id: `song:${sg.raw.id}`, name: sg.raw.song, cat: sg.raw.category === 'Journeys' ? 'Journeys' : 'Songs', meter: sg.raw.timeSig, bpm: shownBpm(sg, sg.raw.bpm), song: sg, pattern: sg.pattern })
     return out
   }, [])
 }
@@ -345,6 +347,10 @@ export function PlayerBar() {
   const kitLoading = P.kitProgress < 1 && P.playing && KITS.find(k => k.id === P.kitId)!.voices.low.kind === 'sample'
   const show = (t: typeof tab) => { setTab(t); setOpen(true) }
   useEffect(() => { if (sg && tab === 'browse') setTab('now') }, [sg, tab])
+  // live tempo: follows the song's tempo map (per-bar and mid-bar changes) as it plays
+  const [live, setLive] = useState<number | null>(null)
+  useEffect(() => { if (!sg || !P.playing) { setLive(null); return }
+    const id = setInterval(() => setLive(Tone.getTransport().bpm.value), 200); return () => clearInterval(id) }, [sg, P.playing])
   return <>
     <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-ink/85 backdrop-blur-xl border-t border-white/[0.06]"><div className="max-w-xl mx-auto">
       <div className="flex items-center gap-3 h-14 px-2 rounded-2xl bg-white/[0.05] border border-white/[0.06]">
@@ -356,7 +362,7 @@ export function PlayerBar() {
           <div className="text-[14px] font-medium truncate">{title}</div>
           <div className="text-[11px] text-mute truncate">{kitLoading ? `Loading samples ${Math.round(P.kitProgress * 100)}%` : sub}</div>
         </button>
-        <button onClick={() => show('sound')} className="text-xs tabular-nums text-mute px-1 h-10">{P.bpm}</button>
+        <button onClick={() => show('sound')} className="text-xs tabular-nums text-mute px-1 h-10" aria-label="Current tempo">{sg ? shownBpm(sg, live ?? P.bpm) : Math.round(P.bpm)}</button>
         <button aria-label="Browse rhythms" onClick={() => show(sg ? 'now' : 'browse')} className="w-10 h-10 shrink-0 grid place-items-center rounded-full bg-white/[0.08] text-xl active:scale-90">{sg ? '⌃' : '+'}</button>
       </div>
     </div></div>
@@ -373,11 +379,15 @@ export function PlayerBar() {
       {tab === 'kit' && <KitView bars={sg ? sg.bars : P.layers.map(l => l.pattern)} />}
       {tab === 'browse' && !sg && <Browser />}
       {tab === 'sound' && <div className="space-y-6">
-        <section><Label>Tempo <span className="text-bone tabular-nums">{P.bpm}</span> <span className="normal-case tracking-normal">BPM</span></Label>
-          <input type="range" min={40} max={260} value={P.bpm} onChange={e => P.setBpm(+e.target.value)} className="slider no-sheet-drag touch-pan-x" aria-label="Tempo" />
+        <section><Label>Tempo <span className="text-bone tabular-nums">{sg ? shownBpm(sg, live ?? P.bpm) : Math.round(P.bpm)}</span> <span className="normal-case tracking-normal">BPM</span></Label>
+          <input type="range" min={40} max={260} value={sg ? shownBpm(sg, P.bpm) : P.bpm} onChange={e => P.setBpm(+e.target.value / (sg?.raw.bpmDisplay ?? 1))} className="slider no-sheet-drag touch-pan-x" aria-label="Tempo" />
+          {sg && <p className="mt-1.5 text-[11px] text-mute leading-snug">{sg.raw.bpmNote ?? 'Follows the tab\'s tempo map; the slider scales every tempo change proportionally.'}</p>}
           {P.layers[0]?.pattern.bpmNote && <p className="mt-1.5 text-[11px] text-mute leading-snug">{P.layers[0].pattern.bpmNote}{P.layers[0].pattern.bpmSource && <> <a className="underline underline-offset-2" href={P.layers[0].pattern.bpmSource} target="_blank" rel="noreferrer">source</a></>}</p>}</section>
-        <section><Label>Swing <span className="text-bone tabular-nums">{Math.round(P.swing * 100)}%</span></Label>
-          <input type="range" min={0} max={1} step={0.01} value={P.swing} onChange={e => P.setSwing(+e.target.value)} className="slider no-sheet-drag touch-pan-x" aria-label="Swing" /></section>
+        {sg ? <section><Label>Feel <span className="text-bone tabular-nums">{Math.round(P.feel * 100)}%</span></Label>
+          <input type="range" min={0} max={1} step={0.01} value={P.feel} onChange={e => P.setFeel(+e.target.value)} className="slider no-sheet-drag touch-pan-x" aria-label="Feel" />
+          <p className="mt-1.5 text-[11px] text-mute leading-snug">100% plays the song as transcribed: its own shuffle, plus human feel on fast rolls. 0% is straight and exact. Straight songs stay straight either way.</p></section>
+        : <section><Label>Swing <span className="text-bone tabular-nums">{Math.round(P.swing * 100)}%</span></Label>
+          <input type="range" min={0} max={1} step={0.01} value={P.swing} onChange={e => P.setSwing(+e.target.value)} className="slider no-sheet-drag touch-pan-x" aria-label="Swing" /></section>}
         <section><Label>Kit</Label>
           <select value={P.kitId} onChange={e => P.setKit(e.target.value)} className="sel w-full">{KITS.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}</select>
           <p className="mt-1.5 text-[11px] text-mute">{KITS.find(k => k.id === P.kitId)!.blurb}</p>
