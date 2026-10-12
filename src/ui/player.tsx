@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { RhythmEngine, preloadKit, setSampleBase } from '../engine/audio'
 import type { Arrangement, Fill, Layer, Pattern, Voice } from '../engine/types'
 import { VOICES } from '../engine/types'
@@ -352,7 +353,7 @@ export function PlayerBar() {
   const [live, setLive] = useState<number | null>(null)
   useEffect(() => { if (!sg || !P.playing) { setLive(null); return }
     const id = setInterval(() => setLive(Tone.getTransport().bpm.value), 200); return () => clearInterval(id) }, [sg, P.playing])
-  return <>
+  return createPortal(<>
     <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-ink/85 backdrop-blur-xl border-t border-white/[0.06]"><div className="max-w-xl mx-auto">
       <div className="flex items-center gap-3 h-14 px-2 rounded-2xl bg-white/[0.05] border border-white/[0.06]">
         <button aria-label={P.playing ? 'Stop' : 'Play'} onClick={P.toggle} disabled={!P.layers.length && !P.arrangement && !P.song}
@@ -391,7 +392,7 @@ export function PlayerBar() {
         <FillPicker />
       </div>}
     </Sheet>
-  </>
+  </>, document.body)
 }
 const Label = ({ children, className = '' }: { children: ReactNode; className?: string }) => <div className={`mb-2 text-[11px] uppercase tracking-[0.12em] text-mute flex gap-1.5 items-baseline ${className}`}>{children}</div>
 

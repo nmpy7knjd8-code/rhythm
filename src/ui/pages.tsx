@@ -99,11 +99,14 @@ const POPULAR = ['The Beatles', 'Led Zeppelin', 'Nirvana', 'AC/DC', 'The Police'
 
 /** Smooth-scroll so the artist group lands 80 px from the top; re-aim as lazy content above shifts the layout. */
 function scrollToArtist(id: string) {
-  const aim = (behavior: ScrollBehavior) => { const el = document.getElementById(id); if (!el) return 0
-    const y = el.getBoundingClientRect().top + window.scrollY - 80; window.scrollTo({ top: y, behavior }); return el.getBoundingClientRect().top - 80 }
+  const aim = (behavior: ScrollBehavior) => { const el = document.getElementById(id); if (!el) return
+    window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 80), behavior }) }
   aim('smooth'); let n = 0
+  // re-aim while lazy content above shifts the layout; stop as soon as it settles or the user touches/scrolls
+  const stop = () => { clearInterval(t); for (const ev of ['touchstart', 'wheel', 'keydown', 'pointerdown'] as const) window.removeEventListener(ev, stop) }
+  for (const ev of ['touchstart', 'wheel', 'keydown', 'pointerdown'] as const) window.addEventListener(ev, stop, { passive: true })
   const t = setInterval(() => { const off = Math.abs((document.getElementById(id)?.getBoundingClientRect().top ?? 80) - 80)
-    if (++n > 12 || off < 2) { clearInterval(t); return } if (n % 3 === 0) aim(off > 600 ? 'smooth' : 'auto') }, 250)
+    if (++n > 12 || off < 2) { stop(); return } if (n % 3 === 0) aim(off > 600 ? 'smooth' : 'auto') }, 250)
 }
 
 function Songs() {
