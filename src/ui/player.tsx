@@ -383,11 +383,6 @@ export function PlayerBar() {
           <input type="range" min={40} max={260} value={sg ? shownBpm(sg, P.bpm) : P.bpm} onChange={e => P.setBpm(+e.target.value / (sg?.raw.bpmDisplay ?? 1))} className="slider no-sheet-drag touch-pan-x" aria-label="Tempo" />
           {sg && <p className="mt-1.5 text-[11px] text-mute leading-snug">{sg.raw.bpmNote ?? 'Follows the tab\'s tempo map; the slider scales every tempo change proportionally.'}</p>}
           {P.layers[0]?.pattern.bpmNote && <p className="mt-1.5 text-[11px] text-mute leading-snug">{P.layers[0].pattern.bpmNote}{P.layers[0].pattern.bpmSource && <> <a className="underline underline-offset-2" href={P.layers[0].pattern.bpmSource} target="_blank" rel="noreferrer">source</a></>}</p>}</section>
-        {sg ? <section><Label>Feel <span className="text-bone tabular-nums">{Math.round(P.feel * 100)}%</span></Label>
-          <input type="range" min={0} max={1} step={0.01} value={P.feel} onChange={e => P.setFeel(+e.target.value)} className="slider no-sheet-drag touch-pan-x" aria-label="Feel" />
-          <p className="mt-1.5 text-[11px] text-mute leading-snug">100% plays the song as transcribed: its own shuffle, plus human feel on fast rolls. 0% is straight and exact. Straight songs stay straight either way.</p></section>
-        : <section><Label>Swing <span className="text-bone tabular-nums">{Math.round(P.swing * 100)}%</span></Label>
-          <input type="range" min={0} max={1} step={0.01} value={P.swing} onChange={e => P.setSwing(+e.target.value)} className="slider no-sheet-drag touch-pan-x" aria-label="Swing" /></section>}
         <section><Label>Kit</Label>
           <select value={P.kitId} onChange={e => P.setKit(e.target.value)} className="sel w-full">{KITS.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}</select>
           <p className="mt-1.5 text-[11px] text-mute">{KITS.find(k => k.id === P.kitId)!.blurb}</p>

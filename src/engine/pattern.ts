@@ -36,10 +36,16 @@ export function stepForTick(p: Pattern, tick: number): number | null {
 }
 
 /** Swing delay as a fraction of a step. Odd steps of 8- or 16-step grids get delayed. swing 0..1 maps to straight..triplet. */
-export function swingOffset(p: Pattern, step: number, swing: number): number {
-  const tps = ticksPerStep(p)
-  if (!p.swingable || (tps !== 3 && tps !== 6) || step % 2 === 0) return 0
-  return swing * (1 / 3)
+/** Natural swing per style (0 = straight, 1 = full triplet long-short on 16ths). Straight styles are absent and stay straight. */
+const NATURAL_SWING: Record<string, number> = { cissy: 0.4, 'gospel-chop': 0.3, 'boom-bap': 0.35, dilla: 0.55, lofi: 0.45, ukg: 0.6,
+  samba: 0.15, partido: 0.15, 'one-drop': 0.5, steppers: 0.3, rockers: 0.3, kpanlogo: 0.4, 'djembe-kuku': 0.4, 'th-sw': 0.5 }
+export const naturalSwing = (p: Pattern) => p.suggestedSwing ?? NATURAL_SWING[p.id] ?? NATURAL_SWING[p.id.replace(/^[a-z]+-(?=.)/, '')] ?? 0
+/** Off-beat 16th delay in steps. Always the pattern's own natural feel; downbeats never move. */
+export function swingOffset(p: Pattern, step: number, _legacy = 0): number {
+  void _legacy
+  const tps = ticksPerStep(p), sw = naturalSwing(p)
+  if (!sw || (tps !== 3 && tps !== 6) || step % 2 === 0) return 0
+  return sw * (1 / 3)
 }
 
 export function audibleLayers(layers: Layer[]): Layer[] {

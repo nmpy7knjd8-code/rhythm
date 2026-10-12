@@ -28,7 +28,7 @@ const Tag = ({ c }: { c: string }) => <span className="eyebrow">{c}</span>
 export function Library() {
   const [tab, setTab] = useState<'styles' | 'songs'>('songs')
   return <>
-    <H1 center t="Rhythm library" sub="Grooves from many styles and songs, each with notes on how it feels and why. Play one, then add layers." />
+    <H1 center t="Rhythm library" sub="Grooves from many songs and styles, each with notes on how it feels and why. Play one, then add layers." />
     <div className="mb-12 flex justify-center"><div className="inline-flex p-0.5 rounded-full bg-white/[0.05]">{(['songs', 'styles'] as const).map(t => <button key={t} onClick={() => setTab(t)} className={`h-9 px-5 rounded-full text-sm capitalize transition-all duration-200 ${tab === t ? 'bg-bone text-ink' : 'text-bone/60'}`}>{t === 'songs' ? `Songs · ${SONGS.length}` : `Styles · ${RHYTHMS.length}`}</button>)}</div></div>
     {tab === 'styles' ? <Styles /> : <Songs />}
   </>
@@ -123,7 +123,7 @@ function Songs() {
   const [picked, setPicked] = useState<string | null>(null)
   const slug = (a: string) => 'artist-' + a.toLowerCase().replace(/[^a-z0-9]+/g, '-')
   return <div className="rise">
-    <nav aria-label="Artists" className={`mx-auto max-w-md flex flex-wrap justify-center gap-1 overflow-hidden ${allArtists ? '' : 'max-h-[46px]'}`}>
+    <nav aria-label="Artists" className={`mx-auto max-w-md flex flex-wrap justify-center gap-1 overflow-hidden ${allArtists ? '' : 'max-h-[121px]'}`}>
       {artists.map(a => <button key={a} onClick={() => { setPicked(a); scrollToArtist(slug(a)) }}
         className={`h-[21px] px-2 rounded-full text-[10.5px] leading-none border transition-colors ${picked === a ? 'border-amber/60 text-amber bg-amber/[0.08]' : 'border-white/[0.07] bg-white/[0.035] text-bone/70 hover:text-amber hover:border-amber/40'}`}>{a}</button>)}
     </nav>
