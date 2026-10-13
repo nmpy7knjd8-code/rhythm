@@ -2,7 +2,7 @@ import * as Tone from 'tone'
 import type { Kit, KitVoice, Layer, Voice, Arrangement, Pattern, Fill } from './types'
 import { TICKS_PER_BAR, hitsAt, stepForTick, swingOffset, audibleLayers, ticksPerStep , subHitsAt, VARIANTS, fracOf } from './pattern'
 
-type Inst = { trigger: (t: number, v: number, r?: number, gm?: number, gate?: number) => void; choke?: (t: number) => void; dispose: () => void }
+type Inst = { trigger: (t: number, v: number, r?: number, gm?: number, gate?: number, tip?: boolean) => void; choke?: (t: number) => void; dispose: () => void }
 
 // ---- sample bank: lazy, cached, shared across kits/layers ----
 let SAMPLE_BASE = ''
@@ -48,16 +48,24 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode): Inst {
   layers.forEach(l => l.files.forEach(loadFile))
   const fb = kv.fallback ? makeSynth(kv.fallback, g) : null
   const rr = layers.map(() => 0)
+  let last = '', seed = 1, lp: Tone.Filter | null = null
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 }
   const live = new Set<Tone.ToneBufferSource>()
   return {
-    trigger: (t, v, r = 1, gm = 1, gate = 0) => {
+    trigger: (t, v, r = 1, gm = 1, gate = 0, tip = false) => {
       let li = layers.findIndex(l => v <= l.vel + 1e-6); if (li < 0) li = layers.length - 1
-      const files = layers[li].files, f = files[rr[li]++ % files.length]
-      const buf = buffers.get(f)
-      if (!buf) { fb?.trigger(t, v, r); return }
       const lo = li ? layers[li - 1].vel : 0
       const rel = (v - lo) / Math.max(0.01, layers[li].vel - lo) // position within layer
-      const src = new Tone.ToneBufferSource(buf).connect(g)
+      // near a layer boundary, borrow from the neighbouring layer 30% of the time (gain stays matched to v)
+      let pick = li
+      if (rel > 0.85 && li < layers.length - 1 && rnd() < 0.3) pick = li + 1
+      else if (rel < 0.15 && li > 0 && rnd() < 0.3) pick = li - 1
+      // random round-robin, never the same file twice in a row
+      const files = layers[pick].files.filter(x => x !== last).length ? layers[pick].files.filter(x => x !== last) : layers[pick].files
+      const f = files[Math.floor(rnd() * files.length)]; rr[li]++; last = f
+      const buf = buffers.get(f)
+      if (!buf) { fb?.trigger(t, v, r); return }
+      const src = new Tone.ToneBufferSource(buf).connect(tip ? (lp ??= new Tone.Filter(7000, 'lowpass').connect(g)) : g)
       const wob = 1 + ((rr[li] * 0.61803) % 1 - 0.5) * 0.016 // ±0.8% pitch per stroke
       src.playbackRate.value = (kv.rate ?? 1) * r * wob
       src.onended = () => { live.delete(src); src.dispose() }
@@ -65,13 +73,19 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode): Inst {
       src.start(t, 0, undefined, (0.55 + 0.45 * Math.min(1, rel)) * gm)
       if (gate > 0) { src.fadeOut = 0.03; src.stop(t + gate) } // gated / dampened drum
     },
-    choke: t => { live.forEach(s => { try { s.stop(t + 0.01) } catch { /* already stopped */ } }); fb?.choke?.(t) },
-    dispose: () => { fb?.dispose(); g.dispose() },
+    choke: t => { live.forEach(s => { try { s.fadeOut = 0.06; s.stop(t) } catch { /* already stopped */ } }); fb?.choke?.(t) }, // ~60 ms damping, like a foot closing the hat
+    dispose: () => { fb?.dispose(); lp?.dispose(); g.dispose() },
   }
 }
 
 interface Channel { gain: Tone.Gain; insts: Partial<Record<Voice, Inst>> }
 export interface SoundProfile { snare?: number; snareGate?: number; toms?: number; tomGate?: number; cym?: number }
+interface HitCtx { bar: number; pos: number; beat: number; sub: number; n?: number; stroke: number }
+const VOICE_IDX: Partial<Record<Voice, number>> = { low: 1, back: 2, tick: 3, open: 4, pedal: 5, ride: 6, crash1: 7, crash2: 8, tomHi: 9, tomMid: 10, tomLo: 11 }
+/** Deterministic hash in [-1, 1] (same hit → same value every playthrough). */
+const hash = (a: number, b: number, c: number) => { const x = Math.sin(a * 12.9898 + b * 78.233 + c * 37.719) * 43758.5453; return (x - Math.floor(x)) * 2 - 1 }
+/** Beat length in ticks for accents: dotted quarter (18) in compound x/8 meters, else quarter (12). */
+const beatTicksOf = (p: Pattern) => { const m = /^(\d+)\/8$/.exec(p.timeSig ?? ''); return m && +m[1] % 3 === 0 && +m[1] > 3 ? 18 : 12 }
 export type StepListener = (layerSteps: Record<string, number>, bar: number) => void
 const FILL_ID = 'fill', FX_ID = 'fx', SONG_ID = 'song'
 /** Inner roll strokes (between grid steps) are played softer than the stroke on the step, like real sticking:
@@ -79,7 +93,17 @@ const FILL_ID = 'fill', FX_ID = 'fx', SONG_ID = 'song'
 /** Inner roll strokes softer (natural accent shape); scaled by feel (0 = exact, flat velocity). */
 const rollVel = (v: number, frac: number, feel = 1) => Math.min(1, v * (1 - feel * (Math.abs(frac - 0.5) < 0.01 ? 0.2 : 0.28)))
 /** Deterministic ±0.8 ms drift (kept under the 1 ms timing-audit tolerance) on inner roll strokes so rolls aren't machine-perfect. */
-const rollJitter = (bar: number, step: number, frac: number) => { const x = Math.sin((bar * 131 + step * 17 + frac * 7) * 12.9898) * 43758.5453; return ((x - Math.floor(x)) * 2 - 1) * 0.0008 }
+/** Timing drift for inner roll strokes only (the on-step strokes stay exactly on the grid). Below 12 strokes/s: the old ±0.8 ms.
+ *  Faster: ±2-4 ms scaled by speed, from slow overlapping sines over the song position (smooth, non-repeating, not white noise),
+ *  plus a small left/right hand unevenness. Clamped to 20% of the stroke gap so strokes never reorder. */
+const rollJitter = (bar: number, step: number, frac: number, stroke = 1, j = 0) => {
+  const rate = 1 / stroke
+  if (rate < 12) { const x = Math.sin((bar * 131 + step * 17 + frac * 7) * 12.9898) * 43758.5453; return ((x - Math.floor(x)) * 2 - 1) * 0.0008 }
+  const amp = Math.min(0.004, 0.002 + (rate - 12) / 12 * 0.002), u = bar * 4 + step + frac
+  const smooth = 0.6 * Math.sin(u * 1.37) + 0.4 * Math.sin(u * 0.53 + 1.1)
+  const hand = (j % 2 ? 0.35 : -0.35)
+  return Math.max(-0.2 * stroke, Math.min(0.2 * stroke, amp * (0.75 * smooth + 0.25 * hand)))
+}
 /** Visual hit bus: Kit view subscribes; callbacks fire via Tone.Draw at the hit's audio time. */
 export const hitBus = new Set<(voice: Voice, vel: number, variant?: string) => void>()
 
@@ -146,8 +170,10 @@ export class RhythmEngine {
       let t = time
       const fl = this.feel
       if (p.humanize) { const r = Math.sin((this.songBar * 97 + step) * 12.9898) * 43758.5453; t += fl * (p.humanize.lateMs + ((r - Math.floor(r)) * 2 - 1) * p.humanize.jitterMs) / 1000 }
+      this.hz = { bar: this.songBar, pos: step * tps, beat: beatTicksOf(p), sub: -1, stroke: stepSec }
       for (const h of hitsAt(p, step)) this.play(SONG_ID, h.voice, t + this.feelShift(p, step, tps, stepSec), h.velocity, h.graces, stepSec, p.variant?.[h.voice]?.[step])
-      for (const h of subHitsAt(p, step)) this.play(SONG_ID, h.voice, t + h.frac * stepSec + this.feelShift(p, step + h.frac, tps, stepSec) + fl * rollJitter(this.songBar, step, h.frac), rollVel(h.velocity, h.frac, fl), 0, stepSec)
+      const subs = subHitsAt(p, step); subs.forEach((h, j) => { this.hz = { bar: this.songBar, pos: (step + h.frac) * tps, beat: beatTicksOf(p), sub: j, n: subs.length, stroke: stepSec / (subs.length + 1) }
+      this.play(SONG_ID, h.voice, t + h.frac * stepSec + this.feelShift(p, step + h.frac, tps, stepSec) + fl * rollJitter(this.songBar, step, h.frac, stepSec / (subs.length + 1), j), rollVel(h.velocity, h.frac, fl), 0, stepSec) }); this.hz = null
       const b = this.songBar; Tone.getDraw().schedule(() => this.listeners.forEach(f => f({ [SONG_ID]: step }, b)), time)
     }
     if (++this.songTick >= len) {
@@ -224,13 +250,40 @@ export class RhythmEngine {
     const inst = this.inst(channelId, voice); if (!inst) return
     if (hitBus.size) { const v0 = voice, vv = vel; Tone.getDraw().schedule(() => hitBus.forEach(f => f(v0, vv, variant)), t) }
     if (voice === 'tick' || voice === 'pedal') this.channels.get(channelId)?.insts.open?.choke?.(t)
-    const g = Math.max(0.025, Math.min(0.03, stepSec / 2)) // flam/drag grace spacing: 25-30 ms
-    for (let i = graces; i > 0; i--) inst.trigger(Math.max(0, t - g * i), vel * 0.35)
+    const hz = this.hz, fl = this.feel
+    if (hz && fl > 0) vel = this.humanVel(voice, vel, hz, fl)
+    const hh = hz ? hash(hz.bar, hz.pos, 7) : 0
+    // flam/drag graces sit before the stroke (the main onset never moves): 18-35 ms apart, 0.25-0.4 of the stroke
+    const g = Math.max(0.018, Math.min(0.035, stepSec / 2)) * (hz && fl > 0 ? 1 + 0.2 * hh * fl : 1)
+    for (let i = graces; i > 0; i--) inst.trigger(Math.max(0, t - g * i), vel * (0.325 + 0.075 * hh * fl))
+    // hi-hat tip (off-beat 16ths, darker) vs shank (on the beat and the "&")
+    const tip = !!hz && fl > 0 && (voice === 'tick' || voice === 'open') && hz.pos % (hz.beat / 2) !== 0
     const sp = this.sound, isSn = voice === 'back', isCr = voice === 'crash1' || voice === 'crash2'
     const isTom = voice === 'tomHi' || voice === 'tomMid' || voice === 'tomLo'
     const rate = (vr?.rate ?? 1) * ((isSn ? sp?.snare : isTom ? sp?.toms : isCr || voice === 'ride' ? sp?.cym : 1) ?? 1)
     const gate = (isSn ? sp?.snareGate : isTom ? sp?.tomGate : 0) ?? 0
-    inst.trigger(t, vel, rate, isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1, gate)
+    inst.trigger(t, vel, rate, isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1, gate, tip)
+  }
+  /** Position of the hit being played (set by the scheduler), for velocity shaping. */
+  private hz: HitCtx | null = null
+  /** Velocity shaping (never timing): metric accents on hats/ride/kick, small deterministic per-hit variation plus a slow phrase drift,
+   *  and for roll strokes hand alternation, a crescendo through the step, and more spread when strokes are very fast. Scaled by feel. */
+  private humanVel(voice: Voice, vel: number, hz: HitCtx, fl: number) {
+    const vi = VOICE_IDX[voice] ?? 0
+    if (hz.sub < 0 && Math.abs(vel - 0.75) < 0.01) {
+      const ib = hz.pos % hz.beat, a = hz.pos === 0 ? 1.04 : ib === 0 ? 1 : ib === hz.beat / 2 ? 0.9 : 0.8
+      if (voice === 'tick' || voice === 'ride' || voice === 'open') vel *= 1 + (a - 1) * fl
+      else if (voice === 'low') vel *= 1 + (0.94 + 0.06 * a - 1) * fl
+    }
+    let sp = vel < 0.45 ? 0.06 : voice === 'tick' || voice === 'ride' || voice === 'open' ? 0.04 : voice === 'back' || voice === 'low' ? 0.03 : 0.02
+    if (hz.sub >= 0) {
+      vel *= hz.sub % 2 === 0 ? 0.93 : 1 // weak hand (roll strokes alternate with the on-step stroke)
+      const up = hash(hz.bar, Math.floor(hz.pos), 3) > -0.3, k = (hz.sub + 1) / (hz.n ?? 1) // mostly crescendo, sometimes decrescendo
+      vel *= 0.92 + 0.08 * (up ? k : 1 - k)
+      if (hz.stroke < 1 / 12) sp += 0.03 // fast strokes: less even
+    }
+    const drift = 0.03 * Math.sin(hz.bar * 0.37 + vi) + 0.02 * Math.sin(hz.bar * 0.11)
+    return Math.max(0.02, Math.min(1, vel * (1 + fl * (drift + sp * hash(hz.bar, hz.pos, vi)))))
   }
   /** Per-song sound profile (playback rate / gate on the existing samples). */
   sound: SoundProfile | null = null
@@ -294,8 +347,12 @@ export class RhythmEngine {
         steps[s.id] = step
         const stepSec = tickSec * ticksPerStep(s.pattern)
         const t = time + swingOffset(s.pattern, step, this.swing) * stepSec
+        const tp = ticksPerStep(s.pattern), bt = beatTicksOf(s.pattern)
+        this.hz = { bar: this.bar, pos: step * tp, beat: bt, sub: -1, stroke: stepSec }
         for (const h of hitsAt(s.pattern, step)) this.play(s.id, h.voice, t, h.velocity, h.graces, stepSec)
-        for (const h of subHitsAt(s.pattern, step)) this.play(s.id, h.voice, t + h.frac * stepSec + rollJitter(this.bar, step, h.frac), rollVel(h.velocity, h.frac), 0, stepSec)
+        const subs = subHitsAt(s.pattern, step)
+        subs.forEach((h, j) => { this.hz = { bar: this.bar, pos: (step + h.frac) * tp, beat: bt, sub: j, n: subs.length, stroke: stepSec / (subs.length + 1) }; this.play(s.id, h.voice, t + h.frac * stepSec + rollJitter(this.bar, step, h.frac, stepSec / (subs.length + 1), j), rollVel(h.velocity, h.frac), 0, stepSec) })
+        this.hz = null
       }
       if (!fillBar) for (const l of this.layers) if (steps[l.id] === undefined) { const s = stepForTick(l.pattern, this.tick); if (s !== null) steps[l.id] = s }
       if (Object.keys(steps).length) { const bar = this.bar; Tone.getDraw().schedule(() => this.listeners.forEach(f => f(steps, bar)), time) }

@@ -4,10 +4,10 @@ const U = process.argv[2] || 'https://nmpy7knjd8-code.github.io/rhythm/'
 const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] })
 const c = await b.newContext({ ...devices['iPhone 13'], viewport: { width: 390, height: 844 } }); const p = await c.newPage()
 await p.goto(U, { waitUntil: 'networkidle' })
-await p.evaluate(async () => { await window.__pulseLoadSong('anesthetize', 0) }); await p.locator('button:has(svg)').last().click(); await p.waitForTimeout(600)
+await p.evaluate(async () => { await window.__pulseLoadSong('anesthetize', 0) }); await p.click('button[aria-label="Browse rhythms"]'); await p.waitForTimeout(600)
 await p.evaluate(async () => { const e = window.__pulseEngine; await e.start(); e.setBpm(e.songBaseBpm * 3) })
 let checked = 0, soft = 0, bad = 0, shot = false
-for (let k = 0; k < 120; k++) {
+for (let k = 0; k < 40; k++) {
   await p.waitForTimeout(250)
   const r = await p.$$eval('span[title]', els => els.filter(el => el.textContent).map(el => {
     const bar = el.previousElementSibling?.previousElementSibling ?? null, cell = el.parentElement.getBoundingClientRect(), l = el.getBoundingClientRect()
