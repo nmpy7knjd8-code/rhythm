@@ -104,7 +104,7 @@ KITS.splice(1, 0,
 
 // Level trims (dB), applied to per-kit copies so shared synth voices/fallbacks are trimmed exactly once per kit:
 // rim/cross-stick -3 dB, open hi-hat -3.5 dB, crash 2 -3 dB. Closed hat and pedal unchanged.
-const TRIM_DB: Partial<Record<Voice, number>> = { accent: -3, open: -3.5, crash2: -3, rideBell: -3 }
+const TRIM_DB: Partial<Record<Voice, number>> = { accent: -3, open: -5, crash2: -3, rideBell: -3 }
 for (const k of KITS) for (const [v, db] of Object.entries(TRIM_DB) as [Voice, number][]) {
   const kv = k.voices[v]; if (!kv) continue
   const f = 10 ** (db / 20)
