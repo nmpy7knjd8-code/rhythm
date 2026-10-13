@@ -125,7 +125,7 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false, leveled 
 }
 
 interface Channel { gain: Tone.Gain; insts: Partial<Record<Voice, Inst>> }
-export interface SoundProfile { snare?: number; snareGate?: number; toms?: number; tomGate?: number; cym?: number }
+export interface SoundProfile { snare?: number; snareGate?: number; toms?: number; tomGate?: number; cym?: number; /** false: repeated snare hits are never ducked (accented stabs written in half-time) */ snareDuck?: boolean }
 interface HitCtx { bar: number; pos: number; beat: number; sub: number; n?: number; stroke: number }
 const VOICE_IDX: Partial<Record<Voice, number>> = { low: 1, back: 2, tick: 3, open: 4, pedal: 5, ride: 6, crash1: 7, crash2: 8, tomHi: 9, tomMid: 10, tomLo: 11 }
 /** Deterministic hash in [-1, 1] (same hit → same value every playthrough). */
@@ -387,6 +387,7 @@ export class RhythmEngine {
    *  as hits space out. Single accents, normal backbeats and ghost notes (soft hits) are untouched. */
   private density(key: string, t: number, vel: number, win: number) {
     if (vel < 0.45 || (this.hz && this.hz.sub >= 0)) return 1 // ghosts and in-between (sub-step) strokes are never ducked
+    if (key.endsWith(':sn') && this.sound?.snareDuck === false) return 1
     const eighth = win * 30 / Tone.getTransport().bpm.getValueAtTime(t), d = this.dens.get(key) ?? { t: -9, lvl: 1 }
     const gap = t - d.t
     if (gap < 0) return d.lvl // out-of-order (same step, other source)

@@ -480,6 +480,9 @@
    "goodPart": {
     "bar": 90,
     "at": "Drum Solo"
+   },
+   "sound": {
+    "snareDuck": false
    }
   },
   "aerials": {
@@ -906,5 +909,19 @@
   "bitesdust": 0.9821428571428571,
   "grudge": 0.9795918367346939,
   "puppies": 0.9876543209876543
+ },
+ "barFixes": {
+  "4646": [
+   {
+    "bar": 96,
+    "set": {
+     "snare": "7.7.7..7..7.7."
+    },
+    "dropSub": [
+     "snare"
+    ],
+    "why": "Drum Solo bar 5 (double-bass bar): snare with the ride on 1, 2, 3, 4+, 6, 7 and no ghost notes, as in the Dean Christesen tab and the tTabs tab (both agree); the Songsterr tab has ghost snares on 3e/4a/5e/6a instead of the snare on 7"
+   }
+  ]
  }
 }
