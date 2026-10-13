@@ -41,7 +41,7 @@ function makeSynth(kv: KitVoice, g: Tone.Gain): Inst {
   return { trigger: (t, v, r = 1) => s.triggerAttackRelease((kv.pitch ?? 300) * r, (kv.decay ?? 0.3), t, v), choke: t => s.triggerRelease(t), dispose: () => s.dispose() }
 }
 
-function makeInst(kv: KitVoice, out: Tone.ToneAudioNode): Inst {
+function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false): Inst {
   const g = new Tone.Gain(kv.gain ?? 1).connect(out)
   if (kv.kind !== 'sample') { const s = makeSynth(kv, g); return { ...s, dispose: () => { s.dispose(); g.dispose() } } }
   const layers = kv.layers ?? []
@@ -51,6 +51,7 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode): Inst {
   let last = '', seed = 1, lp: Tone.Filter | null = null
   const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 }
   const live = new Set<Tone.ToneBufferSource>()
+  let lastT = -9
   return {
     trigger: (t, v, r = 1, gm = 1, gate = 0, tip = false) => {
       let li = layers.findIndex(l => v <= l.vel + 1e-6); if (li < 0) li = layers.length - 1
@@ -70,6 +71,8 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode): Inst {
       src.playbackRate.value = (kv.rate ?? 1) * r * wob
       src.onended = () => { live.delete(src); src.dispose() }
       live.add(src)
+      // a crash/china/open hat that is still ringing doesn't give a fresh sharp transient: soften the attack of quick repeats (2-8 ms fade-in from the onset)
+      if (washy) { const dt = t - lastT; if (dt > 0 && dt < 0.6) src.fadeIn = 0.002 + 0.006 * (1 - dt / 0.6); lastT = t }
       src.start(t, 0, undefined, (0.55 + 0.45 * Math.min(1, rel)) * gm)
       if (gate > 0) { src.fadeOut = 0.03; src.stop(t + gate) } // gated / dampened drum
     },
@@ -123,7 +126,11 @@ export class RhythmEngine {
   private bar = 0
   private eventId: number | null = null
   private listeners = new Set<StepListener>()
-  private master = new Tone.Gain(0.8).connect(new Tone.Compressor({ threshold: -14, ratio: 3, attack: 0.005, release: 0.15 }).toDestination())
+  private bus = new Tone.Compressor({ threshold: -14, ratio: 3, attack: 0.005, release: 0.15 }).toDestination()
+  private master = new Tone.Gain(0.8).connect(this.bus)
+  /** One light shared room (about 0.7 s, about -20 dB, low end filtered out of the send so the kick stays dry and tight). */
+  readonly room = (() => { const r = new Tone.Reverb({ decay: 0.7, preDelay: 0.008, wet: 1 }); const hp = new Tone.Filter(300, 'highpass'); const g = new Tone.Gain(0.1)
+    this.master.connect(hp); hp.connect(r); r.connect(g); g.connect(this.bus); return r })()
   private arrangement: { arr: Arrangement; resolve: (ids: string[]) => Pattern[] } | null = null
   private fill: Fill | null = null
   private fillEvery = 0
@@ -169,9 +176,10 @@ export class RhythmEngine {
       const fl = this.feel
       if (p.humanize) { const r = Math.sin((this.songBar * 97 + step) * 12.9898) * 43758.5453; t += fl * (p.humanize.lateMs + ((r - Math.floor(r)) * 2 - 1) * p.humanize.jitterMs) / 1000 }
       this.hz = { bar: this.songBar, pos: step * tps, beat: beatTicksOf(p), sub: -1, stroke: stepSec }
-      if (p.grace) this.playGraces(SONG_ID, p, step, t, stepSec, f => this.feelShift(p, step + f, tps, stepSec))
-      for (const h of hitsAt(p, step)) this.play(SONG_ID, h.voice, t + this.feelShift(p, step, tps, stepSec), h.velocity, h.graces, stepSec, p.variant?.[h.voice]?.[step])
-      this.playSubs(SONG_ID, p, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec), fl); this.hz = null
+      const bt = (this.songBar * len + this.songTick) / 12 // song position in quarter beats (smooth for these steady-meter grooves)
+      if (p.grace) this.playGraces(SONG_ID, p, step, t, stepSec, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt))
+      for (const h of hitsAt(p, step)) this.play(SONG_ID, h.voice, t + this.feelShift(p, step, tps, stepSec) + this.driftAt(h.voice, bt), h.velocity, h.graces, stepSec, p.variant?.[h.voice]?.[step])
+      this.playSubs(SONG_ID, p, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt), fl); this.hz = null
       const b = this.songBar; Tone.getDraw().schedule(() => this.listeners.forEach(f => f({ [SONG_ID]: step }, b)), time)
     }
     if (++this.songTick >= len) {
@@ -228,7 +236,7 @@ export class RhythmEngine {
 
   private inst(channelId: string, v: Voice): Inst | undefined {
     const c = this.channels.get(channelId) ?? this.channel(channelId)
-    return (c.insts[v] ??= makeInst(this.kit.voices[v], c.gain))
+    return (c.insts[v] ??= makeInst(this.kit.voices[v], c.gain, v === 'crash1' || v === 'crash2' || v === 'china' || v === 'open'))
   }
 
   /** Optional event trace for timing tests: every scheduled hit's audio-context time. */
@@ -314,6 +322,15 @@ export class RhythmEngine {
     }
     const drift = 0.03 * Math.sin(hz.bar * 0.37 + vi) + 0.02 * Math.sin(hz.bar * 0.11)
     return Math.max(0.02, Math.min(1, vel * (1 + fl * (drift + sp * hash(hz.bar, hz.pos, vi)))))
+  }
+  /** Groove drift (ms, 0 = off). Only hand-picked groove songs set it: the whole kit slowly pushes and pulls together (kick and crashes
+   *  exactly on that shared curve), hands get a smaller slow extra of their own. Smooth sines over beats, never white noise. */
+  drift = 0
+  private driftAt(voice: Voice, beat: number) {
+    if (!this.drift) return 0
+    const c = 0.65 * Math.sin(beat * 0.19) + 0.35 * Math.sin(beat * 0.071 + 2)
+    const hand = voice === 'low' || voice === 'crash1' || voice === 'crash2' ? 0 : 0.25 * Math.sin(beat * 0.43 + (VOICE_IDX[voice] ?? 0))
+    return this.feel * this.drift / 1000 * (c + hand) / 1.25
   }
   /** Per-song sound profile (playback rate / gate on the existing samples). */
   sound: SoundProfile | null = null

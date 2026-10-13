@@ -19,7 +19,8 @@ for (const [id, sec] of songs) {
     t += n * stepSec
   })
   const r = await p.evaluate(async ({ id, sec, dur }) => { await window.__pulseLoadSong(id, sec); const e = window.__pulseEngine; e.trace = []; await e.start(); await new Promise(r => setTimeout(r, dur)); e.stop(); return e.trace }, { id, sec: +sec, dur: t * 1000 + 600 })
-  const hum = s.humanize ? (s.humanize.lateMs + s.humanize.jitterMs) / 1000 : 0
+  const meta = JSON.parse(readFileSync('src/data/songs.json')).find(x => x.id === id)
+  const hum = (s.humanize ? (s.humanize.lateMs + s.humanize.jitterMs) / 1000 : 0) + (meta?.drift ? 2 * meta.drift / 1000 : 0) // groove-drift songs: tolerance = the drift's full swing
   const t0 = r[0]?.t ?? 0, firstExp = Math.min(...exp.map(x => x.t))
   const got = r.filter(x => x.t - t0 < t - firstExp - 1e-6).map(x => ({ v: x.voice, t: x.t - t0 + firstExp })).filter(x => !x.v.startsWith('crash') || true)
   let maxErr = 0, maxIn = 0, unmatched = 0

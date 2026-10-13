@@ -72,11 +72,13 @@
     "snareGate": 0.2,
     "tomGate": 0.25,
     "cym": 0.95
-   }
+   },
+   "drift": 4
   },
   "holdtheline": {
    "bpmDisplay": 0.6666666666666666,
-   "bpmNote": "The tab counts dotted quarters in 12/8 (97, matching the record); Pulse plays it at that pulse."
+   "bpmNote": "The tab counts dotted quarters in 12/8 (97, matching the record); Pulse plays it at that pulse.",
+   "drift": 4
   },
   "africa": {
    "bpmDisplay": 0.5,
@@ -117,7 +119,8 @@
     "seconds": 428,
     "source": "Wikipedia track length (Led Zeppelin IV, 7:08)",
     "modelSeconds": 443
-   }
+   },
+   "drift": 4
   },
   "rocknroll": {
    "sound": {
@@ -296,6 +299,9 @@
   "byob": {
    "bpm": 205,
    "bpmNote": "Shown at the fast verse tempo (about 205 in the tab). The choruses drop to about 101, which is what tempo databases list for the whole track."
+  },
+  "rosanna": {
+   "drift": 4
   }
  },
  "pinnedFiles": [

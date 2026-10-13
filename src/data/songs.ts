@@ -5,7 +5,7 @@ import { registerPatterns } from './rhythms'
 
 /** Shape of research/song-patterns.json entries. Velocities 0–1 per step. */
 export interface SongEntryRaw {
-  id: string; song: string; artist: string; drummer: string; bpm: number; timeSig: string; bpmDisplay?: number; bpmNote?: string; sound?: import('../engine/audio').SoundProfile
+  id: string; song: string; artist: string; drummer: string; bpm: number; timeSig: string; bpmDisplay?: number; bpmNote?: string; sound?: import('../engine/audio').SoundProfile; drift?: number
   stepsPerBar: number; bars: number; voices: Record<string, number[]>
   feel?: string; whyItWorks?: string; source?: string; confidence?: string; label?: string
   sections?: { name: string; repeat: number; confidence?: string; timeSig?: string; ticksPerStep?: number; bars: Record<string, string>[] }[]
