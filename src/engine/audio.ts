@@ -142,6 +142,8 @@ export class RhythmEngine {
   skipped = 0
   private pendingJump: number | null = null
   onSongBar?: (bar: number) => void
+  /** Fired when a song plays past its last bar (not when a section loop wraps). */
+  onSongEnd?: () => void
   setSong(bars: Pattern[] | null) { this.song = bars ? { bars, loop: null } : null; this.songBar = 0; this.songTick = 0; this.pendingJump = null }
   setSongLoop(loop: [number, number] | null) { if (this.song) this.song.loop = loop }
   /** Jump to a bar: immediately if stopped, otherwise at the next bar line. */
@@ -180,7 +182,7 @@ export class RhythmEngine {
       this.songTick = 0
       let next = this.pendingJump ?? this.songBar + 1; this.pendingJump = null
       if (song.loop && next >= song.loop[1]) next = song.loop[0]
-      if (next >= song.bars.length) next = 0
+      if (next >= song.bars.length) { next = 0; Tone.getDraw().schedule(() => this.onSongEnd?.(), time) }
       this.songBar = next
     }
   }

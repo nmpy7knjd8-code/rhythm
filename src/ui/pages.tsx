@@ -56,12 +56,24 @@ function Styles() {
 
 function SongButtons({ song }: { song: Song }) {
   const P = usePlayer()
-  return <div className="flex items-center gap-2 mt-4">
-    <button className="btn-primary" onClick={async () => { await P.loadSong(song); await P.toggle() }}><span className="inline-block w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-current" /> Play song</button>
-    <button className="btn-ghost" onClick={async () => { P.load(song.pattern); if (!P.playing) await P.toggle() }}>Loop groove</button>
-    <span className="ml-auto text-xs text-mute tabular-nums">{shownBpm(song, song.raw.bpm)} BPM</span>
+  return <div className="flex items-center gap-1.5 mt-4 whitespace-nowrap">
+    <button className="btn-primary !px-3.5" onClick={async () => { await P.loadSong(song); await P.toggle() }}><span className="inline-block w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-current" /> Play song</button>
+    <button className="btn-ghost !px-3.5" onClick={async () => { P.load(song.pattern); if (!P.playing) await P.toggle() }}>Loop groove</button>
+    <QueueButton song={song} />
+    <span className="ml-auto pl-1 text-[11px] text-mute tabular-nums">{shownBpm(song, song.raw.bpm)} BPM</span>
   </div>
 }
+
+/** Small "add to queue" button: shows ✓ briefly after adding. */
+export function QueueButton({ song }: { song: Song }) {
+  const P = usePlayer(); const [done, setDone] = useState(false)
+  const n = P.queue.filter(q => q.raw.id === song.raw.id).length
+  return <button aria-label={`Add ${song.raw.song} to queue`} title="Add to queue" onClick={() => { P.enqueue(song); setDone(true); setTimeout(() => setDone(false), 900) }}
+    className={`relative w-10 h-10 grid place-items-center rounded-full border border-white/[0.08] text-[15px] leading-none active:scale-90 transition ${done ? 'text-amber border-amber/40' : 'text-bone/60 hover:text-bone'}`}>
+    {done ? '✓' : <QueueIcon />}{n > 0 && !done && <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 rounded-full bg-amber text-ink text-[9px] font-semibold grid place-items-center">{n}</span>}
+  </button>
+}
+export const QueueIcon = () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M2 4h8M2 8h8M2 12h5M12 9v5M9.5 11.5h5" /></svg>
 
 const REQ_PH = 'Request a song (added in minutes)'
 function RequestSong() {

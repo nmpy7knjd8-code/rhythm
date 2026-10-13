@@ -27,7 +27,7 @@ interface Ctx {
   toggle: () => Promise<void>; setBpm: (n: number) => void; setSwing: (n: number) => void; setKit: (id: string) => void
   subscribe: RhythmEngine['subscribe']
   song: Song | null; songBar: number; loopSection: number | null
-  loadSong: (s: Song, section?: number) => Promise<void>; playRange: (s: Song, start: number, end: number) => Promise<void>; jumpBar: (bar: number) => void; jumpSection: (i: number) => void; setLoopSection: (i: number | null) => void
+  loadSong: (s: Song, section?: number) => Promise<void>; queue: Song[]; enqueue: (s: Song) => void; unqueue: (i: number) => void; next: () => Promise<void>; playRange: (s: Song, start: number, end: number) => Promise<void>; jumpBar: (bar: number) => void; jumpSection: (i: number) => void; setLoopSection: (i: number | null) => void
 }
 export const sectionOf = (s: Song, bar: number) => Math.max(0, s.sections.findIndex(x => bar >= x.start && bar < x.start + x.bars))
 const C = createContext<Ctx>(null!)
@@ -42,6 +42,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [swing, setSwingS] = useState(0)
   const [feel, setFeelS] = useState(1)
   const [kitId, setKitId] = useState('acoustic')
+  const [queue, setQueue] = useState<Song[]>([])
+  const live = useRef<Ctx | null>(null) // latest context, for engine callbacks
   const [arrangement, setArr] = useState<Arrangement | null>(null)
   const [section, setSection] = useState<number | null>(null)
   const [tuning, setTuning] = useState<Tuning>({})
@@ -57,6 +59,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!eng.current) {
       eng.current = new RhythmEngine(); eng.current.setKit(KITS[0]); eng.current.onSection = setSection
       eng.current.onBar = (_b, f) => setInFill(f); eng.current.onSongBar = setSongBar
+      eng.current.onSongEnd = () => { if (live.current?.queue.length) void live.current.next() }
       ;(window as unknown as { __pulseEngine?: RhythmEngine }).__pulseEngine = eng.current // used by the timing test
     }
     return eng.current
@@ -86,6 +89,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     layers, playing, bpm, swing, feel, setFeel: (f: number) => { setFeelS(f); e().setFeel(f) }, kitId, section, arrangement, tuning, setTuning, fillId, fillEvery, inFill, kitProgress,
     setFill: (id, every) => { setFillId(id); if (every !== undefined) setFillEvery(every) },
     song, songBar, loopSection,
+    queue,
+    enqueue: sg => setQueue(q => [...q, sg]),
+    unqueue: i => setQueue(q => q.filter((_, j) => j !== i)),
+    next: async () => {
+      const q = live.current?.queue ?? []; if (!q.length) return
+      const [sg, ...rest] = q; setQueue(rest)
+      await live.current!.loadSong(sg); await live.current!.toggle()
+    },
     loadSong: async (sg, sec) => {
       await loadSongBars(sg); autoKit(sg)
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; setArr(null); setSection(null); setLayers([])
@@ -130,7 +141,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setSwing: v => { setSwingS(v); e().setSwing(v) },
     setKit: id => { autoKitOn.current = false; setKitId(id); setKitProgress(0); preload(id) },
     subscribe: l => e().subscribe(l),
-  }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload])
+  }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue])
+  live.current = value
   useEffect(() => { (window as unknown as { __pulseLoadSong?: (id: string, sec?: number) => Promise<void> }).__pulseLoadSong = async (id, sec) => { const sg = SONGS.find(x => x.raw.id === id); if (sg) await value.loadSong(sg, sec) } }, [value])
   useEffect(() => { (window as unknown as { __pulseSetKit?: (id: string) => void }).__pulseSetKit = value.setKit }, [value]) // used by tests
   useEffect(() => { (window as unknown as { __pulseLoadPattern?: (id: string) => boolean }).__pulseLoadPattern = id => { const pt = Object.values(PATTERNS).find(x => x.id === id || x.id.endsWith('-' + id)); if (pt) value.load(pt, false); return !!pt } }, [value]) // used by tests
@@ -368,6 +380,11 @@ export function PlayerBar() {
           className={`relative w-10 h-10 shrink-0 rounded-full bg-amber text-ink grid place-items-center active:scale-90 transition-transform disabled:opacity-25 ${P.playing ? 'pulse-ring' : ''}`}>
           {P.playing ? <span className="w-3 h-3 rounded-[2px] bg-ink" /> : <span className="ml-0.5 w-0 h-0 border-y-[7px] border-y-transparent border-l-[11px] border-l-ink" />}
         </button>
+        <button aria-label={P.queue.length ? `Next song (${P.queue.length} queued)` : 'Next song (queue empty)'} onClick={() => void P.next()} disabled={!P.queue.length}
+          className="relative -ml-1 w-10 h-10 shrink-0 grid place-items-center rounded-full text-bone/80 active:scale-90 disabled:opacity-25">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5v11l8-5.5z" /><rect x="11.5" y="2.5" width="2" height="11" rx="0.6" /></svg>
+          {P.queue.length > 0 && <span className="absolute top-0.5 right-0.5 text-[9px] tabular-nums text-amber">{P.queue.length}</span>}
+        </button>
         <button className="flex-1 min-w-0 text-left" onClick={() => show('now')}>
           <div className="text-[14px] font-medium truncate">{title}</div>
           <div className="text-[11px] text-mute truncate">{kitLoading ? `Loading samples ${Math.round(P.kitProgress * 100)}%` : sub}</div>
@@ -381,6 +398,12 @@ export function PlayerBar() {
       head={<Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} />}>
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
+        {P.queue.length > 0 && <div><div className="text-[10px] uppercase tracking-wider text-mute mb-1">Up next</div>
+          <ol>{P.queue.map((q, i) => <li key={i} className="flex items-center gap-2 h-11 border-b border-white/[0.05] last:border-0">
+            <span className="w-4 text-[11px] text-mute tabular-nums">{i + 1}</span>
+            <span className="flex-1 min-w-0 truncate text-sm">{q.raw.song}<span className="text-mute"> · {q.raw.artist}</span></span>
+            <button aria-label={`Remove ${q.raw.song} from queue`} onClick={() => P.unqueue(i)} className="w-10 h-10 grid place-items-center rounded-full text-mute active:bg-white/[0.06]">✕</button>
+          </li>)}</ol></div>}
         {sg?.raw.tuning && <p className="text-[11px] text-mute">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
         {!sg && P.arrangement && <ol className="space-y-1.5 text-sm">{P.arrangement.sections.map((s, i) => <li key={i} className={P.section === i ? 'text-amber' : 'text-mute'}>{s.name} · {s.bars} bars</li>)}</ol>}
         {!sg && !P.arrangement && (P.layers.length ? P.layers.map(l => <LayerCard key={l.id} layer={l} />) : <p className="text-sm text-mute">Nothing loaded. Open Browse to pick a rhythm, then tap + to stack layers.</p>)}
