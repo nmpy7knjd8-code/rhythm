@@ -407,7 +407,7 @@ export function PlayerBar() {
     <Sheet open={open} onClose={() => setOpen(false)} title={sg ? sg.raw.song : title} subtitle={sg ? `${sg.raw.artist} · ${sg.raw.drummer}` : undefined}
       contentPull={tab !== 'sound'}
       head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} />{P.playing && sg?.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
-        className="mt-2 h-7 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}<UpNext key={String(open)} /></div>}>
+        className="mt-3.5 h-7 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}<UpNext key={String(open)} /></div>}>
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
         {sg?.raw.tuning && <p className="text-[11px] text-mute">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
@@ -510,12 +510,12 @@ export function SongForm({ song }: { song?: Song }) {
 function UpNext() {
   const P = usePlayer(); const [open, setOpen] = useState(false)
   if (!P.queue.length) return null
-  return <div className="mt-2 w-full text-left">
-    <div className="flex items-center gap-1">
+  return <div className="mt-2.5 w-full text-left">
+    <div className="flex items-center gap-3">
     <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="flex-1 min-w-0 h-9 flex items-center gap-2 text-[12px] text-mute">
       <span className="uppercase tracking-wider text-[10px]">Up next</span>
       <span className="flex-1 min-w-0 truncate text-left text-bone/70">{P.queue[0].raw.song}{P.queue.length > 1 ? ` +${P.queue.length - 1}` : ''}</span>
-      <span className={`transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
+      <span className={`text-[18px] leading-none text-bone/60 transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
     </button>
     <button aria-label="Play next song" onClick={() => void P.next()} className="shrink-0 h-9 pl-3 pr-3.5 flex items-center gap-1.5 rounded-full text-[12px] text-bone/85 bg-white/[0.06] active:scale-95">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5v11l8-5.5z" /><rect x="11.5" y="2.5" width="2" height="11" rx="0.6" /></svg>Next
