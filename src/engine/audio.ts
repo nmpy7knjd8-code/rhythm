@@ -88,10 +88,6 @@ const hash = (a: number, b: number, c: number) => { const x = Math.sin(a * 12.98
 const beatTicksOf = (p: Pattern) => { const m = /^(\d+)\/8$/.exec(p.timeSig ?? ''); return m && +m[1] % 3 === 0 && +m[1] > 3 ? 18 : 12 }
 export type StepListener = (layerSteps: Record<string, number>, bar: number) => void
 const FILL_ID = 'fill', FX_ID = 'fx', SONG_ID = 'song'
-/** Inner roll strokes (between grid steps) are played softer than the stroke on the step, like real sticking:
- *  the middle of a 32nd pair a bit firmer than triplet inner strokes. */
-/** Inner roll strokes softer (natural accent shape); scaled by feel (0 = exact, flat velocity). */
-const rollVel = (v: number, frac: number, feel = 1) => Math.min(1, v * (1 - feel * (Math.abs(frac - 0.5) < 0.01 ? 0.2 : 0.28)))
 /** Deterministic ±0.8 ms drift (kept under the 1 ms timing-audit tolerance) on inner roll strokes so rolls aren't machine-perfect. */
 /** Timing drift for inner roll strokes only (the on-step strokes stay exactly on the grid). Below 12 strokes/s: the old ±0.8 ms.
  *  Faster: ±2-4 ms scaled by speed, from slow overlapping sines over the song position (smooth, non-repeating, not white noise),
@@ -255,7 +251,8 @@ export class RhythmEngine {
     if (hz && fl > 0) vel = this.humanVel(voice, vel, hz, fl)
     const hh = hz ? hash(hz.bar, hz.pos, 7) : 0
     // flam/drag graces sit before the stroke (the main onset never moves): 18-35 ms apart, 0.25-0.4 of the stroke
-    const g = Math.max(0.018, Math.min(0.035, stepSec / 2)) * (hz && fl > 0 ? 1 + 0.2 * hh * fl : 1)
+    const lk = channelId + voice, prevT = this.lastHit.get(lk) ?? -9; this.lastHit.set(lk, t)
+    const g = Math.min(Math.max(0.018, Math.min(0.035, stepSec / 2)) * (hz && fl > 0 ? 1 + 0.2 * hh * fl : 1), 0.4 * Math.max(0, t - prevT) / Math.max(1, graces)) // never closer than 40% of the gap to the previous note
     for (let i = graces; i > 0; i--) inst.trigger(Math.max(0, t - g * i), vel * (0.325 + 0.075 * hh * fl))
     // hi-hat tip (off-beat 16ths, darker) vs shank (on the beat and the "&")
     const tip = !!hz && fl > 0 && (voice === 'tick' || voice === 'open') && hz.pos % (hz.beat / 2) !== 0
@@ -274,7 +271,7 @@ export class RhythmEngine {
     for (const h of subs) { const l = by.get(h.voice) ?? []; l.push(h); by.set(h.voice, l) }
     for (const [voice, l] of by) {
       l.sort((a, b) => a.frac - b.frac)
-      const lead = onStep.has(voice), run = l.length >= 2 || lead
+      const lead = onStep.has(voice), run = voice === 'back' && (l.length >= 2 || lead) // only snare runs are rolls; kick/tom 32nd figures play straight
       l.forEach((h, j) => {
         const at = t + h.frac * stepSec + shift(h.frac)
         if (!run) { this.hz = { bar, pos: (step + h.frac) * tps, beat, sub: -1, stroke: stepSec }; this.play(ch, voice, at, h.velocity, 0, stepSec); return }
@@ -282,7 +279,7 @@ export class RhythmEngine {
         const idx = j + (lead ? 1 : 0) // stroke number in the run (0 = first)
         this.hz = { bar, pos: (step + h.frac) * tps, beat, sub: idx, n: l.length + (lead ? 1 : 0), stroke }
         const inner = idx > 0 // the run's first stroke stays exact
-        this.play(ch, voice, at + (inner ? fl * rollJitter(bar, step, h.frac, stroke, idx) : 0), inner ? rollVel(h.velocity, h.frac, fl) : h.velocity, 0, stepSec)
+        this.play(ch, voice, at + (inner ? fl * rollJitter(bar, step, h.frac, stroke, idx) : 0), h.velocity, 0, stepSec) // dynamics: hand alternation in humanVel, no flat cut
       })
     }
   }
@@ -299,7 +296,7 @@ export class RhythmEngine {
     }
     let sp = vel < 0.45 ? 0.06 : voice === 'tick' || voice === 'ride' || voice === 'open' ? 0.04 : voice === 'back' || voice === 'low' ? 0.03 : 0.02
     if (hz.sub >= 0) {
-      vel *= hz.sub % 2 === 1 ? 0.93 : 1 // weak hand: every other stroke of the run
+      vel *= hz.sub % 2 === 1 ? 0.95 : 1.02 // alternating hands (about ±3%), not a flat cut
       const up = hash(hz.bar, Math.floor(hz.pos), 3) > -0.3, k = hz.sub / Math.max(1, (hz.n ?? 1) - 1) // mostly crescendo, sometimes decrescendo
       vel *= 0.92 + 0.08 * (up ? k : 1 - k)
       if (hz.stroke < 1 / 12) sp += 0.03 // fast strokes: less even
@@ -310,14 +307,17 @@ export class RhythmEngine {
   /** Per-song sound profile (playback rate / gate on the existing samples). */
   sound: SoundProfile | null = null
   private dens = new Map<string, { t: number; lvl: number }>()
+  private lastHit = new Map<string, number>()
   /** Repeated snare hits within an 8th note (crash: within a quarter) duck by up to ~4.5 dB (−1.5 dB per dense hit), then recover
    *  as hits space out. Single accents, normal backbeats and ghost notes (soft hits) are untouched. */
   private density(key: string, t: number, vel: number, win: number) {
-    if (vel < 0.45) return 1
+    if (vel < 0.45 || (this.hz && this.hz.sub >= 0)) return 1 // ghosts and in-between (sub-step) strokes are never ducked
     const eighth = win * 30 / Tone.getTransport().bpm.getValueAtTime(t), d = this.dens.get(key) ?? { t: -9, lvl: 1 }
     const gap = t - d.t
     if (gap < 0) return d.lvl // out-of-order (same step, other source)
-    d.lvl = gap <= eighth * 1.05 ? Math.max(0.6, d.lvl * 0.84) : Math.min(1, d.lvl + (gap / eighth) * 0.1)
+    const sn = key.endsWith(':sn'), sixteenth = 15 / Tone.getTransport().bpm.getValueAtTime(t)
+    if (sn && gap < sixteenth * 0.9) { d.t = t; this.dens.set(key, d); return d.lvl } // a run faster than 16ths is a fill, not riding: no extra ducking
+    d.lvl = gap <= eighth * 1.05 ? Math.max(sn ? 0.75 : 0.6, d.lvl * 0.84) : Math.min(1, d.lvl + (gap / eighth) * 0.1) // floor: snare -2.5 dB, crash -4.4 dB
     d.t = t; this.dens.set(key, d); return d.lvl
   }
 
