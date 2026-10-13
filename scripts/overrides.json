@@ -16,11 +16,21 @@
  "meta": {
   "heaviestmatter": {
    "bpmDisplay": 0.5,
-   "bpmNote": "The tab counts the double-time pulse (about 207); the record is listed at 103, so Pulse shows half and plays the tab at its written speed."
+   "bpmNote": "The tab counts the double-time pulse (about 207); the record is listed at 103, so Pulse shows half and plays the tab at its written speed.",
+   "goodPart": {
+    "bar": 181,
+    "at": "Hammer-On Verse",
+    "estimated": true
+   }
   },
   "songforthedead": {
    "bpm": 106,
-   "bpmNote": "Main groove about 106 (record listed at 107); the fast intro runs about 205–214 as written in the tab."
+   "bpmNote": "Main groove about 106 (record listed at 107); the fast intro runs about 205–214 as written in the tab.",
+   "goodPart": {
+    "bar": 125,
+    "at": "Main",
+    "estimated": true
+   }
   },
   "purdie": {
    "form": [
@@ -67,26 +77,51 @@
     "tomGate": 0.25,
     "cym": 0.95
    },
-   "drift": 4
+   "drift": 4,
+   "goodPart": {
+    "bar": 100,
+    "at": "Part 3 · ride",
+    "estimated": true
+   }
   },
   "holdtheline": {
    "bpmDisplay": 0.6666666666666666,
    "bpmNote": "The tab counts dotted quarters in 12/8 (97, matching the record); Pulse plays it at that pulse.",
-   "drift": 4
+   "drift": 4,
+   "goodPart": {
+    "bar": 51,
+    "at": "Solo",
+    "estimated": true
+   }
   },
   "africa": {
    "bpmDisplay": 0.5,
-   "bpmNote": "The tab is in cut time (half note = 92, matching the record at about 92); Pulse shows 92 and plays it as written."
+   "bpmNote": "The tab is in cut time (half note = 92, matching the record at about 92); Pulse shows 92 and plays it as written.",
+   "goodPart": {
+    "bar": 188,
+    "at": "Outro",
+    "estimated": true
+   }
   },
   "shookme": {
    "bpm": 130,
-   "bpmNote": "Intro about 120, main groove about 130 (record listed around 127–128)."
+   "bpmNote": "Intro about 120, main groove about 130 (record listed around 127–128).",
+   "goodPart": {
+    "bar": 106,
+    "at": "Outro",
+    "estimated": true
+   }
   },
   "moon": {
    "sound": {
     "snare": 1.15,
     "snareGate": 0.3,
     "cym": 1.06
+   },
+   "goodPart": {
+    "bar": 127,
+    "at": "Outro",
+    "estimated": true
    }
   },
   "driven": {
@@ -94,6 +129,11 @@
     "snare": 1.15,
     "snareGate": 0.3,
     "cym": 1.06
+   },
+   "goodPart": {
+    "bar": 117,
+    "at": "Outro vamp",
+    "estimated": true
    }
   },
   "everybreath": {
@@ -101,6 +141,11 @@
     "snare": 1.15,
     "snareGate": 0.3,
     "cym": 1.06
+   },
+   "goodPart": {
+    "bar": 51,
+    "at": "Interlude",
+    "estimated": true
    }
   },
   "levee": {
@@ -114,13 +159,23 @@
     "source": "Wikipedia track length (Led Zeppelin IV, 7:08)",
     "modelSeconds": 443
    },
-   "drift": 4
+   "drift": 4,
+   "goodPart": {
+    "bar": 89,
+    "at": "2nd Verse",
+    "estimated": true
+   }
   },
   "rocknroll": {
    "sound": {
     "snare": 0.93,
     "toms": 0.94,
     "cym": 0.94
+   },
+   "goodPart": {
+    "bar": 145,
+    "at": "[Outro]",
+    "estimated": true
    }
   },
   "fool": {
@@ -128,6 +183,10 @@
     "snare": 0.93,
     "toms": 0.94,
     "cym": 0.94
+   },
+   "goodPart": {
+    "bar": 38,
+    "at": "Samba interlude"
    }
   },
   "mobydick": {
@@ -135,6 +194,10 @@
     "snare": 0.93,
     "toms": 0.94,
     "cym": 0.94
+   },
+   "goodPart": {
+    "bar": 24,
+    "at": "Solo (Bonham drum solo)"
    }
   },
   "goodtimes": {
@@ -142,6 +205,11 @@
     "snare": 0.93,
     "toms": 0.94,
     "cym": 0.94
+   },
+   "goodPart": {
+    "bar": 35,
+    "at": "Guitar Solo",
+    "estimated": true
    }
   },
   "kashmir": {
@@ -149,26 +217,49 @@
     "snare": 0.93,
     "toms": 0.94,
     "cym": 0.94
+   },
+   "goodPart": {
+    "bar": 165,
+    "at": "Strings Reprise",
+    "estimated": true
    }
   },
   "tomsawyer": {
    "sound": {
     "snare": 1.07
+   },
+   "goodPart": {
+    "bar": 56,
+    "at": "Drum Solo"
    }
   },
   "yyz": {
    "sound": {
     "snare": 1.07
+   },
+   "goodPart": {
+    "bar": 92,
+    "at": "Keyboard break with drum fills"
    }
   },
   "limelight": {
    "sound": {
     "snare": 1.07
+   },
+   "goodPart": {
+    "bar": 129,
+    "at": "Outro",
+    "estimated": true
    }
   },
   "lavilla": {
    "sound": {
     "snare": 1.07
+   },
+   "goodPart": {
+    "bar": 226,
+    "at": "[E] Sect. V - \"Monsters!\"",
+    "estimated": true
    }
   },
   "cometogether": {
@@ -178,6 +269,11 @@
     "toms": 0.95,
     "tomGate": 0.2,
     "cym": 0.93
+   },
+   "goodPart": {
+    "bar": 12,
+    "at": "Interlude",
+    "estimated": true
    }
   },
   "ticket": {
@@ -187,6 +283,11 @@
     "toms": 0.95,
     "tomGate": 0.2,
     "cym": 0.93
+   },
+   "goodPart": {
+    "bar": 36,
+    "at": "Bridge",
+    "estimated": true
    }
   },
   "rain": {
@@ -196,6 +297,11 @@
     "toms": 0.95,
     "tomGate": 0.2,
     "cym": 0.93
+   },
+   "goodPart": {
+    "bar": 16,
+    "at": "Verse 2",
+    "estimated": true
    }
   },
   "airtonight": {
@@ -205,6 +311,10 @@
     "toms": 0.95,
     "tomGate": 0.25,
     "cym": 1.05
+   },
+   "goodPart": {
+    "bar": 86,
+    "at": "The drum fill into the final chorus"
    }
   },
   "dontyou": {
@@ -212,6 +322,11 @@
     "snareGate": 0.24,
     "tomGate": 0.3,
     "cym": 1.05
+   },
+   "goodPart": {
+    "bar": 62,
+    "at": "Verse 3",
+    "estimated": true
    }
   },
   "prayer": {
@@ -219,6 +334,11 @@
     "snareGate": 0.24,
     "tomGate": 0.3,
     "cym": 1.05
+   },
+   "goodPart": {
+    "bar": 95,
+    "at": "Guitar Solo",
+    "estimated": true
    }
   },
   "sugar80": {
@@ -226,12 +346,22 @@
     "snareGate": 0.24,
     "tomGate": 0.3,
     "cym": 1.05
+   },
+   "goodPart": {
+    "bar": 60,
+    "at": "Interlude",
+    "estimated": true
    }
   },
   "billiejean": {
    "sound": {
     "snare": 1.08,
     "snareGate": 0.12
+   },
+   "goodPart": {
+    "bar": 79,
+    "at": "Pre-Chorus",
+    "estimated": true
    }
   },
   "funkydrummer": {
@@ -244,13 +374,23 @@
     "source": "Wikipedia track length (In the Jungle Groove: \"Funky Drummer (Bonus Beat Reprise)\", 2:54; the full 1970 single edit is 9:13)",
     "modelSeconds": 184
    },
-   "confidence": "transcribed (Songsterr community tab); this is the Bonus Beat Reprise (2:54), not the full 9:13 track"
+   "confidence": "transcribed (Songsterr community tab); this is the Bonus Beat Reprise (2:54), not the full 9:13 track",
+   "goodPart": {
+    "bar": 56,
+    "at": "Groove · bars 57–64",
+    "estimated": true
+   }
   },
   "50ways": {
    "sound": {
     "snareGate": 0.2,
     "tomGate": 0.25,
     "cym": 0.95
+   },
+   "goodPart": {
+    "bar": 5,
+    "at": "Groove · bars 1–8",
+    "estimated": true
    }
   },
   "aja": {
@@ -258,26 +398,55 @@
     "snareGate": 0.2,
     "tomGate": 0.25,
     "cym": 0.95
+   },
+   "goodPart": {
+    "bar": 221,
+    "at": "Outro",
+    "estimated": true
    }
   },
   "aenema": {
    "bpmDisplay": 0.6666666666666666,
    "bpmNote": "The tab counts dotted quarters (about 122 in the 12/8 intro, about 60 in the 6/8 sections written at half speed); Pulse shows the dotted-quarter pulse.",
-   "bpm": 183
+   "bpm": 183,
+   "goodPart": {
+    "bar": 166,
+    "at": "Climax"
+   }
   },
   "cobham": {
-   "confidence": "transcribed (Songsterr community tab); excerpt: about 2:45 of a much longer track"
+   "confidence": "transcribed (Songsterr community tab); excerpt: about 2:45 of a much longer track",
+   "goodPart": {
+    "bar": 12,
+    "at": "[B]",
+    "estimated": true
+   }
   },
   "meetingspirits": {
-   "confidence": "transcribed (Songsterr community tab); approximate: 13% shorter than the record, and the tab notes some bars were duplicated"
+   "confidence": "transcribed (Songsterr community tab); approximate: 13% shorter than the record, and the tab notes some bars were duplicated",
+   "goodPart": {
+    "bar": 135,
+    "at": "Main Theme",
+    "estimated": true
+   }
   },
   "mitchell": {
    "bpm": 150,
-   "bpmNote": "About 150 BPM on the record (AcousticBrainz median of 156 analyses, via TempoPeek); the tab’s 147 was scaled to 150."
+   "bpmNote": "About 150 BPM on the record (AcousticBrainz median of 156 analyses, via TempoPeek); the tab’s 147 was scaled to 150.",
+   "goodPart": {
+    "bar": 172,
+    "at": "Section 2",
+    "estimated": true
+   }
   },
   "bitesdust": {
    "bpm": 110,
-   "bpmNote": "About 110 BPM on the record (AcousticBrainz median of 624 analyses, via TempoPeek); the tab’s 112 was scaled to 110, which also matches the track length."
+   "bpmNote": "About 110 BPM on the record (AcousticBrainz median of 624 analyses, via TempoPeek); the tab’s 112 was scaled to 110, which also matches the track length.",
+   "goodPart": {
+    "bar": 50,
+    "at": "Bridge",
+    "estimated": true
+   }
   },
   "grudge": {
    "bpmNote": "About 96 on the record (SongBPM; Drumeo lists about 100); the tab’s 98 was scaled to 96, which also matches the track length.",
@@ -285,14 +454,432 @@
     "seconds": 515,
     "source": "Wikipedia track length (Lateralus, 8:35)",
     "modelSeconds": 514
+   },
+   "goodPart": {
+    "bar": 207,
+    "at": "Climax/Outro"
    }
   },
   "puppies": {
-   "bpmNote": "About 80 on the record (SongBPM 160 counted double); the tab’s 81 was scaled to 80."
+   "bpmNote": "About 80 on the record (SongBPM 160 counted double); the tab’s 81 was scaled to 80.",
+   "goodPart": {
+    "bar": 68,
+    "at": "Bridge/Drum Fills"
+   }
   },
   "byob": {
    "bpm": 205,
-   "bpmNote": "Shown at the fast verse tempo (about 205 in the tab). The choruses drop to about 101, which is what tempo databases list for the whole track."
+   "bpmNote": "Shown at the fast verse tempo (about 205 in the tab). The choruses drop to about 101, which is what tempo databases list for the whole track.",
+   "goodPart": {
+    "bar": 22,
+    "at": "Verse 1",
+    "estimated": true
+   }
+  },
+  "4646": {
+   "goodPart": {
+    "bar": 90,
+    "at": "Drum Solo"
+   }
+  },
+  "aerials": {
+   "goodPart": {
+    "bar": 17,
+    "at": "Intro",
+    "estimated": true
+   }
+  },
+  "afrobeat": {
+   "goodPart": {
+    "bar": 128,
+    "at": "Out theme",
+    "estimated": true
+   }
+  },
+  "amen": {
+   "goodPart": {
+    "bar": 37,
+    "at": "Part 2 · ride",
+    "estimated": true
+   }
+  },
+  "anesthetize": {
+   "goodPart": {
+    "bar": 311,
+    "at": "Riff 7",
+    "estimated": true
+   }
+  },
+  "backinblack": {
+   "goodPart": {
+    "bar": 66,
+    "at": "Bridge",
+    "estimated": true
+   }
+  },
+  "barker": {
+   "goodPart": {
+    "bar": 71,
+    "at": "Bridge",
+    "estimated": true
+   }
+  },
+  "bleed": {
+   "goodPart": {
+    "bar": 16,
+    "at": "My Crimson Liquid",
+    "estimated": true
+   }
+  },
+  "cantstop": {
+   "goodPart": {
+    "bar": 28,
+    "at": "Chorus",
+    "estimated": true
+   }
+  },
+  "chadsmith": {
+   "goodPart": {
+    "bar": 93,
+    "at": "Outro",
+    "estimated": true
+   }
+  },
+  "chopsuey": {
+   "goodPart": {
+    "bar": 12,
+    "at": "Intro",
+    "estimated": true
+   }
+  },
+  "danceeternity": {
+   "goodPart": {
+    "bar": 57,
+    "at": "Djenty Riff",
+    "estimated": true
+   }
+  },
+  "elvin": {
+   "goodPart": {
+    "bar": 94,
+    "at": "Solo chorus 2",
+    "estimated": true
+   }
+  },
+  "everlong": {
+   "goodPart": {
+    "bar": 75,
+    "at": "Chorus",
+    "estimated": true
+   }
+  },
+  "fred": {
+   "goodPart": {
+    "bar": 218,
+    "at": "Part 17 · drums",
+    "estimated": true
+   }
+  },
+  "frizzlefry": {
+   "goodPart": {
+    "bar": 47,
+    "at": "Verse 1",
+    "estimated": true
+   }
+  },
+  "hollow": {
+   "goodPart": {
+    "bar": 32,
+    "at": "Part 4 · hi-hat",
+    "estimated": true
+   }
+  },
+  "j-afro": {
+   "goodPart": {
+    "bar": 80,
+    "at": "Peak (all parts, busier)",
+    "estimated": true
+   }
+  },
+  "j-cine": {
+   "goodPart": {
+    "bar": 40,
+    "at": "Battle (peak)",
+    "estimated": true
+   }
+  },
+  "j-funk": {
+   "goodPart": {
+    "bar": 64,
+    "at": "Build",
+    "estimated": true
+   }
+  },
+  "j-prog": {
+   "goodPart": {
+    "bar": 75,
+    "at": "Climb (13/8)",
+    "estimated": true
+   }
+  },
+  "jambi": {
+   "goodPart": {
+    "bar": 158,
+    "at": "Interlude",
+    "estimated": true
+   }
+  },
+  "johnfisherman": {
+   "goodPart": {
+    "bar": 10,
+    "at": "Intro",
+    "estimated": true
+   }
+  },
+  "judith": {
+   "goodPart": {
+    "bar": 62,
+    "at": "Pre-Chorus",
+    "estimated": true
+   }
+  },
+  "lateralus": {
+   "goodPart": {
+    "bar": 240,
+    "at": "\"Spiral out... keep going\" outro"
+   }
+  },
+  "libras": {
+   "goodPart": {
+    "bar": 11,
+    "at": "Verse 1",
+    "estimated": true
+   }
+  },
+  "metropolis": {
+   "goodPart": {
+    "bar": 301,
+    "at": "Outro",
+    "estimated": true
+   }
+  },
+  "monkeywrench": {
+   "goodPart": {
+    "bar": 46,
+    "at": "Chorus",
+    "estimated": true
+   }
+  },
+  "morethan": {
+   "goodPart": {
+    "bar": 88,
+    "at": "Verse 3",
+    "estimated": true
+   }
+  },
+  "onedrop": {
+   "goodPart": {
+    "bar": 16,
+    "at": "Verse",
+    "estimated": true
+   }
+  },
+  "outsider": {
+   "goodPart": {
+    "bar": 34,
+    "at": "Verse",
+    "estimated": true
+   }
+  },
+  "paranoid": {
+   "goodPart": {
+    "bar": 35,
+    "at": "Verse 2",
+    "estimated": true
+   }
+  },
+  "pet": {
+   "goodPart": {
+    "bar": 58,
+    "at": "Bridge",
+    "estimated": true
+   }
+  },
+  "pneuma": {
+   "goodPart": {
+    "bar": 326,
+    "at": "Climax"
+   }
+  },
+  "pot": {
+   "goodPart": {
+    "bar": 139,
+    "at": "Breakdown",
+    "estimated": true
+   }
+  },
+  "questlove": {
+   "goodPart": {
+    "bar": 24,
+    "at": "Hook",
+    "estimated": true
+   }
+  },
+  "reflection": {
+   "goodPart": {
+    "bar": 210,
+    "at": "Verse 3",
+    "estimated": true
+   }
+  },
+  "rightintwo": {
+   "goodPart": {
+    "bar": 167,
+    "at": "Tabla Solo"
+   }
+  },
+  "rumine": {
+   "goodPart": {
+    "bar": 64,
+    "at": "Chorus 3",
+    "estimated": true
+   }
+  },
+  "runtothehills": {
+   "goodPart": {
+    "bar": 145,
+    "at": "Chorus",
+    "estimated": true
+   }
+  },
+  "schism": {
+   "goodPart": {
+    "bar": 189,
+    "at": "Climax"
+   }
+  },
+  "schizoid": {
+   "goodPart": {
+    "bar": 217,
+    "at": "Free Jazz!",
+    "estimated": true
+   }
+  },
+  "smallthings": {
+   "goodPart": {
+    "bar": 54,
+    "at": "Pre-Chorus 2",
+    "estimated": true
+   }
+  },
+  "sober": {
+   "goodPart": {
+    "bar": 140,
+    "at": "Bridge",
+    "estimated": true
+   }
+  },
+  "spiders": {
+   "goodPart": {
+    "bar": 64,
+    "at": "Chorus 2",
+    "estimated": true
+   }
+  },
+  "stinkfist": {
+   "goodPart": {
+    "bar": 69,
+    "at": "Climax"
+   }
+  },
+  "sugar": {
+   "goodPart": {
+    "bar": 22,
+    "at": "Verse 1",
+    "estimated": true
+   }
+  },
+  "sweetchild": {
+   "goodPart": {
+    "bar": 177,
+    "at": "[H] Slowdown - 3 bars",
+    "estimated": true
+   }
+  },
+  "sweetemotion": {
+   "goodPart": {
+    "bar": 30,
+    "at": "Bridge 1",
+    "estimated": true
+   }
+  },
+  "teenspirit": {
+   "goodPart": {
+    "bar": 132,
+    "at": "[O] Outro",
+    "estimated": true
+   }
+  },
+  "ticks": {
+   "goodPart": {
+    "bar": 12,
+    "at": "Intro Solo (Carey drum intro)"
+   }
+  },
+  "toxicity": {
+   "goodPart": {
+    "bar": 136,
+    "at": "Outro",
+    "estimated": true
+   }
+  },
+  "tweekers": {
+   "goodPart": {
+    "bar": 84,
+    "at": "Bass Solo",
+    "estimated": true
+   }
+  },
+  "vicarious": {
+   "goodPart": {
+    "bar": 154,
+    "at": "Climax"
+   }
+  },
+  "weak": {
+   "goodPart": {
+    "bar": 22,
+    "at": "Bridge",
+    "estimated": true
+   }
+  },
+  "welcomehome": {
+   "goodPart": {
+    "bar": 90,
+    "at": "Solo",
+    "estimated": true
+   }
+  },
+  "whiplash": {
+   "goodPart": {
+    "bar": 52,
+    "at": "Part 3 · hi-hat",
+    "estimated": true
+   }
+  },
+  "wipeout": {
+   "goodPart": {
+    "bar": 72,
+    "at": "Part 2 · toms",
+    "estimated": true
+   }
+  },
+  "wontgetfooled": {
+   "goodPart": {
+    "bar": 214,
+    "at": "Chorus",
+    "estimated": true
+   }
   }
  },
  "pinnedFiles": [
