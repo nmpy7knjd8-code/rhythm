@@ -100,7 +100,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     loadSong: async (sg, sec) => {
       await loadSongBars(sg); autoKit(sg)
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([])
-      en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0); setFeelS(1); en.setFeel(1)
+      en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
     },
     /** Play bars [start, end) of a song (0-based), looping that range. */
@@ -108,7 +108,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       await loadSongBars(sg); autoKit(sg)
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([])
       const n = sg.bars.length; const st = Math.max(0, Math.min(a, n - 1)), end = Math.max(st + 1, Math.min(b, n))
-      en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0); setFeelS(1); en.setFeel(1)
+      en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm); en.setSongLoop([st, end])
       preload(kitId); await en.start(); setPlaying(true)
     },
@@ -420,6 +420,9 @@ export function PlayerBar() {
           <input type="range" min={40} max={260} value={sg ? shownBpm(sg, P.bpm) : P.bpm} onChange={e => P.setBpm(+e.target.value / (sg?.raw.bpmDisplay ?? 1))} className="slider no-sheet-drag touch-pan-x" aria-label="Tempo" />
           {sg && <p className="mt-1.5 text-[11px] text-mute leading-snug">{sg.raw.bpmNote ?? 'Follows the tab\'s tempo map; the slider scales every tempo change proportionally.'}</p>}
           {P.layers[0]?.pattern.bpmNote && <p className="mt-1.5 text-[11px] text-mute leading-snug">{P.layers[0].pattern.bpmNote}{P.layers[0].pattern.bpmSource && <> <a className="underline underline-offset-2" href={P.layers[0].pattern.bpmSource} target="_blank" rel="noreferrer">source</a></>}</p>}</section>
+        <section><Label>Feel <span className="text-bone tabular-nums">{Math.round(P.feel * 100)}%</span></Label>
+          <input type="range" min={0} max={2} step={0.05} value={P.feel} onChange={e => P.setFeel(+e.target.value)} onDoubleClick={() => P.setFeel(1)} className="slider no-sheet-drag touch-pan-x" aria-label="Feel" />
+          <p className="mt-1.5 text-[11px] text-mute leading-snug">{P.feel === 0 ? 'Exact: straight grid, no human variation.' : P.feel < 1 ? 'Tighter than natural: less swing, less human variation.' : P.feel === 1 ? 'Natural (100%): each rhythm\'s own swing and a human touch.' : 'Looser: swung parts swing harder (up to 4:1) and the human variation grows.'}</p></section>
         <section><Label>Kit</Label>
           <select value={P.kitId} onChange={e => P.setKit(e.target.value)} className="sel w-full">{KITS.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}</select>
           <p className="mt-1.5 text-[11px] text-mute">{KITS.find(k => k.id === P.kitId)!.blurb}</p>

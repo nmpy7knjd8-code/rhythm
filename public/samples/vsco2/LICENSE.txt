@@ -1,0 +1,4 @@
+Cymbal samples from VSCO 2 Community Edition by Versilian Studios (Sam Gossner)
+Source: https://github.com/sgossner/VSCO-2-CE (Percussion/cymbal-crash1_*, susCymb1-hitstick_*, susCymb1-hit-bell_*)
+License: CC0 1.0 Universal (public domain dedication), https://creativecommons.org/publicdomain/zero/1.0/
+Adapted: leading silence trimmed, shortened with fade-out, mixed to mono, peak-normalised, 96 kbps MP3.

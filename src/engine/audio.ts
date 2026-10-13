@@ -42,7 +42,12 @@ function makeSynth(kv: KitVoice, g: Tone.Gain): Inst {
 }
 
 function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false): Inst {
-  const g = new Tone.Gain(kv.gain ?? 1).connect(out)
+  const eqs: Tone.Filter[] = []
+  if (kv.eq?.peak) eqs.push(new Tone.Filter({ type: 'peaking', frequency: kv.eq.peak[0], gain: kv.eq.peak[1], Q: kv.eq.peak[2] }))
+  if (kv.eq?.shelf) eqs.push(new Tone.Filter({ type: 'highshelf', frequency: kv.eq.shelf[0], gain: kv.eq.shelf[1] }))
+  if (kv.eq?.lp) eqs.push(new Tone.Filter({ type: 'lowpass', frequency: kv.eq.lp, rolloff: -12, Q: 0.5 }))
+  const g = new Tone.Gain(kv.gain ?? 1)
+  if (eqs.length) { g.chain(...eqs, out) } else g.connect(out)
   if (kv.kind !== 'sample') { const s = makeSynth(kv, g); return { ...s, dispose: () => { s.dispose(); g.dispose() } } }
   const layers = kv.layers ?? []
   layers.forEach(l => l.files.forEach(loadFile))
@@ -72,12 +77,13 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false): Inst {
       src.onended = () => { live.delete(src); src.dispose() }
       live.add(src)
       // a crash/china/open hat that is still ringing doesn't give a fresh sharp transient: soften the attack of quick repeats (2-8 ms fade-in from the onset)
-      if (washy) { const dt = t - lastT; if (dt > 0 && dt < 0.6) src.fadeIn = 0.002 + 0.006 * (1 - dt / 0.6); lastT = t }
+      if (kv.eq?.attack) src.fadeIn = kv.eq.attack
+      if (washy) { const dt = t - lastT; if (dt > 0 && dt < 0.6) src.fadeIn = Math.max(kv.eq?.attack ?? 0, 0.002 + 0.006 * (1 - dt / 0.6)); lastT = t }
       src.start(t, 0, undefined, (0.55 + 0.45 * Math.min(1, rel)) * gm)
       if (gate > 0) { src.fadeOut = 0.03; src.stop(t + gate) } // gated / dampened drum
     },
     choke: t => { live.forEach(s => { try { s.fadeOut = 0.06; s.stop(t) } catch { /* already stopped */ } }); fb?.choke?.(t) }, // ~60 ms damping, like a foot closing the hat
-    dispose: () => { fb?.dispose(); lp?.dispose(); g.dispose() },
+    dispose: () => { fb?.dispose(); lp?.dispose(); g.dispose(); eqs.forEach(f => f.dispose()) },
   }
 }
 
@@ -114,13 +120,15 @@ export class RhythmEngine {
   private swing = 0
   /** Song feel 0..1: 1 = as transcribed (tab shuffle + human roll feel), 0 = straight and exact. */
   private feel = 1
-  setFeel(f: number) { this.feel = Math.max(0, Math.min(1, f)) }
+  /** Feel 0-2: 0 exact, 1 the natural feel (default), above 1 swings harder and loosens the human variation. */
+  setFeel(f: number) { this.feel = Math.max(0, Math.min(2, f)) }
   /** Seconds to move a shuffled off-beat back toward straight (0 at feel 1). Straight bars never move. */
   private feelShift(p: Pattern, pos: number, tps: number, stepSec: number) {
-    if (!p.feel || this.feel >= 1) return 0
+    if (!p.feel || this.feel === 1) return 0
     const u = p.feel === '16th' ? 1 / 8 : 1 / 4, w = pos * tps / TICKS_PER_BAR, r = w % u
     if (Math.abs(r - u * 2 / 3) > 1e-6) return 0
-    return -(u / 6) * (1 - this.feel) * (TICKS_PER_BAR / tps) * stepSec
+    // the written shuffle off-beat sits at 2/3 of the pair (2:1). Feel f puts it at 1/2 + f/6: 0 straight, 1 triplet, capped at 0.8 (4:1) so it never reaches the next note
+    return (u / 6) * (Math.min(this.feel, 1.8) - 1) * (TICKS_PER_BAR / tps) * stepSec
   }
   private tick = 0
   private bar = 0
@@ -414,7 +422,7 @@ export class RhythmEngine {
         const step = stepForTick(s.pattern, s.tickBase); if (step === null) continue
         steps[s.id] = step
         const stepSec = tickSec * ticksPerStep(s.pattern)
-        const t = time + swingOffset(s.pattern, step, this.swing) * stepSec
+        const t = time + Math.min(0.6, swingOffset(s.pattern, step, this.swing) * this.feel) * stepSec // natural swing scaled by feel; 0.6 of a step = 4:1 at most
         const tp = ticksPerStep(s.pattern), bt = beatTicksOf(s.pattern)
         this.hz = { bar: this.bar, pos: step * tp, beat: bt, sub: -1, stroke: stepSec }
         for (const h of hitsAt(s.pattern, step)) this.play(s.id, h.voice, t, h.velocity, h.graces, stepSec)

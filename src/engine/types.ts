@@ -64,6 +64,8 @@ export interface Arrangement { id: string; name: string; bpm: number; sections: 
 
 export interface SampleLayer { /** upper velocity bound 0..1 */ vel: number; files: string[] }
 export interface KitVoice {
+  /** tone shaping after the voice gain: lowpass Hz, high shelf [Hz, dB], peaking cut [Hz, dB, Q], minimum attack fade-in (s) */
+  eq?: { lp?: number; shelf?: [number, number]; peak?: [number, number, number]; attack?: number }
   kind: 'membrane' | 'noise' | 'metal' | 'sample'
   /** sample kind: velocity layers, each with round-robin files (paths relative to sample base URL) */
   layers?: SampleLayer[]
