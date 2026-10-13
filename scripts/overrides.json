@@ -7,13 +7,10 @@
   "westside",
   "bluemondo",
   "nautilus",
-  "islandmagic"
+  "islandmagic",
+  "hotforteacher"
  ],
  "meta": {
-  "hotforteacher": {
-   "bpmDisplay": 0.5,
-   "bpmNote": "The tab is written in cut time (half note = 128); the record is 128 BPM, so Pulse shows 128 and plays the tab at its written speed."
-  },
   "heaviestmatter": {
    "bpmDisplay": 0.5,
    "bpmNote": "The tab counts the double-time pulse (about 207); the record is listed at 103, so Pulse shows half and plays the tab at its written speed."
@@ -322,8 +319,7 @@
   "purdie": 177,
   "mobydick": 7,
   "sugar": 35,
-  "danceeternity": 14,
-  "hotforteacher": 287
+  "danceeternity": 14
  },
  "tempoScale": {
   "mitchell": 1.0204081632653061,

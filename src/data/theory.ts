@@ -136,7 +136,7 @@ export const THEORY: Concept[] = [
     count: 'Swing eighths: 1 (trip) let 2 (trip) let: say the triplet, play only the first and last.',
     points: ['"Microtiming" means small deliberate deviations, such as a laid-back snare. Whether it adds groove is debated: Davies et al. (2013, Music Perception) found added deviations generally lowered groove ratings, and Senn et al. (2016) found quantised and original expert timing rated about equally.', 'Pulse plays each style with its own natural swing amount, and songs exactly as transcribed.'],
     listen: 'Straight eighths, then triplet swing, then a shuffle and a half-time shuffle.',
-    songs: [{ id: 'singsing', note: 'big-band swing' }, { id: 'hotforteacher', note: 'a fast double-bass shuffle' }, { id: 'rosanna', note: 'the half-time shuffle' }, { id: 'fool', note: 'Bonham\'s half-time shuffle' }, { id: 'purdie', note: 'the Purdie shuffle' }],
+    songs: [{ id: 'singsing', note: 'big-band swing' }, { id: 'rosanna', note: 'the half-time shuffle' }, { id: 'fool', note: 'Bonham\'s half-time shuffle' }, { id: 'purdie', note: 'the Purdie shuffle' }],
     patterns: [
       P('sw-straight', 'Straight eighths (1:1)', 8, 2, 100, { tick: 'xxxxxxxx', low: 'X...X...', back: '..X...X.' }),
       P('sw-trip', 'Triplet swing eighths (2:1)', 12, 3, 100, { tick: 'x.xx.xx.xx.x', low: 'X.....X.....', back: '...X.....X..' }),
