@@ -16,6 +16,6 @@ for (let k = 0; k < 40; k++) {
     return { txt: el.textContent, softBar: bb ? bb.height < cell.height * 0.8 : false, inside: bb ? (l.top + l.height / 2 >= bb.top - 0.5 && l.top + l.height / 2 <= bb.bottom + 0.5) : true, labelVisible: l.bottom <= cell.bottom + 0.5 && l.top >= cell.top - 0.5 }
   }))
   for (const x of r) { checked++; if (x.softBar) soft++; if (!x.inside || !x.labelVisible) bad++ }
-  if (!shot && r.some(x => x.softBar)) { shot = true; const el = await p.$('span[title]'); await el.evaluate(e => e.scrollIntoView({ block: 'center' })); const bx = await el.evaluate(e => { const r = e.closest('.flex-1.flex').parentElement.parentElement.getBoundingClientRect(); return { x: 0, y: Math.max(0, r.top - 10), width: 390, height: Math.min(300, r.height + 20) } }); await p.screenshot({ path: '/tmp/variant-soft.png', clip: bx }) }
+  if (!shot && r.some(x => x.softBar)) { shot = true; const el = await p.$('span[title]'); await el.evaluate(e => e.scrollIntoView({ block: 'center' })); const bx = await el.evaluate(e => { const r = e.closest('.flex-1.flex').parentElement.parentElement.getBoundingClientRect(); return { x: 0, y: Math.max(0, r.top - 10), width: 390, height: Math.min(300, r.height + 20) } }); await p.screenshot({ path: '/tmp/variant-soft.png' }) }
 }
 console.log({ checked, soft, bad }); await b.close()
