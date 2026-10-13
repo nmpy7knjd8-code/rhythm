@@ -312,7 +312,7 @@ function FillPicker() {
 
 /** Bottom sheet. Drag anywhere on the header (handle, title, tabs) or pull down on content that is scrolled to the top:
  *  the sheet follows the finger and closes past 40 px or on a quick flick. Close button, tap outside and Esc also close. */
-function Sheet({ open, onClose, children, title, subtitle, head, contentPull = true }: { open: boolean; onClose: () => void; children: ReactNode; title?: string; subtitle?: string; head?: ReactNode; contentPull?: boolean }) {
+function Sheet({ open, onClose, children, title, subtitle, head, lead, contentPull = true }: { open: boolean; onClose: () => void; children: ReactNode; title?: string; subtitle?: string; head?: ReactNode; lead?: ReactNode; contentPull?: boolean }) {
   const [dy, setDy] = useState(0); const drag = useRef<{ y: number; t: number; lastY: number; lastT: number; active: boolean; fromContent: boolean } | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   useEffect(() => { if (!open) setDy(0); else if (scroller.current) scroller.current.scrollTop = 0 }, [open]) // every open starts at the top
@@ -355,8 +355,9 @@ function Sheet({ open, onClose, children, title, subtitle, head, contentPull = t
           onTouchStart={e => start(e.touches[0].clientY, false)} onTouchMove={e => move(e.touches[0].clientY)} onTouchEnd={end} onTouchCancel={end}
           onPointerDown={e => { if (e.pointerType === 'mouse' && !(e.target as HTMLElement).closest('button')) { start(e.clientY, false); const mm = (ev: PointerEvent) => move(ev.clientY); const mu = () => { end(); removeEventListener('pointermove', mm); removeEventListener('pointerup', mu) }; addEventListener('pointermove', mm); addEventListener('pointerup', mu) } }}>
           <div className="pt-2 pb-0.5 flex justify-center"><span className="w-10 h-1.5 rounded-full bg-white/30" /></div>
-          <div className="relative flex items-center h-12 pl-4 pr-1">
-            <div className="min-w-0 pr-2"><div className="text-[14px] font-medium truncate">{title || 'Player'}</div>{subtitle && <div className="text-[11px] text-mute truncate">{subtitle}</div>}</div>
+          <div className="relative flex items-center h-12 pl-3 pr-1 gap-3">
+            {lead && <div className="flex items-center gap-3 shrink-0">{lead}</div>}
+            <div className="min-w-0 flex-1 pr-2"><div className="text-[14px] font-medium truncate">{title || 'Player'}</div>{subtitle && <div className="text-[11px] text-mute truncate">{subtitle}</div>}</div>
             <button aria-label="Close player" onClick={onClose} className="ml-auto h-12 pl-4 pr-3 flex items-center gap-1.5 rounded-full text-sm text-bone/85 active:scale-95 shrink-0">
               Close <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
             </button>
@@ -384,9 +385,7 @@ export function PlayerBar() {
   const [live, setLive] = useState<number | null>(null)
   useEffect(() => { if (!sg || !P.playing) { setLive(null); return }
     const id = setInterval(() => setLive(Tone.getTransport().bpm.value), 200); return () => clearInterval(id) }, [sg, P.playing])
-  return createPortal(<>
-    <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-ink/85 backdrop-blur-xl border-t border-white/[0.06]"><div className="max-w-xl mx-auto">
-      <div className="flex items-center gap-3 h-14 px-2 rounded-2xl bg-white/[0.05] border border-white/[0.06]">
+  const transport = <>
         <button aria-label={P.playing ? 'Stop' : 'Play'} onClick={P.toggle} disabled={!P.layers.length && !P.arrangement && !P.song}
           className={`relative w-10 h-10 shrink-0 rounded-full bg-amber text-ink grid place-items-center active:scale-90 transition-transform disabled:opacity-25 ${P.playing ? 'pulse-ring' : ''}`}>
           {P.playing ? <span className="w-3 h-3 rounded-[2px] bg-ink" /> : <span className="ml-0.5 w-0 h-0 border-y-[7px] border-y-transparent border-l-[11px] border-l-ink" />}
@@ -396,6 +395,11 @@ export function PlayerBar() {
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5v11l8-5.5z" /><rect x="11.5" y="2.5" width="2" height="11" rx="0.6" /></svg>
           {P.queue.length > 0 && <span className="absolute top-0.5 right-0.5 text-[9px] tabular-nums text-amber">{P.queue.length}</span>}
         </button>
+  </>
+  return createPortal(<>
+    <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-ink/85 backdrop-blur-xl border-t border-white/[0.06]"><div className="max-w-xl mx-auto">
+      <div className="flex items-center gap-3 h-14 px-2 rounded-2xl bg-white/[0.05] border border-white/[0.06]">
+        {transport}
         <button className="flex-1 min-w-0 text-left" onClick={() => show('now')}>
           <div className="text-[14px] font-medium truncate">{title}</div>
           <div className="text-[11px] text-mute truncate">{kitLoading ? `Loading samples ${Math.round(P.kitProgress * 100)}%` : sub}</div>
@@ -404,7 +408,7 @@ export function PlayerBar() {
         <button aria-label="Browse rhythms" onClick={() => show(sg ? 'now' : 'browse')} className="w-10 h-10 shrink-0 grid place-items-center rounded-full bg-white/[0.08] text-xl active:scale-90">{sg ? '⌃' : '+'}</button>
       </div>
     </div></div>
-    <Sheet open={open} onClose={() => setOpen(false)} title={sg ? sg.raw.song : title} subtitle={sg ? `${sg.raw.artist} · ${sg.raw.drummer}` : undefined}
+    <Sheet open={open} onClose={() => setOpen(false)} lead={transport} title={sg ? sg.raw.song : title} subtitle={sg ? `${sg.raw.artist} · ${sg.raw.drummer}` : undefined}
       contentPull={tab !== 'sound'}
       head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} />{P.playing && sg?.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
         className="mt-3.5 h-7 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}<UpNext key={String(open)} /></div>}>

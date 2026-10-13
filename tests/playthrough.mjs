@@ -25,7 +25,7 @@ async function worker() {
       while (performance.now() - t0 < limit) { await new Promise(r => setTimeout(r, 50)); const sb = e.songBar; if (sb < prev && prev > 0) { wrapped = true; break } prev = sb; maxBar = Math.max(maxBar, sb) }
       e.stop()
       const tr = e.trace.filter(x => x.src === 'song'); const firstPass = []; for (const x of tr) { firstPass.push(x) }
-      const seen = new Set(); let dup = 0; for (const x of tr) { const k = x.voice + '@' + x.t.toFixed(6); if (seen.has(k)) dup++; seen.add(k) }
+      const seen = new Set(); let dup = 0; for (const x of tr) { const k = x.voice + ':' + (x.variant ?? '') + '@' + x.t.toFixed(6); if (seen.has(k)) dup++; seen.add(k) }
       return { maxBar, wrapped, events: tr.length, skipped: e.skipped, dup, ms: Math.round(performance.now() - t0) }
     }, { id, SCALE, sec: ex.sec })
     // events can include the first beat after wrapping; allow the hits of bar 0 extra
