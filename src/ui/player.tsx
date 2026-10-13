@@ -27,7 +27,7 @@ interface Ctx {
   toggle: () => Promise<void>; setBpm: (n: number) => void; setSwing: (n: number) => void; setKit: (id: string) => void
   subscribe: RhythmEngine['subscribe']
   song: Song | null; songBar: number; loopSection: number | null
-  loadSong: (s: Song, section?: number) => Promise<void>; queue: Song[]; enqueue: (s: Song) => void; unqueue: (i: number) => void; next: () => Promise<void>; playRange: (s: Song, start: number, end: number) => Promise<void>; jumpBar: (bar: number) => void; jumpSection: (i: number) => void; setLoopSection: (i: number | null) => void
+  loadSong: (s: Song, section?: number) => Promise<void>; queue: Song[]; enqueue: (s: Song) => void; unqueue: (i: number) => void; next: () => Promise<void>; shuffle: (pool: Song[]) => Promise<void>; playRange: (s: Song, start: number, end: number) => Promise<void>; jumpBar: (bar: number) => void; jumpSection: (i: number) => void; setLoopSection: (i: number | null) => void
 }
 export const sectionOf = (s: Song, bar: number) => Math.max(0, s.sections.findIndex(x => bar >= x.start && bar < x.start + x.bars))
 const C = createContext<Ctx>(null!)
@@ -91,6 +91,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const q = live.current?.queue ?? []; if (!q.length) return
       const [sg, ...rest] = q; setQueue(rest)
       await live.current!.loadSong(sg); await live.current!.toggle()
+    },
+    // play a random song now and queue 4 more (no repeats)
+    shuffle: async pool => {
+      const a = [...pool]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
+      const [first, ...rest] = a.slice(0, 5); if (!first) return
+      setQueue(rest); await live.current!.loadSong(first); if (!live.current!.playing) await live.current!.toggle()
     },
     loadSong: async (sg, sec) => {
       await loadSongBars(sg)

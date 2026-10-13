@@ -1,0 +1,20 @@
+// Library shuffle: plays a random song at once and queues 4 more; 'Click an artist' scrolls to the artist bubbles. Screenshot at 390 px.
+import { chromium } from 'playwright'
+const url = process.argv[2] ?? 'http://localhost:4173/rhythm/', shot = process.argv[3] ?? '/workspace/shuffle.png'
+const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] }); const p = await b.newPage({ viewport: { width: 390, height: 844 } })
+await p.goto(url + '?v=' + Date.now(), { waitUntil: 'networkidle' })
+const lib = p.getByRole('link', { name: /library/i }).first(); if (await lib.count()) await lib.click(); else await p.getByRole('button', { name: /library/i }).first().click()
+await p.waitForTimeout(800)
+await p.screenshot({ path: shot.replace('.png', '-library.png') })
+const rows = await p.evaluate(() => { const n = document.getElementById('artists'); const ys = new Set([...n.querySelectorAll('button')].filter(x => x.getBoundingClientRect().bottom <= n.getBoundingClientRect().bottom + 0.5).map(x => Math.round(x.getBoundingClientRect().top))); return ys.size })
+const sz = await p.evaluate(() => [...document.querySelectorAll('button')].filter(x => /^(Click an artist|or shuffle|Songs ·.*)$/.test(x.textContent.trim())).map(x => x.textContent.trim() + ' ' + Math.round(x.getBoundingClientRect().height) + 'px ' + getComputedStyle(x).fontSize))
+await p.getByRole('button', { name: 'Click an artist' }).click(); await p.waitForTimeout(900)
+const focus = await p.evaluate(() => document.activeElement?.closest('#artists') ? 'artist bubble focused' : 'no focus')
+await p.getByRole('button', { name: 'or shuffle' }).click(); await p.waitForTimeout(2500)
+const st = await p.evaluate(() => ({ playing: window.__pulseEngine?.isPlaying ?? window.__pulseEngine?.playing, t: window.__pulseEngine?.trace }))
+const nextLabel = await p.locator('button[aria-label^="Next song"]').first().getAttribute('aria-label')
+await p.click('button[aria-label="Browse rhythms"]'); await p.waitForTimeout(700); await p.click('button[aria-expanded]'); await p.waitForTimeout(400)
+const items = await p.locator('button[aria-label^="Remove "][aria-label$="from queue"]').count()
+await p.screenshot({ path: shot })
+console.log(JSON.stringify({ artistRowsVisible: rows, sizes: sz, focus, queued: items, nextLabel, engine: st.playing }))
+await b.close()

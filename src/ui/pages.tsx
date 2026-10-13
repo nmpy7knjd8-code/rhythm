@@ -139,10 +139,16 @@ function Songs() {
   const [allArtists, setAllArtists] = useState(false)
   const [picked, setPicked] = useState<string | null>(null)
   const slug = (a: string) => 'artist-' + a.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+  const P = usePlayer()
+  const pickArtist = () => { const n = document.getElementById('artists'); n?.scrollIntoView({ behavior: 'smooth', block: 'center' }); n?.querySelector('button')?.focus({ preventScroll: true }) }
   return <div className="rise">
-    <nav aria-label="Artists" className={`mx-auto max-w-md flex flex-wrap justify-center gap-1 overflow-hidden ${allArtists ? '' : 'max-h-[121px]'}`}>
+    <div className="-mt-8 mb-8 flex justify-center gap-2">
+      <button onClick={pickArtist} className="h-9 px-5 rounded-full text-sm bg-white/[0.05] text-bone/80">Click an artist</button>
+      <button onClick={() => void P.shuffle(list.filter(isRealSong))} className="h-9 px-5 rounded-full text-sm bg-amber text-ink">or shuffle</button>
+    </div>
+    <nav id="artists" aria-label="Artists" className={`scroll-mt-24 mx-auto max-w-md flex flex-wrap justify-center gap-1 overflow-hidden ${allArtists ? '' : 'max-h-[108px]'}`}>
       {artists.map(a => <button key={a} onClick={() => { setPicked(a); scrollToArtist(slug(a)) }}
-        className={`h-[21px] px-2 rounded-full text-[10.5px] leading-none border transition-colors ${picked === a ? 'border-amber/60 text-amber bg-amber/[0.08]' : 'border-white/[0.07] bg-white/[0.035] text-bone/70 hover:text-amber hover:border-amber/40'}`}>{a}</button>)}
+        className={`h-6 px-2.5 rounded-full text-[12px] leading-none border transition-colors ${picked === a ? 'border-amber/60 text-amber bg-amber/[0.08]' : 'border-white/[0.07] bg-white/[0.035] text-bone/70 hover:text-amber hover:border-amber/40'}`}>{a}</button>)}
     </nav>
     <div className="mt-1 mb-5 text-center"><button onClick={() => setAllArtists(v => !v)} className="text-[11px] text-mute hover:text-amber">{allArtists ? 'Fewer' : 'More artists'}</button></div>
     <RequestSong />
