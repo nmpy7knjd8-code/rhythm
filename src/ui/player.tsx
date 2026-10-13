@@ -354,8 +354,8 @@ function Sheet({ open, onClose, children, title, subtitle, head, contentPull = t
         <div className="shrink-0 touch-none select-none cursor-grab rounded-t-[24px] border-b border-white/[0.06]"
           onTouchStart={e => start(e.touches[0].clientY, false)} onTouchMove={e => move(e.touches[0].clientY)} onTouchEnd={end} onTouchCancel={end}
           onPointerDown={e => { if (e.pointerType === 'mouse' && !(e.target as HTMLElement).closest('button')) { start(e.clientY, false); const mm = (ev: PointerEvent) => move(ev.clientY); const mu = () => { end(); removeEventListener('pointermove', mm); removeEventListener('pointerup', mu) }; addEventListener('pointermove', mm); addEventListener('pointerup', mu) } }}>
-          <div className="relative flex items-center h-14 pl-4 pr-1">
-            <span className="absolute left-1/2 top-2 -translate-x-1/2 w-10 h-1.5 rounded-full bg-white/30" />
+          <div className="pt-2 pb-0.5 flex justify-center"><span className="w-10 h-1.5 rounded-full bg-white/30" /></div>
+          <div className="relative flex items-center h-12 pl-4 pr-1">
             <div className="min-w-0 pr-2"><div className="text-[14px] font-medium truncate">{title || 'Player'}</div>{subtitle && <div className="text-[11px] text-mute truncate">{subtitle}</div>}</div>
             <button aria-label="Close player" onClick={onClose} className="ml-auto h-12 pl-4 pr-3 flex items-center gap-1.5 rounded-full text-sm text-bone/85 active:scale-95 shrink-0">
               Close <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
@@ -511,11 +511,16 @@ function UpNext() {
   const P = usePlayer(); const [open, setOpen] = useState(false)
   if (!P.queue.length) return null
   return <div className="mt-2 w-full text-left">
-    <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="w-full h-9 flex items-center gap-2 text-[12px] text-mute">
+    <div className="flex items-center gap-1">
+    <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="flex-1 min-w-0 h-9 flex items-center gap-2 text-[12px] text-mute">
       <span className="uppercase tracking-wider text-[10px]">Up next</span>
       <span className="flex-1 min-w-0 truncate text-left text-bone/70">{P.queue[0].raw.song}{P.queue.length > 1 ? ` +${P.queue.length - 1}` : ''}</span>
       <span className={`transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
     </button>
+    <button aria-label="Play next song" onClick={() => void P.next()} className="shrink-0 h-9 pl-3 pr-3.5 flex items-center gap-1.5 rounded-full text-[12px] text-bone/85 bg-white/[0.06] active:scale-95">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5v11l8-5.5z" /><rect x="11.5" y="2.5" width="2" height="11" rx="0.6" /></svg>Next
+    </button>
+    </div>
     {open && <ol>{P.queue.map((q, i) => <li key={i} className="flex items-center gap-2 h-11 border-t border-white/[0.05]">
       <span className="w-4 text-[11px] text-mute tabular-nums">{i + 1}</span>
       <span className="flex-1 min-w-0 truncate text-sm">{q.raw.song}<span className="text-mute"> · {q.raw.artist}</span></span>
