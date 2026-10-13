@@ -35,20 +35,20 @@ export async function preloadKit(kit: Kit, onProgress?: (done: number, total: nu
 function makeSynth(kv: KitVoice, g: Tone.Gain): Inst {
   if (kv.kind === 'membrane') {
     const s = new Tone.MembraneSynth({ pitchDecay: kv.pitchDecay ?? 0.05, octaves: 4, envelope: { attack: 0.001, decay: (kv.decay ?? 0.3), sustain: 0, release: 0.05 } }).connect(g)
-    return { trigger: (t, v, r = 1) => s.triggerAttackRelease((kv.pitch ?? 60) * r, (kv.decay ?? 0.3), t, v), dispose: () => s.dispose() }
+    return { trigger: (t, v0, r = 1, gm = 1) => { const v = v0 * gm; s.triggerAttackRelease((kv.pitch ?? 60) * r, (kv.decay ?? 0.3), t, v) }, dispose: () => s.dispose() }
   }
   if (kv.kind === 'noise') {
     const f = new Tone.Filter(kv.tone ?? 6000, kv.tone && kv.tone > 4000 ? 'highpass' : 'bandpass').connect(g)
     const s = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: (kv.decay ?? 0.3), sustain: 0 } }).connect(f)
     const body = kv.pitch ? new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 1.5, envelope: { attack: 0.001, decay: (kv.decay ?? 0.3) * 0.6, sustain: 0 } }).connect(g) : null
     return {
-      trigger: (t, v, r = 1) => { s.triggerAttackRelease((kv.decay ?? 0.3), t, v); body?.triggerAttackRelease(kv.pitch! * r, (kv.decay ?? 0.3) * 0.6, t, v * 0.6) },
+      trigger: (t, v0, r = 1, gm = 1) => { const v = v0 * gm; s.triggerAttackRelease((kv.decay ?? 0.3), t, v); body?.triggerAttackRelease(kv.pitch! * r, (kv.decay ?? 0.3) * 0.6, t, v * 0.6) },
       choke: t => s.triggerRelease(t),
       dispose: () => { s.dispose(); f.dispose(); body?.dispose() },
     }
   }
   const s = new Tone.MetalSynth({ harmonicity: kv.tone ?? 5.1, modulationIndex: 16, resonance: 3000, octaves: 1.2, envelope: { attack: 0.001, decay: (kv.decay ?? 0.3), release: 0.05 } }).connect(g)
-  return { trigger: (t, v, r = 1) => s.triggerAttackRelease((kv.pitch ?? 300) * r, (kv.decay ?? 0.3), t, v), choke: t => s.triggerRelease(t), dispose: () => s.dispose() }
+  return { trigger: (t, v0, r = 1, gm = 1) => { const v = v0 * gm; s.triggerAttackRelease((kv.pitch ?? 300) * r, (kv.decay ?? 0.3), t, v) }, choke: t => s.triggerRelease(t), dispose: () => s.dispose() }
 }
 
 function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false): Inst {
@@ -287,7 +287,10 @@ export class RhythmEngine {
     const isTom = voice === 'tomHi' || voice === 'tomMid' || voice === 'tomLo'
     const rate = (vr?.rate ?? 1) * ((isSn ? sp?.snare : isTom ? sp?.toms : isCr || voice === 'ride' ? sp?.cym : 1) ?? 1)
     const gate = (isSn ? sp?.snareGate : isTom ? sp?.tomGate : 0) ?? 0
-    inst.trigger(t, vel, rate, isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1, gate, tip)
+    // crashes/china: -3 dB overall and a steep velocity curve (gain ~ v^2, so half velocity is -12 dB below full), with the
+    // layer picked from v^1.5 so soft hits use the softer samples
+    const crashy = isCr || voice === 'china', cv = crashy ? Math.pow(Math.max(0, vel), 1.5) : vel, cg = crashy ? 0.708 * vel * vel : 1
+    inst.trigger(t, cv, rate, (isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1) * cg, gate, tip)
   }
   /** Tab grace notes for this step: soft strokes just before the onset, 18-35 ms apart and never closer than 40% of the gap to that drum's previous note. */
   private playGraces(ch: string, p: Pattern, step: number, t: number, stepSec: number, shift: (frac: number) => number) {
