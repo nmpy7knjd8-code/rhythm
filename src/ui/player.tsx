@@ -143,6 +143,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     subscribe: l => e().subscribe(l),
   }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue])
   live.current = value
+  // Lock screen / Control Center: song title and artist, play/pause and next (the queue)
+  useEffect(() => {
+    const ms = navigator.mediaSession; if (!ms) return
+    ms.metadata = new MediaMetadata({ title: song?.raw.song ?? 'Pulse', artist: song ? `${song.raw.artist} · ${song.raw.drummer}` : 'Rhythm practice',
+      artwork: [{ src: `${import.meta.env.BASE_URL}icons/icon-512.png`, sizes: '512x512', type: 'image/png' }] })
+    ms.playbackState = playing ? 'playing' : 'paused'
+    ms.setActionHandler('play', () => { if (!live.current?.playing) void live.current?.toggle() })
+    ms.setActionHandler('pause', () => { if (live.current?.playing) void live.current?.toggle() })
+    try { ms.setActionHandler('nexttrack', queue.length ? () => { void live.current?.next() } : null) } catch { /* unsupported */ }
+  }, [song, playing, queue.length])
   useEffect(() => { (window as unknown as { __pulseLoadSong?: (id: string, sec?: number) => Promise<void> }).__pulseLoadSong = async (id, sec) => { const sg = SONGS.find(x => x.raw.id === id); if (sg) await value.loadSong(sg, sec) } }, [value])
   useEffect(() => { (window as unknown as { __pulseSetKit?: (id: string) => void }).__pulseSetKit = value.setKit }, [value]) // used by tests
   useEffect(() => { (window as unknown as { __pulseLoadPattern?: (id: string) => boolean }).__pulseLoadPattern = id => { const pt = Object.values(PATTERNS).find(x => x.id === id || x.id.endsWith('-' + id)); if (pt) value.load(pt, false); return !!pt } }, [value]) // used by tests

@@ -364,8 +364,26 @@ export class RhythmEngine {
 
   private inFill(bar: number) { return !!this.fill && this.fillEvery > 0 && !this.arrangement && bar % this.fillEvery === this.fillEvery - 1 }
 
+  /** iOS Home Screen app: WebAudio normally stops when the app is backgrounded. Route the mix into a MediaStream played by an
+   *  <audio playsinline> element (iOS treats that as media playback) and ask for the 'playback' audio session. Only on iOS, so other
+   *  platforms keep the direct, lowest-latency output. Timing is unchanged (all hits keep their relative times); iOS may still suspend it. */
+  private bgEl: HTMLAudioElement | null = null
+  private backgroundAudio() {
+    const nav = navigator as Navigator & { audioSession?: { type: string } }
+    try { if (nav.audioSession) nav.audioSession.type = 'playback' } catch { /* unsupported */ }
+    const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    if (!ios || this.bgEl) { void this.bgEl?.play().catch(() => {}); return }
+    const raw = Tone.getContext().rawContext as AudioContext
+    if (!raw.createMediaStreamDestination) return
+    const dest = raw.createMediaStreamDestination()
+    this.bus.disconnect(); Tone.connect(this.bus, dest)
+    const el = document.createElement('audio'); el.setAttribute('playsinline', ''); el.srcObject = dest.stream; this.bgEl = el
+    void el.play().catch(() => { this.bus.disconnect(); this.bus.toDestination(); this.bgEl = null }) // refused: back to the normal output, never silent
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && this.playing) { void Tone.getContext().resume(); void el.play().catch(() => {}) } })
+  }
   async start() {
     await Tone.start()
+    this.backgroundAudio()
     const tr = Tone.getTransport()
     if (this.eventId !== null) return
     this.tick = 0; this.bar = 0
