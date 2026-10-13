@@ -8,7 +8,9 @@
   "bluemondo",
   "nautilus",
   "islandmagic",
-  "hotforteacher"
+  "hotforteacher",
+  "rosanna",
+  "jump"
  ],
  "meta": {
   "heaviestmatter": {
@@ -296,9 +298,6 @@
   "byob": {
    "bpm": 205,
    "bpmNote": "Shown at the fast verse tempo (about 205 in the tab). The choruses drop to about 101, which is what tempo databases list for the whole track."
-  },
-  "rosanna": {
-   "drift": 4
   }
  },
  "pinnedFiles": [
@@ -313,7 +312,6 @@
  ],
  "tagShuffle": true,
  "shuffleBars": {
-  "rosanna": 119,
   "mitchell": 183,
   "moon": 183,
   "purdie": 177,

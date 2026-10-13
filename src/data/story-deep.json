@@ -155,13 +155,6 @@
    ],
    "examples": [
     {
-     "songId": "rosanna",
-     "barStart": 1,
-     "barEnd": 7,
-     "label": "Rosanna: Intro",
-     "note": "Drums alone. Jeff Porcaro's half-time shuffle sets triplet time, ghost notes and backbeat on 3 before the band enters."
-    },
-    {
      "songId": "mobydick",
      "barStart": 34,
      "barEnd": 78,
@@ -633,13 +626,6 @@
    ],
    "examples": [
     {
-     "songId": "rosanna",
-     "barStart": 20,
-     "barEnd": 26,
-     "label": "Rosanna: Pre-chorus",
-     "note": "The section ends in a 2/4 bar, a shortened bar that pulls the chorus in early."
-    },
-    {
      "songId": "lateralus",
      "barStart": 35,
      "barEnd": 43,
@@ -797,57 +783,6 @@
        "text": "Recorded in the Headley Grange lobby with two Beyerdynamic M 160 microphones above the stairwell, Helios compressors set to 'breathe' and a Binson Echorec delay.",
        "sources": [
         "levee"
-       ],
-       "confidence": "high"
-      }
-     ]
-    },
-    {
-     "songId": "rosanna",
-     "title": "Rosanna · Toto (1982)",
-     "arc": "A groove whose detail does the talking.",
-     "beats": [
-      {
-       "songId": "rosanna",
-       "barStart": 1,
-       "barEnd": 7,
-       "label": "Intro",
-       "note": "Drums alone. Jeff Porcaro's half-time shuffle sets triplet time, ghost notes and backbeat on 3 before the band enters."
-      },
-      {
-       "songId": "rosanna",
-       "barStart": 8,
-       "barEnd": 19,
-       "label": "Verse",
-       "note": "Shuffle under the vocal; the ghost notes keep it moving at low volume."
-      },
-      {
-       "songId": "rosanna",
-       "barStart": 20,
-       "barEnd": 26,
-       "label": "Pre-chorus",
-       "note": "The section ends in a 2/4 bar, a shortened bar that pulls the chorus in early."
-      },
-      {
-       "songId": "rosanna",
-       "barStart": 27,
-       "barEnd": 35,
-       "label": "Chorus",
-       "note": "Arrival, again cut short by a 2/4 bar, so the chorus never settles."
-      },
-      {
-       "songId": "rosanna",
-       "barStart": 101,
-       "barEnd": 119,
-       "label": "Outro jam",
-       "note": "Unplanned ending: the song was meant to stop, but Porcaro kept playing."
-      }
-     ],
-     "notes": [
-      {
-       "text": "The groove is described as a half-time shuffle drawing on Bernard Purdie's shuffle, Bonham's 'Fool in the Rain' and the Bo Diddley beat.",
-       "sources": [
-        "rosanna"
        ],
        "confidence": "high"
       }

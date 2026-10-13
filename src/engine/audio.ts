@@ -8,10 +8,20 @@ type Inst = { trigger: (t: number, v: number, r?: number, gm?: number, gate?: nu
 let SAMPLE_BASE = ''
 export const setSampleBase = (b: string) => { SAMPLE_BASE = b }
 const buffers = new Map<string, Tone.ToneAudioBuffer>()
+/** Where each sample's attack actually starts (s). Samples differ by up to ~9 ms of lead-in (and MP3 decoders add their own padding),
+ *  so round-robin and layer changes made equal notes land unevenly. Playback starts every file at its own attack, 0.5 ms early. */
+const onsets = new Map<string, number>()
+export const sampleAlign = { on: true } // test hook: compare against unaligned playback
+function onsetOf(b: Tone.ToneAudioBuffer) {
+  const d = b.getChannelData(0); let pk = 0
+  for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > pk) pk = a }
+  for (let i = 0; i < d.length; i++) if (Math.abs(d[i]) > 0.1 * pk) return Math.max(0, i / b.sampleRate - 0.0005)
+  return 0
+}
 const loading = new Map<string, Promise<void>>()
 function loadFile(f: string): Promise<void> {
   if (!loading.has(f)) loading.set(f, new Promise<void>(res => {
-    const b = new Tone.ToneAudioBuffer(SAMPLE_BASE + f, () => { buffers.set(f, b); res() }, () => res())
+    const b = new Tone.ToneAudioBuffer(SAMPLE_BASE + f, () => { buffers.set(f, b); onsets.set(f, onsetOf(b)); res() }, () => res())
   }))
   return loading.get(f)!
 }
@@ -79,7 +89,7 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false): Inst {
       // a crash/china/open hat that is still ringing doesn't give a fresh sharp transient: soften the attack of quick repeats (2-8 ms fade-in from the onset)
       if (kv.eq?.attack) src.fadeIn = kv.eq.attack
       if (washy) { const dt = t - lastT; if (dt > 0 && dt < 0.6) src.fadeIn = Math.max(kv.eq?.attack ?? 0, 0.002 + 0.006 * (1 - dt / 0.6)); lastT = t }
-      src.start(t, 0, undefined, (0.55 + 0.45 * Math.min(1, rel)) * gm)
+      src.start(t, sampleAlign.on ? onsets.get(f) ?? 0 : 0, undefined, (0.55 + 0.45 * Math.min(1, rel)) * gm)
       if (gate > 0) { src.fadeOut = 0.03; src.stop(t + gate) } // gated / dampened drum
     },
     choke: t => { live.forEach(s => { try { s.fadeOut = 0.06; s.stop(t) } catch { /* already stopped */ } }); fb?.choke?.(t) }, // ~60 ms damping, like a foot closing the hat
@@ -101,7 +111,7 @@ const FILL_ID = 'fill', FX_ID = 'fx', SONG_ID = 'song'
 /** Timing drift for inner roll strokes only (the on-step strokes stay exactly on the grid). Below 12 strokes/s: the old ±0.8 ms.
  *  Faster: ±2-4 ms scaled by speed, from slow overlapping sines over the song position (smooth, non-repeating, not white noise),
  *  plus a small left/right hand unevenness. Clamped to 20% of the stroke gap so strokes never reorder. */
-const rollJitter = (bar: number, step: number, frac: number, stroke = 1, j = 0) => {
+export const rollJitter = (bar: number, step: number, frac: number, stroke = 1, j = 0) => {
   const rate = 1 / stroke
   if (rate < 12) { const x = Math.sin((bar * 131 + step * 17 + frac * 7) * 12.9898) * 43758.5453; return ((x - Math.floor(x)) * 2 - 1) * 0.0008 }
   const amp = Math.min(0.004, 0.002 + (rate - 12) / 12 * 0.002), u = bar * 4 + step + frac
@@ -292,7 +302,7 @@ export class RhythmEngine {
   /** Off-grid (sub-step) hits, grouped per drum. Only a real same-drum run (2+ off-grid strokes in the step, or one next to an
    *  on-step stroke of the same drum) gets roll shaping: softer inner strokes, hand alternation, crescendo and the small inner-stroke
    *  timing drift. A lone off-grid note (a syncopated 32nd kick, a triplet note) plays exactly, at its written velocity. */
-  private playSubs(ch: string, p: Pattern, step: number, t: number, stepSec: number, bar: number, beat: number, tps: number, shift: (frac: number) => number, fl: number) {
+  private playSubs(ch: string, p: Pattern, step: number, t: number, stepSec: number, bar: number, beat: number, tps: number, shift: (frac: number) => number, _fl: number) {
     const subs = subHitsAt(p, step); if (!subs.length) return
     const onStep = new Set(hitsAt(p, step).map(h => h.voice)), by = new Map<Voice, typeof subs>()
     for (const h of subs) { const l = by.get(h.voice) ?? []; l.push(h); by.set(h.voice, l) }
@@ -305,8 +315,7 @@ export class RhythmEngine {
         const prev = j ? l[j - 1].frac : lead ? 0 : h.frac - 1 / (l.length + 1), stroke = Math.max(0.001, (h.frac - prev) * stepSec)
         const idx = j + (lead ? 1 : 0) // stroke number in the run (0 = first)
         this.hz = { bar, pos: (step + h.frac) * tps, beat, sub: idx, n: l.length + (lead ? 1 : 0), stroke }
-        const inner = idx > 0 // the run's first stroke stays exact
-        this.play(ch, voice, at + (inner ? fl * rollJitter(bar, step, h.frac, stroke, idx) : 0), h.velocity, 0, stepSec) // dynamics: hand alternation in humanVel, no flat cut
+        this.play(ch, voice, at, h.velocity, 0, stepSec) // dynamics: hand alternation in humanVel, no flat cut
       })
     }
   }

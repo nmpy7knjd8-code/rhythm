@@ -96,7 +96,7 @@ export const THEORY: Concept[] = [
     body: 'Ghost notes are very soft strokes, usually on the snare, between the main beats. They are felt more than heard: they fill in the subdivision and make a groove breathe. The key is contrast. The backbeat stays loud and the ghosts stay barely audible, played from a low stick height rather than by "trying to be quiet".',
     points: ['Think in two heights: high for accents, an inch or two off the head for ghosts.', 'Ghosts often sit on the "e" and "a" of the beat, or on the middle triplet partial in a shuffle.'],
     listen: 'A plain backbeat, then the same groove with ghost notes. Mute the ghost layer to hear what it adds.',
-    songs: [{ id: 'funkydrummer', note: 'the classic ghost-note funk groove' }, { id: 'rosanna', note: 'ghosted triplets in a half-time shuffle' }, { id: 'purdie', note: 'Purdie\'s ghosted shuffle on Home at Last' }],
+    songs: [{ id: 'funkydrummer', note: 'the classic ghost-note funk groove' }, { id: 'purdie', note: 'Purdie\'s ghosted shuffle on Home at Last' }],
     patterns: [
       P('gh-base', 'Backbeat groove', 16, 4, 94, { low: 'X.....x...X.....', back: '....X.......X...', tick: 'x.x.x.x.x.x.x.x.' }),
       P('gh-layer', 'Ghost-note layer (snare)', 16, 4, 94, { back: '.g.....g.g....g.' }),
@@ -136,7 +136,7 @@ export const THEORY: Concept[] = [
     count: 'Swing eighths: 1 (trip) let 2 (trip) let: say the triplet, play only the first and last.',
     points: ['"Microtiming" means small deliberate deviations, such as a laid-back snare. Whether it adds groove is debated: Davies et al. (2013, Music Perception) found added deviations generally lowered groove ratings, and Senn et al. (2016) found quantised and original expert timing rated about equally.', 'Pulse plays each style with its own natural swing amount, and songs exactly as transcribed.'],
     listen: 'Straight eighths, then triplet swing, then a shuffle and a half-time shuffle.',
-    songs: [{ id: 'singsing', note: 'big-band swing' }, { id: 'rosanna', note: 'the half-time shuffle' }, { id: 'fool', note: 'Bonham\'s half-time shuffle' }, { id: 'purdie', note: 'the Purdie shuffle' }],
+    songs: [{ id: 'singsing', note: 'big-band swing' }, { id: 'fool', note: 'Bonham\'s half-time shuffle' }, { id: 'purdie', note: 'the Purdie shuffle' }],
     patterns: [
       P('sw-straight', 'Straight eighths (1:1)', 8, 2, 100, { tick: 'xxxxxxxx', low: 'X...X...', back: '..X...X.' }),
       P('sw-trip', 'Triplet swing eighths (2:1)', 12, 3, 100, { tick: 'x.xx.xx.xx.x', low: 'X.....X.....', back: '...X.....X..' }),
@@ -147,7 +147,7 @@ export const THEORY: Concept[] = [
   { id: 'halftime', title: 'Half-time and double-time feel',
     body: 'Half-time and double-time change where the backbeat falls while the tempo stays put. In half-time the snare moves from 2 and 4 to beat 3 only, so the groove feels twice as slow. In double-time it lands on every "&", so it feels twice as fast. The band\'s tempo, the hi-hat and the chords do not have to change at all.',
     listen: 'The same tempo, three feels. Swap between them.',
-    songs: [{ id: 'africa', note: 'Porcaro described the groove as half-time: backbeat on 3' }, { id: 'rosanna', note: 'a half-time shuffle' }],
+    songs: [{ id: 'africa', note: 'Porcaro described the groove as half-time: backbeat on 3' }],
     patterns: [
       P('ht-normal', 'Normal: snare on 2 and 4', 16, 4, 100, { tick: 'x.x.x.x.x.x.x.x.', low: 'X.......X.......', back: '....X.......X...' }),
       P('ht-half', 'Half-time: snare on 3', 16, 4, 100, { tick: 'x.x.x.x.x.x.x.x.', low: 'X.........X.....', back: '........X.......' }),

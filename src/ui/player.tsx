@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { RhythmEngine, preloadKit, setSampleBase } from '../engine/audio'
+import { RhythmEngine, preloadKit, setSampleBase, sampleAlign } from '../engine/audio'
 import type { Arrangement, Fill, Layer, Pattern, Voice } from '../engine/types'
 import { VOICES } from '../engine/types'
 import { KitView } from './kitview'
@@ -62,7 +62,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       eng.current = new RhythmEngine(); eng.current.setKit(KITS[0]); eng.current.setFeel(FEEL); eng.current.onSection = setSection
       eng.current.onBar = (_b, f) => setInFill(f); eng.current.onSongBar = setSongBar
       eng.current.onSongEnd = () => { if (live.current?.queue.length) void live.current.next() }
-      ;(window as unknown as { __pulseEngine?: RhythmEngine }).__pulseEngine = eng.current // used by the timing test
+      ;(window as unknown as { __pulseEngine?: RhythmEngine; __pulseAlign?: typeof sampleAlign }).__pulseEngine = eng.current; (window as unknown as { __pulseAlign?: typeof sampleAlign }).__pulseAlign = sampleAlign // used by the timing test
     }
     return eng.current
   }, [])

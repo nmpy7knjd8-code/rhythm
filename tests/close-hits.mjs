@@ -1,7 +1,7 @@
 // Renders songs in the real engine and flags any voice with two hits closer than 20 ms (grace notes counted).
 import { chromium } from 'playwright'
 const url = process.argv[2] ?? 'http://localhost:4173/rhythm/'
-const ids = (process.argv[3] ?? 'moon,cometogether,tomsawyer,levee,rosanna,yyz,schism,amen').split(',')
+const ids = (process.argv[3] ?? 'moon,cometogether,tomsawyer,levee,purdie,yyz,schism,amen').split(',')
 const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] })
 const p = await b.newPage(); await p.goto(url, { waitUntil: 'networkidle' })
 await p.getByRole('button', { name: 'Browse rhythms' }).click(); await p.waitForTimeout(300)
