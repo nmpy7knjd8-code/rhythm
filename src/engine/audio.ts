@@ -314,9 +314,9 @@ export class RhythmEngine {
     const isTom = voice === 'tomHi' || voice === 'tomMid' || voice === 'tomLo'
     const rate = (vr?.rate ?? 1) * ((isSn ? sp?.snare : isTom ? sp?.toms : isCr || voice === 'ride' ? sp?.cym : 1) ?? 1)
     const gate = (isSn ? sp?.snareGate : isTom ? sp?.tomGate : 0) ?? 0
-    // crashes/china: -3 dB overall and a steep velocity curve (gain ~ v^2, so half velocity is -12 dB below full), with the
+    // crashes/china: -3 dB overall and a steep velocity curve (gain ~ v^1.5, so half velocity is -9 dB below full), with the
     // layer picked from v^1.5 so soft hits use the softer samples
-    const crashy = isCr || voice === 'china', cv = crashy ? Math.pow(Math.max(0, vel), 1.5) : vel, cg = crashy ? 0.708 * vel * vel : 1
+    const crashy = isCr || voice === 'china', cv = crashy ? Math.pow(Math.max(0, vel), 1.5) : vel, cg = crashy ? 0.708 * Math.pow(Math.max(0, vel), 1.5) : 1
     inst.trigger(t, cv, rate, (isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1) * cg, gate, tip)
   }
   /** Tab grace notes for this step: soft strokes just before the onset, 18-35 ms apart and never closer than 40% of the gap to that drum's previous note. */
