@@ -2,7 +2,7 @@ import * as Tone from 'tone'
 import type { Kit, KitVoice, Layer, Voice, Arrangement, Pattern, Fill } from './types'
 import { TICKS_PER_BAR, hitsAt, stepForTick, swingOffset, audibleLayers, ticksPerStep , subHitsAt, VARIANTS, fracOf } from './pattern'
 
-type Inst = { trigger: (t: number, v: number, r?: number, gm?: number, gate?: number, tip?: boolean) => void; choke?: (t: number) => void; dispose: () => void }
+type Inst = { trigger: (t: number, v: number, r?: number, gm?: number, gate?: number, tip?: boolean, tier?: number) => void; choke?: (t: number) => void; dispose: () => void }
 
 // ---- sample bank: lazy, cached, shared across kits/layers ----
 let SAMPLE_BASE = ''
@@ -35,6 +35,12 @@ function levelOf(b: Tone.ToneAudioBuffer, on: number) {
   for (let i = 0; i < n; i++) e += d[i0 + i] * d[i0 + i]
   return n > 0 ? Math.sqrt(e / n) : 0
 }
+/** Snare dynamics tiers (same on every kit): 2 = true ghost note (flagged ghost in the tab: written velocity <= 0.35),
+ *  1 = soft but real hit (0.35-0.6), 0 = full hit (unchanged). Levels are dB below a backbeat ('7', velocity 0.78). */
+export const BACKBEAT_V = 7 / 9
+export const TIER_DB = [0, -10, -20]
+const TIER_V = [1, 0.5, 0.33] // nominal velocity of each tier; the humanized velocity only adds its small per-hit variation
+export const snareTier = (v: number) => v <= 0.35 + 1e-6 ? 2 : v < 0.6 - 1e-6 ? 1 : 0
 const loading = new Map<string, Promise<void>>()
 function loadFile(f: string): Promise<void> {
   if (!loading.has(f)) loading.set(f, new Promise<void>(res => {
@@ -85,13 +91,14 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false, leveled 
   const live = new Set<Tone.ToneBufferSource>()
   let lastT = -9
   return {
-    trigger: (t, v, r = 1, gm = 1, gate = 0, tip = false) => {
+    trigger: (t, v, r = 1, gm = 1, gate = 0, tip = false, tier = 0) => {
       let li = layers.findIndex(l => v <= l.vel + 1e-6); if (li < 0) li = layers.length - 1
+      if (tier === 2) li = 0 // true ghost: always the softest layer
       const lo = li ? layers[li - 1].vel : 0
       const rel = (v - lo) / Math.max(0.01, layers[li].vel - lo) // position within layer
       // near a layer boundary, borrow from the neighbouring layer 30% of the time (gain stays matched to v)
       let pick = li
-      if (rel > 0.85 && li < layers.length - 1 && rnd() < 0.3) pick = li + 1
+      if (tier === 2) { /* ghosts never borrow a louder layer */ } else if (rel > 0.85 && li < layers.length - 1 && rnd() < 0.3) pick = li + 1
       else if (rel < 0.15 && li > 0 && rnd() < 0.3) pick = li - 1
       // random round-robin, never the same file twice in a row
       const files = layers[pick].files.filter(x => x !== last).length ? layers[pick].files.filter(x => x !== last) : layers[pick].files
@@ -115,6 +122,14 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false, leveled 
         const ref = avg(layers[layers.length - 1].files), soft = avg(layers[0].files), lv = levels.get(f) ?? 0
         if (layers.length > 1 && ref > 0 && soft >= 0.7 * ref && lv > 0) vg = (0.2 + 0.8 * Math.pow(Math.min(1, Math.max(0, v)), 1.5)) * Math.max(0.5, Math.min(1.5, ref / lv))
         if (sampleAlign.on) lead = Math.min(0.008, Math.max(0, (rises.get(f) ?? 0) - 0.001)) / Math.max(0.5, src.playbackRate.value)
+      }
+      // snare tiers: a fixed level below the backbeat (a '7' hit: its layer's average attack level at that velocity), whatever the files' own loudness
+      if (tier) {
+        const avg = (fs: string[]) => { const a = fs.map(x => levels.get(x) ?? 0).filter(x => x > 0); return a.length ? a.reduce((p, q) => p + q, 0) / a.length : 0 }
+        let bi = layers.findIndex(l => BACKBEAT_V <= l.vel + 1e-6); if (bi < 0) bi = layers.length - 1
+        const blo = bi ? layers[bi - 1].vel : 0, bvg = 0.55 + 0.45 * Math.min(1, (BACKBEAT_V - blo) / Math.max(0.01, layers[bi].vel - blo))
+        const ref = avg(layers[bi].files) * bvg, lv = levels.get(f) ?? 0
+        if (ref > 0 && lv > 0) vg = 10 ** (TIER_DB[tier] / 20) * (ref / lv) * (v / TIER_V[tier])
       }
       src.start(Math.max(0, t - lead), sampleAlign.on ? onsets.get(f) ?? 0 : 0, undefined, vg * gm)
       if (gate > 0) { src.fadeOut = 0.03; src.stop(t + gate) } // gated / dampened drum
@@ -285,7 +300,7 @@ export class RhythmEngine {
   }
 
   /** Optional event trace for timing tests: every scheduled hit's audio-context time. */
-  trace: { t: number; src: string; voice: Voice; bar: number; variant?: string }[] | null = null
+  trace: { t: number; src: string; voice: Voice; bar: number; variant?: string; tier?: number }[] | null = null
   /** Bar length in ticks follows the first layer's own bar (e.g. 42 ticks for 7/8), so fills land on its bar lines. */
   private barTicks(): number {
     const p = this.layers[0]?.pattern; if (!p) return TICKS_PER_BAR
@@ -294,14 +309,14 @@ export class RhythmEngine {
   }
   private play(channelId: string, voice: Voice, t: number, vel: number, graces = 0, stepSec = 0.1, variant?: string) {
     if (this.late || !isFinite(t)) { this.skipped++; return }
-    this.trace?.push({ t, src: channelId, voice, bar: this.bar, variant })
+    this.trace?.push({ t, src: channelId, voice, bar: this.bar, variant, tier: voice === 'back' ? snareTier(vel) : undefined })
     const vr = variant ? VARIANTS[variant] : undefined
     if (vr?.voice) voice = vr.voice
     vel = Math.min(1, vel * (vr?.gain ?? 1))
     const inst = this.inst(channelId, voice); if (!inst) return
     if (hitBus.size) { const v0 = voice, vv = vel; Tone.getDraw().schedule(() => hitBus.forEach(f => f(v0, vv, variant)), t) }
     if (voice === 'tick' || voice === 'pedal') this.channels.get(channelId)?.insts.open?.choke?.(t)
-    const hz = this.hz, fl = this.feel
+    const hz = this.hz, fl = this.feel, vel0 = vel
     if (hz && fl > 0) vel = this.humanVel(voice, vel, hz, fl)
     const hh = hz ? hash(hz.bar, hz.pos, 7) : 0
     // flam/drag graces sit before the stroke (the main onset never moves): 18-35 ms apart, 0.25-0.4 of the stroke
@@ -317,7 +332,9 @@ export class RhythmEngine {
     // crashes/china: -3 dB overall and a steep velocity curve (gain ~ v^1.5, so half velocity is -9 dB below full), with the
     // layer picked from v^1.5 so soft hits use the softer samples
     const crashy = isCr || voice === 'china', cv = crashy ? Math.pow(Math.max(0, vel), 1.5) : vel, cg = crashy ? 0.708 * Math.pow(Math.max(0, vel), 1.5) : 1
-    inst.trigger(t, cv, rate, (isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1) * cg, gate, tip)
+    const tier = isSn ? snareTier(vel0) : 0, kind = this.kit.voices[voice]?.kind
+    if (tier && kind !== 'sample') vel = BACKBEAT_V * 10 ** (TIER_DB[tier] / 20) * (vel / TIER_V[tier]) // synth snares: level follows velocity
+    inst.trigger(t, tier && kind !== 'sample' ? vel : cv, rate, (isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1) * cg, gate, tip, kind === 'sample' ? tier : 0)
   }
   /** Tab grace notes for this step: soft strokes just before the onset, 18-35 ms apart and never closer than 40% of the gap to that drum's previous note. */
   private playGraces(ch: string, p: Pattern, step: number, t: number, stepSec: number, shift: (frac: number) => number) {
