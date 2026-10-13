@@ -427,10 +427,38 @@ export class RhythmEngine {
     this.bus.disconnect(); Tone.connect(this.bus, dest)
     const el = document.createElement('audio'); el.setAttribute('playsinline', ''); el.srcObject = dest.stream; this.bgEl = el
     void el.play().catch(() => { this.bus.disconnect(); this.bus.toDestination(); this.bgEl = null }) // refused: back to the normal output, never silent
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && this.playing) { void Tone.getContext().resume(); void el.play().catch(() => {}) } })
+  }
+  /** Recover from audio interruptions (iOS: another app played audio, call, Siri): resume the context if it isn't running,
+   *  restart the background audio element, and restart the transport if it stopped. Never hangs: gives up after `ms`. */
+  trState() { return Tone.getTransport().state + ' ' + Tone.getTransport().seconds.toFixed(2) }
+  rawCtx() { return Tone.getContext().rawContext as AudioContext }
+  async wake(ms = 1500) {
+    const ctx = Tone.getContext().rawContext as AudioContext
+    const timeout = new Promise<void>(r => setTimeout(r, ms))
+    if (ctx.state !== 'running') {
+      await Promise.race([Tone.start().catch(() => {}), timeout])
+      if ((ctx.state as string) !== 'running') await Promise.race([ctx.resume().catch(() => {}), new Promise<void>(r => setTimeout(r, 400))])
+    }
+    const el = this.bgEl
+    if (el && el.paused) {
+      await Promise.race([el.play().catch(() => { this.bus.disconnect(); this.bus.toDestination(); this.bgEl = null }), new Promise<void>(r => setTimeout(r, 800))])
+    }
+    if (this.playing && Tone.getTransport().state !== 'started') { this.lastTime = -1; Tone.getTransport().start() }
+    return ctx.state === 'running'
+  }
+  private wakeHooked = false
+  private hookWake() {
+    if (this.wakeHooked || typeof document === 'undefined') return; this.wakeHooked = true
+    const ctx = Tone.getContext().rawContext as AudioContext
+    const kick = () => { if (ctx.state !== 'running' || (this.bgEl?.paused && this.playing)) void this.wake() }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kick() })
+    window.addEventListener('pageshow', kick); window.addEventListener('focus', kick)
+    document.addEventListener('pointerdown', kick, true); document.addEventListener('touchend', kick, true)
+    ctx.addEventListener?.('statechange', () => { if (ctx.state !== 'running' && this.playing && document.visibilityState === 'visible') void this.wake() })
   }
   async start() {
-    await Tone.start()
+    this.hookWake()
+    await this.wake()
     this.backgroundAudio()
     const tr = Tone.getTransport()
     if (this.eventId !== null) return

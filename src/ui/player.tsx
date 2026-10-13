@@ -113,8 +113,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm); en.setSongLoop([st, end])
       preload(kitId); await en.start(); setPlaying(true)
     },
-    jumpBar: (b, onBeat) => { e().jumpSong(b, onBeat); if (!e().playing) setSongBar(b) },
-    jumpSection: i => { if (!song) return; const st = song.sections[i].start; e().jumpSong(st, true); if (!e().playing) setSongBar(st)
+    jumpBar: (b, onBeat) => { void e().wake(); e().jumpSong(b, onBeat); if (!e().playing) setSongBar(b) },
+    jumpSection: i => { if (!song) return; const st = song.sections[i].start; void e().wake(); e().jumpSong(st, true); if (!e().playing) setSongBar(st)
       if (loopSection !== null && loopSection !== i) { setLoopS(i); e().setSongLoop([st, st + song.sections[i].bars]) } },
     setLoopSection: i => { setLoopS(i); e().setSongLoop(i === null || !song ? null : [song.sections[i].start, song.sections[i].start + song.sections[i].bars]) },
     load: (p, add) => {
@@ -150,7 +150,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     ms.metadata = new MediaMetadata({ title: song?.raw.song ?? 'Pulse', artist: song ? `${song.raw.artist} · ${song.raw.drummer}` : 'Rhythm practice',
       artwork: [{ src: `${import.meta.env.BASE_URL}icons/icon-512.png`, sizes: '512x512', type: 'image/png' }] })
     ms.playbackState = playing ? 'playing' : 'paused'
-    ms.setActionHandler('play', () => { if (!live.current?.playing) void live.current?.toggle() })
+    ms.setActionHandler('play', () => { if (!live.current?.playing) void live.current?.toggle(); else void e().wake() })
     ms.setActionHandler('pause', () => { if (live.current?.playing) void live.current?.toggle() })
     try { ms.setActionHandler('nexttrack', queue.length ? () => { void live.current?.next() } : null) } catch { /* unsupported */ }
   }, [song, playing, queue.length])
