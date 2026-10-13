@@ -74,13 +74,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [kitId, tuning, song, e])
   useEffect(() => { e().setFill(ALL_FILLS.find(f => f.pattern.id === fillId) ?? null, fillId ? fillEvery : 0) }, [fillId, fillEvery, e])
 
-  // Tool songs default to the Big prog kit (only when on the plain acoustic kit); switch back when leaving them.
-  const autoKitOn = useRef(false)
-  const autoKit = (sg: Song) => {
-    const tool = sg.raw.artist === 'Tool'
-    if (tool && kitId === 'acoustic') { autoKitOn.current = true; setKitId('acoustic-big'); preload('acoustic-big') }
-    else if (!tool && autoKitOn.current && kitId === 'acoustic-big') { autoKitOn.current = false; setKitId('acoustic') }
-  }
   const preload = useCallback((id: string) => {
     const kit = KITS.find(k => k.id === id)!
     if (!Object.values(kit.voices).some(v => v.kind === 'sample')) { setKitProgress(1); return }
@@ -100,14 +93,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       await live.current!.loadSong(sg); await live.current!.toggle()
     },
     loadSong: async (sg, sec) => {
-      await loadSongBars(sg); autoKit(sg)
+      await loadSongBars(sg)
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([])
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
     },
     /** Play bars [start, end) of a song (0-based), looping that range. */
     playRange: async (sg, a, b) => {
-      await loadSongBars(sg); autoKit(sg)
+      await loadSongBars(sg)
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([])
       const n = sg.bars.length; const st = Math.max(0, Math.min(a, n - 1)), end = Math.max(st + 1, Math.min(b, n))
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
@@ -141,7 +134,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     },
     setBpm: v => { setBpmS(v); e().setBpm(v) },
     setSwing: v => { setSwingS(v); e().setSwing(v) },
-    setKit: id => { autoKitOn.current = false; setKitId(id); setKitProgress(0); preload(id) },
+    setKit: id => { setKitId(id); setKitProgress(0); preload(id) },
     subscribe: l => e().subscribe(l),
   }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue])
   live.current = value

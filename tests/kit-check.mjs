@@ -1,5 +1,5 @@
 // Per kit: ringing cymbals/open hat never choked at bar/section lines, density ducking on dense runs only,
-// per-song profile rates on top of the kit, mix trims present, Tool songs auto-pick the Big prog kit.
+// per-song profile rates on top of the kit, mix trims present, every song (Tool too) stays on the chosen kit; default Acoustic.
 import { chromium } from 'playwright'
 const U = process.argv[2] || 'https://nmpy7knjd8-code.github.io/rhythm/'
 const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] })
