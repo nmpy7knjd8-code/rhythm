@@ -1709,6 +1709,68 @@
      "verified": "verbatim match on fetched page (automated)"
     }
    ]
+  },
+  {
+   "name": "Tim Alexander",
+   "signature_techniques": [
+    {
+     "claim": "Describes his playing as built from a few rudiments combined, played clean rather than busy.",
+     "source_url": "https://highway81revisited.com/primus-tim-herb-alexander-interview/"
+    }
+   ],
+   "gear": [
+    {
+     "claim": "After heart surgery he moved his Octobans to the front and switched to a 20-inch bass drum so the toms sit lower.",
+     "source_url": "https://www.moderndrummer.com/article/june-2019-primuss-tim-herb-alexander/"
+    },
+    {
+     "claim": "Often plays a wide-open hi-hat, close to a ride-cymbal sound.",
+     "source_url": "https://www.moderndrummer.com/article/june-2019-primuss-tim-herb-alexander/"
+    }
+   ],
+   "feel": [],
+   "influences": [
+    {
+     "claim": "Learned Rush albums as a teenager. He names Neil Peart, Bill Bruford and John Bonham.",
+     "source_url": "https://highway81revisited.com/primus-tim-herb-alexander-interview/"
+    }
+   ],
+   "arranging": [],
+   "impact": [
+    {
+     "claim": "Drummer on the '90s Primus albums Sailing the Seas of Cheese, Pork Soda and Tales from the Punchbowl.",
+     "source_url": "https://highway81revisited.com/primus-tim-herb-alexander-interview/"
+    }
+   ],
+   "quotes": [
+    {
+     "quote": "I'm self-taught. I'm not some super advanced, technical guy, but what I do know I try to do really well and clean",
+     "topic": "technique",
+     "source_title": "Primus drummer Tim 'Herb' Alexander on band's unique path, prog credentials and Neil Peart",
+     "publication": "Highway 81 Revisited",
+     "date": "May 2024",
+     "url": "https://highway81revisited.com/primus-tim-herb-alexander-interview/",
+     "verified": "verbatim match on fetched page"
+    },
+    {
+     "quote": "I don't want to hear some super crazy, busy something that doesn't feel good.",
+     "topic": "feel",
+     "source_title": "Primus drummer Tim 'Herb' Alexander on band's unique path, prog credentials and Neil Peart",
+     "publication": "Highway 81 Revisited",
+     "date": "May 2024",
+     "url": "https://highway81revisited.com/primus-tim-herb-alexander-interview/",
+     "verified": "verbatim match on fetched page"
+    },
+    {
+     "quote": "I like a wide-open hi-hat sound. It's more like a ride cymbal.",
+     "topic": "hi-hat",
+     "source_title": "Primus's Tim \"Herb\" Alexander",
+     "publication": "Modern Drummer",
+     "date": "April 2019",
+     "url": "https://www.moderndrummer.com/article/june-2019-primuss-tim-herb-alexander/",
+     "verified": "verbatim match on fetched page"
+    }
+   ]
   }
  ]
 }

@@ -73,6 +73,7 @@ export const ARTISTS: ArtistLens[] = [
   { id: "barker", name: "Travis Barker", band: "blink-182; The Transplants", era: "1998–present", technique: [], feeling: "Pop-punk speed with jazz, marching and hip-hop vocabulary: crisp, flashy and always tight.", storytelling: '', tryThis: [] },
   { id: "chadsmith", name: "Chad Smith", band: "Red Hot Chili Peppers", era: "1988–present", technique: [], feeling: "Heavy, funky and swinging. A rock hitter with ghost-note funk, locked to the bass.", storytelling: '', tryThis: [] },
   { id: "gadd", name: "Steve Gadd", band: "Session work; Paul Simon; Eric Clapton; Steely Dan", era: "1970s–present", technique: [], feeling: "The definitive studio groove: relaxed, precise, and full of rudimental detail that never clutters the song.", storytelling: '', tryThis: [] },
+  { id: "talexander", name: "Tim Alexander", band: "Primus; A Perfect Circle; Puscifer", era: "1980s–present", technique: [], feeling: "Funky and clean: a self-taught player who says his parts come from combining a few rudiments.", storytelling: '', tryThis: [] },
   { id: "twilliams", name: "Tony Williams", band: "Miles Davis Quintet; Lifetime", era: "1960s–1997", technique: [], feeling: "Fearless, fast and conversational: time that moves with the band rather than under it.", storytelling: '', tryThis: [] },
 ]
 registerPatterns(ARTISTS.flatMap(a => a.tryThis.map(t => t.pattern)))
