@@ -1,10 +1,10 @@
 // Dense-passage spacing as scheduled by the engine: for each song, play the densest 4 bars and compare every consecutive
 // pair of onsets (same drum, and all drums) against the transcription's exact gap. Reports the worst gap error (ms) and how many
-// gaps are off by > 3 ms or reordered. FEEL env (default 1.2, the shipped feel).
+// gaps are off by > 3 ms or reordered. FEEL env (default 0.9, the shipped feel).
 import { chromium } from 'playwright'
 import { readFileSync } from 'fs'
 const url = process.argv[2] ?? 'http://localhost:4173/rhythm/'
-const ids = process.argv[3].split(','); const FL = +(process.env.FEEL ?? 1.2)
+const ids = process.argv[3].split(','); const FL = +(process.env.FEEL ?? 0.9)
 const A = { kick: 'low', snare: 'back', closedHat: 'tick', openHat: 'open', pedalHat: 'pedal', ride: 'ride', rideBell: 'rideBell', crash1: 'crash1', crash2: 'crash2', china: 'china', tomHi: 'tomHi', tomMid: 'tomMid', tomFloor: 'tomLo', crossStick: 'accent', cowbell: 'bell', shaker: 'shaker' }
 const fr = f => typeof f === 'string' ? f.split('/').reduce((a, b) => a / b) : f
 const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] })
