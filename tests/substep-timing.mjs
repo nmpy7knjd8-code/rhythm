@@ -9,6 +9,7 @@ const p = await b.newPage(); await p.goto(url, { waitUntil: 'networkidle' })
 await p.getByRole('button', { name: 'Browse rhythms' }).click(); await p.waitForTimeout(300)
 const A = { kick: 'low', snare: 'back', closedHat: 'tick', openHat: 'open', pedalHat: 'pedal', ride: 'ride', rideBell: 'rideBell', crash1: 'crash1', crash2: 'crash2', china: 'china', tomHi: 'tomHi', tomMid: 'tomMid', tomFloor: 'tomLo', crossStick: 'accent', cowbell: 'bell', shaker: 'shaker' }
 let fail = 0
+const FL = +(process.env.FEEL ?? 1) // data fidelity is checked at 100%; FEEL=1.6 shows the shipped feel
 for (const [id, sec] of songs) {
   const d = JSON.parse(readFileSync(`public/songs/${id}.json`)); const s = d.sections[+sec]
   const exp = []; let t = 0
@@ -18,7 +19,7 @@ for (const [id, sec] of songs) {
     for (const [k, m] of Object.entries(bar._sub ?? {})) for (const [st, l] of Object.entries(m)) for (const [fr] of l) if (A[k]) exp.push({ v: A[k], t: t + (+st + (typeof fr === "string" ? fr.split("/").reduce((a, b) => a / b) : fr)) * stepSec, inner: true })
     t += n * stepSec
   })
-  const r = await p.evaluate(async ({ id, sec, dur }) => { await window.__pulseLoadSong(id, sec); const e = window.__pulseEngine; e.trace = []; await e.start(); await new Promise(r => setTimeout(r, dur)); e.stop(); return e.trace }, { id, sec: +sec, dur: t * 1000 + 600 })
+  const r = await p.evaluate(async ({ id, sec, dur, fl }) => { await window.__pulseLoadSong(id, sec); const e = window.__pulseEngine; e.setFeel(fl); e.trace = []; await e.start(); await new Promise(r => setTimeout(r, dur)); e.stop(); return e.trace }, { id, sec: +sec, dur: t * 1000 + 600, fl: FL })
   const meta = JSON.parse(readFileSync('src/data/songs.json')).find(x => x.id === id)
   const hum = (s.humanize ? (s.humanize.lateMs + s.humanize.jitterMs) / 1000 : 0) + (meta?.drift ? 2 * meta.drift / 1000 : 0) // groove-drift songs: tolerance = the drift's full swing
   const t0 = r[0]?.t ?? 0, firstExp = Math.min(...exp.map(x => x.t))

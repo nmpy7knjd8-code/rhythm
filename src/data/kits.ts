@@ -102,28 +102,6 @@ KITS.splice(1, 0,
     { tick: 0.85, open: 0.85, ...each(CYM, 0.8) }),
 )
 
-/** Big prog kit drums and hats unchanged, different cymbals (Garrett: the Big kit's cymbals are slightly abrasive). */
-function progCymbals(id: string, name: string, blurb: string, cym: Partial<Record<Voice, KitVoice>>): Kit {
-  const big = KITS.find(k => k.id === 'acoustic-big')!
-  return { id, name, blurb, voices: { ...big.voices, ...cym } as Record<Voice, KitVoice> }
-}
-const bigV = () => KITS.find(k => k.id === 'acoustic-big')!.voices
-const shaped = (eq: KitVoice['eq'], rate = 1, gain = 1) => Object.fromEntries(CYM.map(v => [v, { ...bigV()[v], eq, rate: (bigV()[v].rate ?? 1) * rate, gain: (bigV()[v].gain ?? 1) * gain }])) as Partial<Record<Voice, KitVoice>>
-const V2 = '../vsco2/'
-const crashV2 = (rate: number, gain: number): KitVoice => ({ kind: 'sample', rate, gain, eq: { shelf: [9000, -3] },
-  layers: [{ vel: 0.35, files: [V2 + 'crash_p_1.mp3'] }, { vel: 0.6, files: [V2 + 'crash_mp_1.mp3', V2 + 'crash_mp_2.mp3'] }, { vel: 0.85, files: [V2 + 'crash_mf_1.mp3', V2 + 'crash_mf_2.mp3'] }, { vel: 1, files: [V2 + 'crash_ff_1.mp3', V2 + 'crash_ff_2.mp3'] }] })
-KITS.splice(3, 0,
-  progCymbals('prog-dark', 'Prog · Dark cymbals', 'Big prog kit drums and hats with darker, warmer cymbals: pitched lower, rolled off above about 8 kHz, softer attack. Salamander Drumkit samples.',
-    shaped({ lp: 8000, shelf: [5000, -4], attack: 0.004 }, 0.9, 1)),
-  progCymbals('prog-smooth', 'Prog · Smooth cymbals', 'Big prog kit drums and hats with the same cymbals de-harshed: the 3-5 kHz bite cut, top end kept so they stay bright. Salamander Drumkit samples.',
-    shaped({ peak: [3800, -6, 1.1], shelf: [10000, -1.5], attack: 0.002 }, 1, 1)),
-  progCymbals('prog-washy', 'Prog · Washy cymbals', 'Big prog kit drums and hats with a different cymbal set: smooth, washy orchestral crash and a stick-played suspended cymbal as ride (VSCO 2 Community Edition, CC0). China stays Salamander, darkened.',
-    { crash1: crashV2(0.95, 0.6), crash2: crashV2(0.85, 0.55),
-      ride: { kind: 'sample', gain: 0.5, eq: { shelf: [8000, -2] }, layers: [{ vel: 0.4, files: [V2 + 'ride_p_1.mp3'] }, { vel: 0.7, files: [V2 + 'ride_mp_1.mp3', V2 + 'ride_mp_2.mp3'] }, { vel: 1, files: [V2 + 'ride_f_1.mp3', V2 + 'ride_f_2.mp3'] }] },
-      rideBell: { kind: 'sample', gain: 0.5, layers: [{ vel: 0.7, files: [V2 + 'bell_mf.mp3'] }, { vel: 1, files: [V2 + 'bell_fff.mp3'] }] },
-      china: { ...bigV().china, eq: { lp: 8000, shelf: [5000, -3], attack: 0.003 } } }),
-)
-
 // Level trims (dB), applied to per-kit copies so shared synth voices/fallbacks are trimmed exactly once per kit:
 // rim/cross-stick -3 dB, open hi-hat -3.5 dB, crash 2 -3 dB. Closed hat and pedal unchanged.
 const TRIM_DB: Partial<Record<Voice, number>> = { accent: -3, open: -3.5, crash2: -3 }
