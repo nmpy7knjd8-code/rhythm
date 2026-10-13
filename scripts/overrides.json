@@ -287,6 +287,10 @@
   },
   "puppies": {
    "bpmNote": "About 80 on the record (SongBPM 160 counted double); the tab’s 81 was scaled to 80."
+  },
+  "byob": {
+   "bpm": 205,
+   "bpmNote": "Shown at the fast verse tempo (about 205 in the tab). The choruses drop to about 101, which is what tempo databases list for the whole track."
   }
  },
  "pinnedFiles": [
