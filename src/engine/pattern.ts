@@ -67,12 +67,12 @@ export function euclid(k: number, n: number, rotate = 0): string {
 /** Sub-step offsets are exact rationals stored as 'n/d' strings (older data: decimals). */
 export const fracOf = (f: number | string) => typeof f === 'number' ? f : (([n, d]) => n / (d ?? 1))(f.split('/').map(Number))
 /** Sub-step hits for a step: offset as a fraction of the step plus velocity (cymbals trimmed like hitsAt). */
-export function subHitsAt(p: Pattern, step: number): (Hit & { frac: number })[] {
+export function subHitsAt(p: Pattern, step: number): (Hit & { frac: number; variant?: string })[] {
   if (!p.sub) return []
-  const out: (Hit & { frac: number })[] = []
-  for (const [voice, m] of Object.entries(p.sub) as [Voice, Record<string, [number, number][]>][]) {
+  const out: (Hit & { frac: number; variant?: string })[] = []
+  for (const [voice, m] of Object.entries(p.sub) as [Voice, Record<string, [number, number, string?][]>][]) {
     const l = m[String(step)]; if (!l) continue
-    for (const [frac, v] of l) out.push({ voice, frac: fracOf(frac), velocity: v * (CYMBAL_TRIM[voice] ?? 1) })
+    for (const [frac, v, variant] of l) out.push({ voice, frac: fracOf(frac), velocity: v * (CYMBAL_TRIM[voice] ?? 1), variant })
   }
   return out
 }
@@ -92,7 +92,7 @@ export const VARIANTS: Record<string, { label: string; short: string; voice?: Vo
   agogoHi: { label: 'Agogô high', short: 'a↑', voice: 'bell', rate: 1.5, gain: 0.85 },
   agogoLo: { label: 'Agogô low', short: 'a↓', voice: 'bell', rate: 1.18, gain: 0.85 },
   bellBig: { label: 'Large bell', short: 'b↓', voice: 'rideBell', rate: 0.8 },
-  tomHi2: { label: 'High tom 2', short: 'h2', voice: 'tomHi', rate: 1.12 },
+  tomHi2: { label: 'High-mid tom', short: 'h2', voice: 'tomHi', rate: 0.9 },
   tomMid2: { label: 'Low-mid tom', short: 'm2', voice: 'tomMid', rate: 0.9 },
   tomFloor2: { label: 'Low floor tom', short: 'f2', voice: 'tomLo', rate: 0.86 },
 }

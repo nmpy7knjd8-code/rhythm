@@ -18,10 +18,27 @@ function onsetOf(b: Tone.ToneAudioBuffer) {
   for (let i = 0; i < d.length; i++) if (Math.abs(d[i]) > 0.1 * pk) return Math.max(0, i / b.sampleRate - 0.0005)
   return 0
 }
+/** Attack loudness of each file (RMS of the first 100 ms after the onset). Used to level tom files: the soft-layer tom samples are
+ *  normalised as loud as the hard ones, so without this a soft tom could come out louder than a slightly harder one at a layer change. */
+const levels = new Map<string, number>()
+/** Time from a file's onset to half its peak (s, 1 ms smoothed envelope): a slow-rising tom is started that much early (up to 8 ms) */
+const rises = new Map<string, number>()
+function riseOf(b: Tone.ToneAudioBuffer, on: number) {
+  const d = b.getChannelData(0), sr = b.sampleRate, i0 = Math.floor(on * sr), w = Math.max(1, Math.floor(sr / 1000)), n = Math.min(d.length - i0, Math.floor(0.05 * sr))
+  const env: number[] = []; let acc = 0
+  for (let i = 0; i < n; i++) { acc += Math.abs(d[i0 + i]); if (i >= w) acc -= Math.abs(d[i0 + i - w]); env.push(acc / Math.min(i + 1, w)) }
+  const pk = Math.max(...env); const i50 = env.findIndex(y => y >= 0.5 * pk)
+  return i50 > 0 ? i50 / sr : 0
+}
+function levelOf(b: Tone.ToneAudioBuffer, on: number) {
+  const d = b.getChannelData(0), i0 = Math.floor(on * b.sampleRate), n = Math.min(d.length - i0, Math.floor(0.1 * b.sampleRate)); let e = 0
+  for (let i = 0; i < n; i++) e += d[i0 + i] * d[i0 + i]
+  return n > 0 ? Math.sqrt(e / n) : 0
+}
 const loading = new Map<string, Promise<void>>()
 function loadFile(f: string): Promise<void> {
   if (!loading.has(f)) loading.set(f, new Promise<void>(res => {
-    const b = new Tone.ToneAudioBuffer(SAMPLE_BASE + f, () => { buffers.set(f, b); onsets.set(f, onsetOf(b)); res() }, () => res())
+    const b = new Tone.ToneAudioBuffer(SAMPLE_BASE + f, () => { buffers.set(f, b); const on = onsetOf(b); onsets.set(f, on); levels.set(f, levelOf(b, on)); rises.set(f, riseOf(b, on)); res() }, () => res())
   }))
   return loading.get(f)!
 }
@@ -51,7 +68,7 @@ function makeSynth(kv: KitVoice, g: Tone.Gain): Inst {
   return { trigger: (t, v0, r = 1, gm = 1) => { const v = v0 * gm; s.triggerAttackRelease((kv.pitch ?? 300) * r, (kv.decay ?? 0.3), t, v) }, choke: t => s.triggerRelease(t), dispose: () => s.dispose() }
 }
 
-function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false): Inst {
+function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false, leveled = false): Inst {
   const eqs: Tone.Filter[] = []
   if (kv.eq?.peak) eqs.push(new Tone.Filter({ type: 'peaking', frequency: kv.eq.peak[0], gain: kv.eq.peak[1], Q: kv.eq.peak[2] }))
   if (kv.eq?.shelf) eqs.push(new Tone.Filter({ type: 'highshelf', frequency: kv.eq.shelf[0], gain: kv.eq.shelf[1] }))
@@ -89,7 +106,17 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false): Inst {
       // a crash/china/open hat that is still ringing doesn't give a fresh sharp transient: soften the attack of quick repeats (2-8 ms fade-in from the onset)
       if (kv.eq?.attack) src.fadeIn = kv.eq.attack
       if (washy) { const dt = t - lastT; if (dt > 0 && dt < 0.6) src.fadeIn = Math.max(kv.eq?.attack ?? 0, 0.002 + 0.006 * (1 - dt / 0.6)); lastT = t }
-      src.start(t, sampleAlign.on ? onsets.get(f) ?? 0 : 0, undefined, (0.55 + 0.45 * Math.min(1, rel)) * gm)
+      // toms: one smooth velocity curve across layers (0.2 + 0.8·v^1.5, equal to the old curve at full velocity), every file leveled
+      // to the hard layer's attack loudness, so layer changes and borrowed neighbour files never jump in level
+      // Only for tom sets whose soft files are normalised (soft layer within 3 dB of the hard one); naturally recorded sets keep the old curve.
+      let vg = 0.55 + 0.45 * Math.min(1, rel), lead = 0
+      if (leveled) {
+        const avg = (fs: string[]) => { const a = fs.map(x => levels.get(x) ?? 0).filter(x => x > 0); return a.length ? a.reduce((p, q) => p + q, 0) / a.length : 0 }
+        const ref = avg(layers[layers.length - 1].files), soft = avg(layers[0].files), lv = levels.get(f) ?? 0
+        if (layers.length > 1 && ref > 0 && soft >= 0.7 * ref && lv > 0) vg = (0.2 + 0.8 * Math.pow(Math.min(1, Math.max(0, v)), 1.5)) * Math.max(0.5, Math.min(1.5, ref / lv))
+        if (sampleAlign.on) lead = Math.min(0.008, Math.max(0, (rises.get(f) ?? 0) - 0.001)) / Math.max(0.5, src.playbackRate.value)
+      }
+      src.start(Math.max(0, t - lead), sampleAlign.on ? onsets.get(f) ?? 0 : 0, undefined, vg * gm)
       if (gate > 0) { src.fadeOut = 0.03; src.stop(t + gate) } // gated / dampened drum
     },
     choke: t => { live.forEach(s => { try { s.fadeOut = 0.06; s.stop(t) } catch { /* already stopped */ } }); fb?.choke?.(t) }, // ~60 ms damping, like a foot closing the hat
@@ -254,7 +281,7 @@ export class RhythmEngine {
 
   private inst(channelId: string, v: Voice): Inst | undefined {
     const c = this.channels.get(channelId) ?? this.channel(channelId)
-    return (c.insts[v] ??= makeInst(this.kit.voices[v], c.gain, v === 'crash1' || v === 'crash2' || v === 'china' || v === 'open'))
+    return (c.insts[v] ??= makeInst(this.kit.voices[v], c.gain, v === 'crash1' || v === 'crash2' || v === 'china' || v === 'open', v === 'tomHi' || v === 'tomMid' || v === 'tomLo'))
   }
 
   /** Optional event trace for timing tests: every scheduled hit's audio-context time. */
@@ -314,11 +341,11 @@ export class RhythmEngine {
       const lead = onStep.has(voice), run = voice === 'back' && (l.length >= 2 || lead) // only snare runs are rolls; kick/tom 32nd figures play straight
       l.forEach((h, j) => {
         const at = t + h.frac * stepSec + shift(h.frac)
-        if (!run) { this.hz = { bar, pos: (step + h.frac) * tps, beat, sub: -1, stroke: stepSec }; this.play(ch, voice, at, h.velocity, 0, stepSec); return }
+        if (!run) { this.hz = { bar, pos: (step + h.frac) * tps, beat, sub: -1, stroke: stepSec }; this.play(ch, voice, at, h.velocity, 0, stepSec, h.variant); return }
         const prev = j ? l[j - 1].frac : lead ? 0 : h.frac - 1 / (l.length + 1), stroke = Math.max(0.001, (h.frac - prev) * stepSec)
         const idx = j + (lead ? 1 : 0) // stroke number in the run (0 = first)
         this.hz = { bar, pos: (step + h.frac) * tps, beat, sub: idx, n: l.length + (lead ? 1 : 0), stroke }
-        this.play(ch, voice, at, h.velocity, 0, stepSec) // dynamics: hand alternation in humanVel, no flat cut
+        this.play(ch, voice, at, h.velocity, 0, stepSec, h.variant) // dynamics: hand alternation in humanVel, no flat cut
       })
     }
   }

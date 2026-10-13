@@ -29,7 +29,7 @@ export interface Pattern {
   /** Display time signature, e.g. '7/8'. */
   timeSig?: string
   /** Sub-step hits: per voice, per step, [fraction of the step (0–1), velocity] pairs, e.g. 32nds or roll strokes. */
-  sub?: Partial<Record<Voice, Record<string, [number | string, number][]>>>
+  sub?: Partial<Record<Voice, Record<string, [number | string, number, string?][]>>>
   /** Instrument/pitch variant per hit: voice → step → variant id (see VARIANTS), e.g. splash on the crash row. */
   variant?: Partial<Record<Voice, Record<string, string>>>
   /** Grace strokes from the tab: voice → onset key ('step' or 'step:n/d' off-grid) → 1 (flam) or 2 (drag). They sit just before that
