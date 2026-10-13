@@ -174,8 +174,7 @@ export class RhythmEngine {
       if (p.humanize) { const r = Math.sin((this.songBar * 97 + step) * 12.9898) * 43758.5453; t += fl * (p.humanize.lateMs + ((r - Math.floor(r)) * 2 - 1) * p.humanize.jitterMs) / 1000 }
       this.hz = { bar: this.songBar, pos: step * tps, beat: beatTicksOf(p), sub: -1, stroke: stepSec }
       for (const h of hitsAt(p, step)) this.play(SONG_ID, h.voice, t + this.feelShift(p, step, tps, stepSec), h.velocity, h.graces, stepSec, p.variant?.[h.voice]?.[step])
-      const subs = subHitsAt(p, step); subs.forEach((h, j) => { this.hz = { bar: this.songBar, pos: (step + h.frac) * tps, beat: beatTicksOf(p), sub: j, n: subs.length, stroke: stepSec / (subs.length + 1) }
-      this.play(SONG_ID, h.voice, t + h.frac * stepSec + this.feelShift(p, step + h.frac, tps, stepSec) + fl * rollJitter(this.songBar, step, h.frac, stepSec / (subs.length + 1), j), rollVel(h.velocity, h.frac, fl), 0, stepSec) }); this.hz = null
+      this.playSubs(SONG_ID, p, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec), fl); this.hz = null
       const b = this.songBar; Tone.getDraw().schedule(() => this.listeners.forEach(f => f({ [SONG_ID]: step }, b)), time)
     }
     if (++this.songTick >= len) {
@@ -266,6 +265,27 @@ export class RhythmEngine {
     const gate = (isSn ? sp?.snareGate : isTom ? sp?.tomGate : 0) ?? 0
     inst.trigger(t, vel, rate, isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1, gate, tip)
   }
+  /** Off-grid (sub-step) hits, grouped per drum. Only a real same-drum run (2+ off-grid strokes in the step, or one next to an
+   *  on-step stroke of the same drum) gets roll shaping: softer inner strokes, hand alternation, crescendo and the small inner-stroke
+   *  timing drift. A lone off-grid note (a syncopated 32nd kick, a triplet note) plays exactly, at its written velocity. */
+  private playSubs(ch: string, p: Pattern, step: number, t: number, stepSec: number, bar: number, beat: number, tps: number, shift: (frac: number) => number, fl: number) {
+    const subs = subHitsAt(p, step); if (!subs.length) return
+    const onStep = new Set(hitsAt(p, step).map(h => h.voice)), by = new Map<Voice, typeof subs>()
+    for (const h of subs) { const l = by.get(h.voice) ?? []; l.push(h); by.set(h.voice, l) }
+    for (const [voice, l] of by) {
+      l.sort((a, b) => a.frac - b.frac)
+      const lead = onStep.has(voice), run = l.length >= 2 || lead
+      l.forEach((h, j) => {
+        const at = t + h.frac * stepSec + shift(h.frac)
+        if (!run) { this.hz = { bar, pos: (step + h.frac) * tps, beat, sub: -1, stroke: stepSec }; this.play(ch, voice, at, h.velocity, 0, stepSec); return }
+        const prev = j ? l[j - 1].frac : lead ? 0 : h.frac - 1 / (l.length + 1), stroke = Math.max(0.001, (h.frac - prev) * stepSec)
+        const idx = j + (lead ? 1 : 0) // stroke number in the run (0 = first)
+        this.hz = { bar, pos: (step + h.frac) * tps, beat, sub: idx, n: l.length + (lead ? 1 : 0), stroke }
+        const inner = idx > 0 // the run's first stroke stays exact
+        this.play(ch, voice, at + (inner ? fl * rollJitter(bar, step, h.frac, stroke, idx) : 0), inner ? rollVel(h.velocity, h.frac, fl) : h.velocity, 0, stepSec)
+      })
+    }
+  }
   /** Position of the hit being played (set by the scheduler), for velocity shaping. */
   private hz: HitCtx | null = null
   /** Velocity shaping (never timing): metric accents on hats/ride/kick, small deterministic per-hit variation plus a slow phrase drift,
@@ -279,8 +299,8 @@ export class RhythmEngine {
     }
     let sp = vel < 0.45 ? 0.06 : voice === 'tick' || voice === 'ride' || voice === 'open' ? 0.04 : voice === 'back' || voice === 'low' ? 0.03 : 0.02
     if (hz.sub >= 0) {
-      vel *= hz.sub % 2 === 0 ? 0.93 : 1 // weak hand (roll strokes alternate with the on-step stroke)
-      const up = hash(hz.bar, Math.floor(hz.pos), 3) > -0.3, k = (hz.sub + 1) / (hz.n ?? 1) // mostly crescendo, sometimes decrescendo
+      vel *= hz.sub % 2 === 1 ? 0.93 : 1 // weak hand: every other stroke of the run
+      const up = hash(hz.bar, Math.floor(hz.pos), 3) > -0.3, k = hz.sub / Math.max(1, (hz.n ?? 1) - 1) // mostly crescendo, sometimes decrescendo
       vel *= 0.92 + 0.08 * (up ? k : 1 - k)
       if (hz.stroke < 1 / 12) sp += 0.03 // fast strokes: less even
     }
@@ -352,8 +372,7 @@ export class RhythmEngine {
         const tp = ticksPerStep(s.pattern), bt = beatTicksOf(s.pattern)
         this.hz = { bar: this.bar, pos: step * tp, beat: bt, sub: -1, stroke: stepSec }
         for (const h of hitsAt(s.pattern, step)) this.play(s.id, h.voice, t, h.velocity, h.graces, stepSec)
-        const subs = subHitsAt(s.pattern, step)
-        subs.forEach((h, j) => { this.hz = { bar: this.bar, pos: (step + h.frac) * tp, beat: bt, sub: j, n: subs.length, stroke: stepSec / (subs.length + 1) }; this.play(s.id, h.voice, t + h.frac * stepSec + rollJitter(this.bar, step, h.frac, stepSec / (subs.length + 1), j), rollVel(h.velocity, h.frac), 0, stepSec) })
+        this.playSubs(s.id, s.pattern, step, t, stepSec, this.bar, bt, tp, () => 0, 1)
         this.hz = null
       }
       if (!fillBar) for (const l of this.layers) if (steps[l.id] === undefined) { const s = stepForTick(l.pattern, this.tick); if (s !== null) steps[l.id] = s }
