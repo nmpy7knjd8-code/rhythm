@@ -172,7 +172,9 @@ export class RhythmEngine {
       const cur = this.song.bars[this.songBar]?.suggestedBpm ?? this.songBaseBpm
       bp.cancelScheduledValues(now); bp.setValueAtTime(cur * this.songTempoScale, now); return
     }
-    bp.cancelScheduledValues(now); bp.setValueAtTime(bp.getValueAtTime(now), now); bp.linearRampToValueAtTime(bpm, now + 0.05)
+    const v = bp.getValueAtTime(now)
+    if (Math.abs(v - bpm) < 1e-6) return // same tempo: re-automating an unchanged value corrupts Tone's tick timeline
+    bp.cancelScheduledValues(now); bp.setValueAtTime(v, now); bp.linearRampToValueAtTime(bpm, now + 0.05)
   }
   /** Insert `fill` in the last bar of every `every` bars (0 = off). */
   setFill(fill: Fill | null, every: number) { this.fill = fill; this.fillEvery = every }
