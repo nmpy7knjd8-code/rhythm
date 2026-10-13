@@ -265,7 +265,8 @@
   },
   "aenema": {
    "bpmDisplay": 0.6666666666666666,
-   "bpmNote": "The tab counts dotted quarters (about 122 in the 12/8 intro, about 60 in the 6/8 sections written at half speed); Pulse shows the dotted-quarter pulse."
+   "bpmNote": "The tab counts dotted quarters (about 122 in the 12/8 intro, about 60 in the 6/8 sections written at half speed); Pulse shows the dotted-quarter pulse.",
+   "bpm": 183
   },
   "cobham": {
    "confidence": "transcribed (Songsterr community tab); excerpt: about 2:45 of a much longer track"
@@ -280,6 +281,12 @@
   "bitesdust": {
    "bpm": 110,
    "bpmNote": "About 110 BPM on the record (AcousticBrainz median of 624 analyses, via TempoPeek); the tab’s 112 was scaled to 110, which also matches the track length."
+  },
+  "grudge": {
+   "bpmNote": "About 96 on the record (SongBPM; Drumeo lists about 100); the tab’s 98 was scaled to 96, which also matches the track length."
+  },
+  "puppies": {
+   "bpmNote": "About 80 on the record (SongBPM 160 counted double); the tab’s 81 was scaled to 80."
   }
  },
  "pinnedFiles": [
@@ -305,6 +312,8 @@
  },
  "tempoScale": {
   "mitchell": 1.0204081632653061,
-  "bitesdust": 0.9821428571428571
+  "bitesdust": 0.9821428571428571,
+  "grudge": 0.9795918367346939,
+  "puppies": 0.9876543209876543
  }
 }
