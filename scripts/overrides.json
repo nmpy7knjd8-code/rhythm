@@ -10,18 +10,13 @@
   "islandmagic",
   "hotforteacher",
   "rosanna",
-  "jump"
+  "jump",
+  "singsing"
  ],
  "meta": {
   "heaviestmatter": {
    "bpmDisplay": 0.5,
    "bpmNote": "The tab counts the double-time pulse (about 207); the record is listed at 103, so Pulse shows half and plays the tab at its written speed."
-  },
-  "singsing": {
-   "bpm": 220,
-   "bpmDisplay": 0.5,
-   "bpmNote": "The tab counts double (about 220 in the main groove); the 1937 record is listed at about 112, so Pulse shows half and plays the tab at its written speed.",
-   "confidence": "transcribed (Songsterr community tab); excerpt: about 3 minutes of the 8:43 1937 recording"
   },
   "songforthedead": {
    "bpm": 106,

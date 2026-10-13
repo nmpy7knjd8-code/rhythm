@@ -187,13 +187,6 @@
      "h": "Timbre as character",
      "paragraphs": [
       {
-       "text": "Sing, Sing, Sing gives the tom-toms the lead role. In the Goodman recording, the Pulse transcription has whole passages on toms and snare only (bars 105 to 112 and 129 to 136), with the ride and kit returning in between. The drums are the main character, not the accompaniment.",
-       "sources": [
-        "singsing"
-       ],
-       "confidence": "high"
-      },
-      {
        "text": "YYZ starts with the Morse code for Y-Y-Z. Peart played that rhythm on crotales on the record, and the band then restated it across the arrangement: one motif, orchestrated several ways.",
        "sources": [
         "yyz"
@@ -325,22 +318,7 @@
      ]
     }
    ],
-   "examples": [
-    {
-     "songId": "singsing",
-     "barStart": 105,
-     "barEnd": 112,
-     "label": "Sing, Sing, Sing: Drum feature",
-     "note": "Toms and snare only. The band drops out and the drums carry the story."
-    },
-    {
-     "songId": "singsing",
-     "barStart": 129,
-     "barEnd": 136,
-     "label": "Sing, Sing, Sing: Second drum feature",
-     "note": "Another tom-and-snare-only passage, answering the first."
-    }
-   ]
+   "examples": []
   },
   {
    "id": "talking",
@@ -885,57 +863,6 @@
        "text": "The vocal syllables follow the Fibonacci sequence (1, 1, 2, 3, 5, 8 ...), and 987, the original 9-8-7 title, is itself a Fibonacci number.",
        "sources": [
         "lateralus"
-       ],
-       "confidence": "high"
-      }
-     ]
-    },
-    {
-     "songId": "singsing",
-     "title": "Sing, Sing, Sing · Benny Goodman, Gene Krupa (1937)",
-     "arc": "The drummer as the main character.",
-     "beats": [
-      {
-       "songId": "singsing",
-       "barStart": 3,
-       "barEnd": 13,
-       "label": "Tom-tom and rim",
-       "note": "Krupa's floor-tom pulse sets a tribal, insistent mood."
-      },
-      {
-       "songId": "singsing",
-       "barStart": 14,
-       "barEnd": 36,
-       "label": "Band in",
-       "note": "Full drums under the ensemble."
-      },
-      {
-       "songId": "singsing",
-       "barStart": 105,
-       "barEnd": 112,
-       "label": "Drum feature",
-       "note": "Toms and snare only. The band drops out and the drums carry the story."
-      },
-      {
-       "songId": "singsing",
-       "barStart": 129,
-       "barEnd": 136,
-       "label": "Second drum feature",
-       "note": "Another tom-and-snare-only passage, answering the first."
-      },
-      {
-       "songId": "singsing",
-       "barStart": 155,
-       "barEnd": 168,
-       "label": "Finale",
-       "note": "Everyone returns for the ending."
-      }
-     ],
-     "notes": [
-      {
-       "text": "The 1937 recording runs 8:43 across both sides of a 12-inch 78. Wikipedia notes that Krupa recorded the first extended drum solos released commercially.",
-       "sources": [
-        "singsing"
        ],
        "confidence": "high"
       }
