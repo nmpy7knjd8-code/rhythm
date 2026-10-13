@@ -395,14 +395,8 @@ export function PlayerBar() {
     </div></div>
     <Sheet open={open} onClose={() => setOpen(false)} title={sg ? sg.raw.song : title} subtitle={sg ? `${sg.raw.artist} · ${sg.raw.drummer}` : undefined}
       contentPull={tab !== 'sound'}
-      head={<Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} />}>
+      head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} /><UpNext /></div>}>
       {tab === 'now' && <div className="space-y-3">
-        {P.queue.length > 0 && <div><div className="text-[10px] uppercase tracking-wider text-mute mb-1">Up next</div>
-          <ol>{P.queue.map((q, i) => <li key={i} className="flex items-center gap-2 h-11 border-b border-white/[0.05] last:border-0">
-            <span className="w-4 text-[11px] text-mute tabular-nums">{i + 1}</span>
-            <span className="flex-1 min-w-0 truncate text-sm">{q.raw.song}<span className="text-mute"> · {q.raw.artist}</span></span>
-            <button aria-label={`Remove ${q.raw.song} from queue`} onClick={() => P.unqueue(i)} className="w-10 h-10 grid place-items-center rounded-full text-mute active:bg-white/[0.06]">✕</button>
-          </li>)}</ol></div>}
         {sg && <SongForm />}
         {sg?.raw.tuning && <p className="text-[11px] text-mute">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
         {!sg && P.arrangement && <ol className="space-y-1.5 text-sm">{P.arrangement.sections.map((s, i) => <li key={i} className={P.section === i ? 'text-amber' : 'text-mute'}>{s.name} · {s.bars} bars</li>)}</ol>}
@@ -497,5 +491,23 @@ export function SongForm({ song }: { song?: Song }) {
         {live && <button aria-label={`Loop ${s.name}`} aria-pressed={P.loopSection === i} onClick={ev => { ev.stopPropagation(); P.setLoopSection(P.loopSection === i ? null : i) }} className={`w-8 h-8 grid place-items-center rounded-full text-xs ${P.loopSection === i ? 'bg-amber text-ink' : 'text-mute'}`}>↻</button>}
       </li>
     })}</ol>
+  </div>
+}
+
+/** "Up next" queue: a quiet one-line summary that opens into a removable list. */
+function UpNext() {
+  const P = usePlayer(); const [open, setOpen] = useState(false)
+  if (!P.queue.length) return null
+  return <div className="mt-2 w-full text-left">
+    <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="w-full h-9 flex items-center gap-2 text-[12px] text-mute">
+      <span className="uppercase tracking-wider text-[10px]">Up next</span>
+      <span className="flex-1 min-w-0 truncate text-left text-bone/70">{P.queue[0].raw.song}{P.queue.length > 1 ? ` +${P.queue.length - 1}` : ''}</span>
+      <span className={`transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
+    </button>
+    {open && <ol>{P.queue.map((q, i) => <li key={i} className="flex items-center gap-2 h-11 border-t border-white/[0.05]">
+      <span className="w-4 text-[11px] text-mute tabular-nums">{i + 1}</span>
+      <span className="flex-1 min-w-0 truncate text-sm">{q.raw.song}<span className="text-mute"> · {q.raw.artist}</span></span>
+      <button aria-label={`Remove ${q.raw.song} from queue`} onClick={() => P.unqueue(i)} className="w-10 h-10 grid place-items-center rounded-full text-mute active:bg-white/[0.06]">✕</button>
+    </li>)}</ol>}
   </div>
 }

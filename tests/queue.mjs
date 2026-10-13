@@ -21,7 +21,7 @@ await p.evaluate(() => { const e = window.__pulseEngine; e.jumpSong(e.song.bars.
 console.log('auto-advance →', await cur(), '| kit', await p.evaluate(() => window.__pulseEngine.kit.name), '| playing', await p.evaluate(() => window.__pulseEngine.playing), '|', await nextBtn.getAttribute('aria-label'))
 // Up next view + remove
 await p.locator('button[aria-label="Add Kashmir to queue"]').first().click(); await p.locator('button[aria-label="Add Africa to queue"]').first().click()
-await p.click('button[aria-label="Browse rhythms"]'); await p.waitForTimeout(700)
+await p.click('button[aria-label="Browse rhythms"]'); await p.waitForTimeout(700); await p.click('button[aria-expanded]'); await p.waitForTimeout(300)
 const items = await p.$$eval('li:has(button[aria-label^="Remove "])', e => e.map(x => x.textContent))
 console.log('up next:', items); await p.screenshot({ path: '/tmp/q-sheet.png' })
 await p.locator('button[aria-label^="Remove Kashmir"]').click(); await p.waitForTimeout(300)
