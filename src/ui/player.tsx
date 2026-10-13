@@ -386,8 +386,6 @@ export function PlayerBar() {
     const id = setInterval(() => setLive(Tone.getTransport().bpm.value), 200); return () => clearInterval(id) }, [sg, P.playing])
   return createPortal(<>
     <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-ink/85 backdrop-blur-xl border-t border-white/[0.06]"><div className="max-w-xl mx-auto">
-      {P.playing && sg?.raw.goodPart && <div className="mb-2 flex justify-center"><button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
-        className="h-7 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button></div>}
       <div className="flex items-center gap-3 h-14 px-2 rounded-2xl bg-white/[0.05] border border-white/[0.06]">
         <button aria-label={P.playing ? 'Stop' : 'Play'} onClick={P.toggle} disabled={!P.layers.length && !P.arrangement && !P.song}
           className={`relative w-10 h-10 shrink-0 rounded-full bg-amber text-ink grid place-items-center active:scale-90 transition-transform disabled:opacity-25 ${P.playing ? 'pulse-ring' : ''}`}>
@@ -408,7 +406,8 @@ export function PlayerBar() {
     </div></div>
     <Sheet open={open} onClose={() => setOpen(false)} title={sg ? sg.raw.song : title} subtitle={sg ? `${sg.raw.artist} · ${sg.raw.drummer}` : undefined}
       contentPull={tab !== 'sound'}
-      head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} /><UpNext /></div>}>
+      head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} />{P.playing && sg?.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
+        className="mt-2 h-7 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}<UpNext /></div>}>
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
         {sg?.raw.tuning && <p className="text-[11px] text-mute">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
