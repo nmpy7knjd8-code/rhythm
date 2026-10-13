@@ -82,6 +82,26 @@ export const KITS: Kit[] = [
     shaker: { kind: 'noise', tone: 9000, decay: 0.05, gain: 0.25 } }) },
 ]
 
+/** Variants of the recorded acoustic kit: the same Salamander samples, re-pitched (playback rate) and re-balanced. */
+function variant(id: string, name: string, blurb: string, rate: Partial<Record<Voice, number>>, gain: Partial<Record<Voice, number>>): Kit {
+  const base = KITS[0].voices, voices = { ...base }
+  for (const v of Object.keys(base) as Voice[]) {
+    const r = rate[v] ?? 1, g = gain[v] ?? 1
+    if (r !== 1 || g !== 1) voices[v] = { ...base[v], rate: (base[v].rate ?? 1) * r, gain: (base[v].gain ?? 1) * g }
+  }
+  return { id, name, blurb, voices }
+}
+const CYM: Voice[] = ['crash1', 'crash2', 'china', 'ride', 'rideBell']
+const each = (vs: Voice[], x: number) => Object.fromEntries(vs.map(v => [v, x])) as Partial<Record<Voice, number>>
+KITS.splice(1, 0,
+  variant('acoustic-big', 'Big prog kit', 'For Tool-style prog: deep, tuned-down toms, a crisp high snare, large darker cymbals with more level, punchy kick. Re-pitched Salamander Drumkit samples.',
+    { tomHi: 0.84, tomMid: 0.84, tomLo: 0.8, back: 1.1, low: 0.94, ...each(CYM, 0.92) },
+    { tomHi: 1.1, tomMid: 1.1, tomLo: 1.15, low: 1.15, back: 1.05, ...each(CYM, 1.15) }),
+  variant('acoustic-vintage', 'Warm vintage kit', 'Warmer, lower-tuned late-60s/70s character: fatter snare, rounder kick, darker and quieter cymbals and hats. Re-pitched Salamander Drumkit samples.',
+    { back: 0.9, low: 0.96, tomHi: 0.93, tomMid: 0.93, tomLo: 0.93, tick: 0.94, open: 0.94, pedal: 0.94, ...each(CYM, 0.9) },
+    { tick: 0.85, open: 0.85, ...each(CYM, 0.8) }),
+)
+
 // Level trims (dB), applied to per-kit copies so shared synth voices/fallbacks are trimmed exactly once per kit:
 // rim/cross-stick -3 dB, open hi-hat -3.5 dB, crash 2 -3 dB. Closed hat and pedal unchanged.
 const TRIM_DB: Partial<Record<Voice, number>> = { accent: -3, open: -3.5, crash2: -3 }

@@ -299,7 +299,7 @@ export function Theory() {
 export function Pitch() {
   const { tuning, setTuning, kitId, setKit } = usePlayer()
   const [preset, setPreset] = useState<string | null>(null)
-  const pick = (id: string) => { const p = TUNING_PRESETS.find(x => x.id === id)!; setPreset(id); setTuning(p.tuning); if (kitId !== 'acoustic') setKit('acoustic') }
+  const pick = (id: string) => { const p = TUNING_PRESETS.find(x => x.id === id)!; setPreset(id); setTuning(p.tuning); if (!kitId.startsWith('acoustic')) setKit('acoustic') }
   const nudge = (v: Voice, d: number) => { const base = tuning[v] ?? TUNING_PRESETS[0].tuning[v]!; setTuning({ ...TUNING_PRESETS[0].tuning, ...tuning, [v]: base + d }); setPreset(null) }
   const LABEL: Record<string, string> = { low: 'Kick', tomLo: 'Floor tom', tomHi: 'Low tom', back: 'Mid tom', accent: 'High tom', bell: 'Top tom' }
   return <>

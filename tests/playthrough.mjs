@@ -15,11 +15,11 @@ const expected = id => { const d = JSON.parse(readFileSync(`public/songs/${id}.j
 const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] })
 let bad = 0; const queue = [...ids]
 async function worker() {
-  const p = await b.newPage({ viewport: { width: 390, height: 844 } }); await p.goto(URL, { waitUntil: 'networkidle' })
+  const p = await b.newPage({ viewport: { width: 390, height: 844 } }); await p.goto(URL, { waitUntil: 'networkidle' }); if (process.env.KIT) await p.evaluate(k => { window.__KIT = k }, process.env.KIT)
   while (queue.length) {
     const id = queue.shift(); const ex = expected(id)
     const r = await p.evaluate(async ({ id, SCALE, sec }) => {
-      await window.__pulseLoadSong(id, 0); const e = window.__pulseEngine; e.jumpSong(0); e.trace = []; e.skipped = 0
+      if (window.__KIT) window.__pulseSetKit(window.__KIT); await window.__pulseLoadSong(id, 0); const e = window.__pulseEngine; e.jumpSong(0); e.trace = []; e.skipped = 0
       const base = e.songBaseBpm; await e.start(); e.setBpm(base * SCALE)
       let maxBar = 0, wrapped = false, prev = 0; const t0 = performance.now(), limit = (sec / SCALE) * 1000 * 1.6 + 4000
       while (performance.now() - t0 < limit) { await new Promise(r => setTimeout(r, 50)); const sb = e.songBar; if (sb < prev && prev > 0) { wrapped = true; break } prev = sb; maxBar = Math.max(maxBar, sb) }

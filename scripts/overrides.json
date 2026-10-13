@@ -246,6 +246,10 @@
     "tomGate": 0.25,
     "cym": 0.95
    }
+  },
+  "aenema": {
+   "bpmDisplay": 0.6666666666666666,
+   "bpmNote": "The tab counts dotted quarters (about 122 in the 12/8 intro, about 60 in the 6/8 sections written at half speed); Pulse shows the dotted-quarter pulse."
   }
  },
  "pinnedFiles": [

@@ -69,6 +69,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [kitId, tuning, song, e])
   useEffect(() => { e().setFill(ALL_FILLS.find(f => f.pattern.id === fillId) ?? null, fillId ? fillEvery : 0) }, [fillId, fillEvery, e])
 
+  // Tool songs default to the Big prog kit (only when on the plain acoustic kit); switch back when leaving them.
+  const autoKitOn = useRef(false)
+  const autoKit = (sg: Song) => {
+    const tool = sg.raw.artist === 'Tool'
+    if (tool && kitId === 'acoustic') { autoKitOn.current = true; setKitId('acoustic-big'); preload('acoustic-big') }
+    else if (!tool && autoKitOn.current && kitId === 'acoustic-big') { autoKitOn.current = false; setKitId('acoustic') }
+  }
   const preload = useCallback((id: string) => {
     const kit = KITS.find(k => k.id === id)!
     if (!Object.values(kit.voices).some(v => v.kind === 'sample')) { setKitProgress(1); return }
@@ -80,14 +87,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setFill: (id, every) => { setFillId(id); if (every !== undefined) setFillEvery(every) },
     song, songBar, loopSection,
     loadSong: async (sg, sec) => {
-      await loadSongBars(sg)
+      await loadSongBars(sg); autoKit(sg)
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; setArr(null); setSection(null); setLayers([])
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0); setFeelS(1); en.setFeel(1)
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
     },
     /** Play bars [start, end) of a song (0-based), looping that range. */
     playRange: async (sg, a, b) => {
-      await loadSongBars(sg)
+      await loadSongBars(sg); autoKit(sg)
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; setArr(null); setSection(null); setLayers([])
       const n = sg.bars.length; const st = Math.max(0, Math.min(a, n - 1)), end = Math.max(st + 1, Math.min(b, n))
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0); setFeelS(1); en.setFeel(1)
@@ -99,7 +106,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (loopSection !== null && loopSection !== i) { setLoopS(i); e().setSongLoop([st, st + song.sections[i].bars]) } },
     setLoopSection: i => { setLoopS(i); e().setSongLoop(i === null || !song ? null : [song.sections[i].start, song.sections[i].start + song.sections[i].bars]) },
     load: (p, add) => {
-      e().setSong(null); setSong(null)
+      e().setSong(null); e().sound = null; setSong(null)
       e().setArrangement(null); setArr(null); setSection(null)
       const l: Layer = { id: `l${n++}`, pattern: p, volume: 0.85, mute: false, solo: false }
       setLayers(prev => (add ? [...prev, l] : [l]))
@@ -107,7 +114,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (!add) { const s = p.suggestedSwing ?? 0; setSwingS(s); e().setSwing(s) }
     },
     loadArrangement: a => {
-      e().setSong(null); setSong(null)
+      e().setSong(null); e().sound = null; setSong(null)
       setArr(a); setBpmS(a.bpm); e().setBpm(a.bpm); setLayers([])
       e().setArrangement(a, ids => ids.map(id => PATTERNS[id]))
       e().stop(); setPlaying(false)
@@ -121,10 +128,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     },
     setBpm: v => { setBpmS(v); e().setBpm(v) },
     setSwing: v => { setSwingS(v); e().setSwing(v) },
-    setKit: id => { setKitId(id); setKitProgress(0); preload(id) },
+    setKit: id => { autoKitOn.current = false; setKitId(id); setKitProgress(0); preload(id) },
     subscribe: l => e().subscribe(l),
   }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload])
   useEffect(() => { (window as unknown as { __pulseLoadSong?: (id: string, sec?: number) => Promise<void> }).__pulseLoadSong = async (id, sec) => { const sg = SONGS.find(x => x.raw.id === id); if (sg) await value.loadSong(sg, sec) } }, [value])
+  useEffect(() => { (window as unknown as { __pulseSetKit?: (id: string) => void }).__pulseSetKit = value.setKit }, [value]) // used by tests
   useEffect(() => { (window as unknown as { __pulseLoadPattern?: (id: string) => boolean }).__pulseLoadPattern = id => { const pt = Object.values(PATTERNS).find(x => x.id === id || x.id.endsWith('-' + id)); if (pt) value.load(pt, false); return !!pt } }, [value]) // used by tests
   return <C.Provider value={value}>{children}</C.Provider>
 }
@@ -169,7 +177,7 @@ export function StepGrid({ pattern, current }: { pattern: Pattern; current: numb
                   <span key={i} className={`relative flex-1 h-5 rounded-[3px] overflow-hidden transition-colors duration-75 ${beat ? 'ml-[3px]' : ''} ${i === current ? 'bg-amber/25' : 'bg-white/[0.04]'}`}>
                     {vel > 0 && <span className={`absolute inset-x-0 bottom-0 rounded-[3px] transition-[background-color,transform] duration-100 ${i === current ? 'bg-amber scale-y-110' : 'bg-bone/70'}`} style={{ height: `${Math.round(25 + vel * 75)}%` }} />}
                     {(c === 'f' || c === 'r') && <span className="absolute top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-ink" />}
-                    {pattern.variant?.[v]?.[String(i)] && <span title={VARIANTS[pattern.variant[v]![String(i)]]?.label} className="absolute inset-0 grid place-items-center text-[7px] leading-none font-semibold text-ink/75">{VARIANTS[pattern.variant[v]![String(i)]]?.short}</span>}
+                    {pattern.variant?.[v]?.[String(i)] && <span title={VARIANTS[pattern.variant[v]![String(i)]]?.label} className="absolute inset-x-0 bottom-0 grid place-items-center text-[7px] leading-none font-semibold text-ink/75" style={{ height: `max(8px, ${vel > 0 ? Math.round(25 + vel * 75) : 100}%)` }}>{VARIANTS[pattern.variant[v]![String(i)]]?.short}</span>}
                     {pattern.sub?.[v]?.[String(i)]?.map(([fr, sv], j) => <span key={j} className={`absolute bottom-0 w-[2px] rounded-full ${i === current ? 'bg-amber' : 'bg-bone/80'}`} style={{ left: `${fracOf(fr) * 100}%`, height: `${Math.round(25 + sv * 75)}%` }} />)}
                   </span>
                 )
