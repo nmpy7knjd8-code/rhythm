@@ -27,7 +27,7 @@ interface Ctx {
   toggle: () => Promise<void>; setBpm: (n: number) => void; setSwing: (n: number) => void; setKit: (id: string) => void
   subscribe: RhythmEngine['subscribe']
   song: Song | null; songBar: number; loopSection: number | null
-  loadSong: (s: Song, section?: number) => Promise<void>; queue: Song[]; enqueue: (s: Song) => void; unqueue: (i: number) => void; next: () => Promise<void>; shuffle: (pool: Song[]) => Promise<void>; playRange: (s: Song, start: number, end: number) => Promise<void>; jumpBar: (bar: number) => void; jumpSection: (i: number) => void; setLoopSection: (i: number | null) => void
+  loadSong: (s: Song, section?: number) => Promise<void>; queue: Song[]; enqueue: (s: Song) => void; unqueue: (i: number) => void; next: () => Promise<void>; shuffle: (pool: Song[]) => Promise<void>; playRange: (s: Song, start: number, end: number) => Promise<void>; jumpBar: (bar: number, onBeat?: boolean) => void; jumpSection: (i: number) => void; setLoopSection: (i: number | null) => void
 }
 export const sectionOf = (s: Song, bar: number) => Math.max(0, s.sections.findIndex(x => bar >= x.start && bar < x.start + x.bars))
 const C = createContext<Ctx>(null!)
@@ -113,7 +113,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm); en.setSongLoop([st, end])
       preload(kitId); await en.start(); setPlaying(true)
     },
-    jumpBar: b => { e().jumpSong(b); if (!e().playing) setSongBar(b) },
+    jumpBar: (b, onBeat) => { e().jumpSong(b, onBeat); if (!e().playing) setSongBar(b) },
     jumpSection: i => { if (!song) return; const st = song.sections[i].start; e().jumpSong(st, true); if (!e().playing) setSongBar(st)
       if (loopSection !== null && loopSection !== i) { setLoopS(i); e().setSongLoop([st, st + song.sections[i].bars]) } },
     setLoopSection: i => { setLoopS(i); e().setSongLoop(i === null || !song ? null : [song.sections[i].start, song.sections[i].start + song.sections[i].bars]) },
@@ -386,7 +386,7 @@ export function PlayerBar() {
     const id = setInterval(() => setLive(Tone.getTransport().bpm.value), 200); return () => clearInterval(id) }, [sg, P.playing])
   return createPortal(<>
     <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-ink/85 backdrop-blur-xl border-t border-white/[0.06]"><div className="max-w-xl mx-auto">
-      {P.playing && sg?.raw.goodPart && <div className="mb-2 flex justify-center"><button onClick={() => P.jumpBar(sg.raw.goodPart!.bar)} title={sg.raw.goodPart.at}
+      {P.playing && sg?.raw.goodPart && <div className="mb-2 flex justify-center"><button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
         className="h-7 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button></div>}
       <div className="flex items-center gap-3 h-14 px-2 rounded-2xl bg-white/[0.05] border border-white/[0.06]">
         <button aria-label={P.playing ? 'Stop' : 'Play'} onClick={P.toggle} disabled={!P.layers.length && !P.arrangement && !P.song}

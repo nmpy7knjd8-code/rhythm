@@ -9,7 +9,7 @@ for (const [n, id] of ids.entries()) {
   await p.waitForTimeout(1200)
   const btn = p.getByRole('button', { name: 'Skip to the good part' }); const shown = await btn.count()
   if (n === 0) await p.screenshot({ path: shot })
-  if (shown) await btn.click(); await p.waitForTimeout(1500)
+  if (shown) await btn.click(); await p.waitForTimeout(3000)
   const bar = await p.evaluate(() => window.__pulseEngine.songBar ?? window.__pulseEngine.bar)
   console.log(id.padEnd(11), JSON.stringify({ shownWhileStopped: before, shownWhilePlaying: shown, barAfterSkip: bar }))
   await p.click('button[aria-label="Stop"]'); await p.waitForTimeout(300)
