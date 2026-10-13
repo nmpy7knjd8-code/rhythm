@@ -65,7 +65,8 @@
    "firstDrumBar": 4,
    "sound": {
     "snareGate": 0.2,
-    "tomGate": 0.25
+    "tomGate": 0.25,
+    "cym": 0.95
    }
   },
   "holdtheline": {
@@ -83,55 +84,64 @@
   "moon": {
    "sound": {
     "snare": 1.15,
-    "snareGate": 0.3
+    "snareGate": 0.3,
+    "cym": 1.06
    }
   },
   "driven": {
    "sound": {
     "snare": 1.15,
-    "snareGate": 0.3
+    "snareGate": 0.3,
+    "cym": 1.06
    }
   },
   "everybreath": {
    "sound": {
     "snare": 1.15,
-    "snareGate": 0.3
+    "snareGate": 0.3,
+    "cym": 1.06
    }
   },
   "levee": {
    "sound": {
     "snare": 0.93,
-    "toms": 0.94
+    "toms": 0.94,
+    "cym": 0.94
    }
   },
   "rocknroll": {
    "sound": {
     "snare": 0.93,
-    "toms": 0.94
+    "toms": 0.94,
+    "cym": 0.94
    }
   },
   "fool": {
    "sound": {
     "snare": 0.93,
-    "toms": 0.94
+    "toms": 0.94,
+    "cym": 0.94
    }
   },
   "mobydick": {
    "sound": {
     "snare": 0.93,
-    "toms": 0.94
+    "toms": 0.94,
+    "cym": 0.94
    }
   },
   "goodtimes": {
    "sound": {
     "snare": 0.93,
-    "toms": 0.94
+    "toms": 0.94,
+    "cym": 0.94
    }
   },
   "kashmir": {
    "sound": {
     "snare": 0.93,
-    "toms": 0.94
+    "toms": 0.94,
+    "cym": 0.94
    }
   },
   "tomsawyer": {
@@ -159,7 +169,8 @@
     "snare": 0.92,
     "snareGate": 0.16,
     "toms": 0.95,
-    "tomGate": 0.2
+    "tomGate": 0.2,
+    "cym": 0.93
    }
   },
   "ticket": {
@@ -167,7 +178,8 @@
     "snare": 0.92,
     "snareGate": 0.16,
     "toms": 0.95,
-    "tomGate": 0.2
+    "tomGate": 0.2,
+    "cym": 0.93
    }
   },
   "rain": {
@@ -175,7 +187,8 @@
     "snare": 0.92,
     "snareGate": 0.16,
     "toms": 0.95,
-    "tomGate": 0.2
+    "tomGate": 0.2,
+    "cym": 0.93
    }
   },
   "airtonight": {
@@ -183,25 +196,29 @@
     "snare": 0.95,
     "snareGate": 0.22,
     "toms": 0.95,
-    "tomGate": 0.25
+    "tomGate": 0.25,
+    "cym": 1.05
    }
   },
   "dontyou": {
    "sound": {
     "snareGate": 0.24,
-    "tomGate": 0.3
+    "tomGate": 0.3,
+    "cym": 1.05
    }
   },
   "prayer": {
    "sound": {
     "snareGate": 0.24,
-    "tomGate": 0.3
+    "tomGate": 0.3,
+    "cym": 1.05
    }
   },
   "sugar80": {
    "sound": {
     "snareGate": 0.24,
-    "tomGate": 0.3
+    "tomGate": 0.3,
+    "cym": 1.05
    }
   },
   "billiejean": {
@@ -219,13 +236,15 @@
   "50ways": {
    "sound": {
     "snareGate": 0.2,
-    "tomGate": 0.25
+    "tomGate": 0.25,
+    "cym": 0.95
    }
   },
   "aja": {
    "sound": {
     "snareGate": 0.2,
-    "tomGate": 0.25
+    "tomGate": 0.25,
+    "cym": 0.95
    }
   }
  },

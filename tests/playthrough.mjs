@@ -15,7 +15,7 @@ const expected = id => { const d = JSON.parse(readFileSync(`public/songs/${id}.j
 const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] })
 let bad = 0; const queue = [...ids]
 async function worker() {
-  const p = await b.newPage(); await p.goto(URL, { waitUntil: 'networkidle' })
+  const p = await b.newPage({ viewport: { width: 390, height: 844 } }); await p.goto(URL, { waitUntil: 'networkidle' })
   while (queue.length) {
     const id = queue.shift(); const ex = expected(id)
     const r = await p.evaluate(async ({ id, SCALE, sec }) => {
