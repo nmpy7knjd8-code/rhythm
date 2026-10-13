@@ -11,18 +11,20 @@
   "hotforteacher",
   "rosanna",
   "jump",
-  "singsing"
+  "singsing",
+  "meetingspirits",
+  "fred",
+  "heaviestmatter",
+  "bleed",
+  "puppies",
+  "tweekers",
+  "frizzlefry",
+  "aja",
+  "amen",
+  "cobham",
+  "mitchell"
  ],
  "meta": {
-  "heaviestmatter": {
-   "bpmDisplay": 0.5,
-   "bpmNote": "The tab counts the double-time pulse (about 207); the record is listed at 103, so Pulse shows half and plays the tab at its written speed.",
-   "goodPart": {
-    "bar": 181,
-    "at": "Hammer-On Verse",
-    "estimated": true
-   }
-  },
   "songforthedead": {
    "bpm": 106,
    "bpmNote": "Main groove about 106 (record listed at 107); the fast intro runs about 205–214 as written in the tab.",
@@ -393,18 +395,6 @@
     "estimated": true
    }
   },
-  "aja": {
-   "sound": {
-    "snareGate": 0.2,
-    "tomGate": 0.25,
-    "cym": 0.95
-   },
-   "goodPart": {
-    "bar": 221,
-    "at": "Outro",
-    "estimated": true
-   }
-  },
   "aenema": {
    "bpmDisplay": 0.6666666666666666,
    "bpmNote": "The tab counts dotted quarters (about 122 in the 12/8 intro, about 60 in the 6/8 sections written at half speed); Pulse shows the dotted-quarter pulse.",
@@ -412,31 +402,6 @@
    "goodPart": {
     "bar": 166,
     "at": "Climax"
-   }
-  },
-  "cobham": {
-   "confidence": "transcribed (Songsterr community tab); excerpt: about 2:45 of a much longer track",
-   "goodPart": {
-    "bar": 12,
-    "at": "[B]",
-    "estimated": true
-   }
-  },
-  "meetingspirits": {
-   "confidence": "transcribed (Songsterr community tab); approximate: 13% shorter than the record, and the tab notes some bars were duplicated",
-   "goodPart": {
-    "bar": 135,
-    "at": "Main Theme",
-    "estimated": true
-   }
-  },
-  "mitchell": {
-   "bpm": 150,
-   "bpmNote": "About 150 BPM on the record (AcousticBrainz median of 156 analyses, via TempoPeek); the tab’s 147 was scaled to 150.",
-   "goodPart": {
-    "bar": 172,
-    "at": "Section 2",
-    "estimated": true
    }
   },
   "bitesdust": {
@@ -458,13 +423,6 @@
    "goodPart": {
     "bar": 207,
     "at": "Climax/Outro"
-   }
-  },
-  "puppies": {
-   "bpmNote": "About 80 on the record (SongBPM 160 counted double); the tab’s 81 was scaled to 80.",
-   "goodPart": {
-    "bar": 68,
-    "at": "Bridge/Drum Fills"
    }
   },
   "byob": {
@@ -499,13 +457,6 @@
     "estimated": true
    }
   },
-  "amen": {
-   "goodPart": {
-    "bar": 37,
-    "at": "Part 2 · ride",
-    "estimated": true
-   }
-  },
   "anesthetize": {
    "goodPart": {
     "bar": 311,
@@ -524,13 +475,6 @@
    "goodPart": {
     "bar": 71,
     "at": "Bridge",
-    "estimated": true
-   }
-  },
-  "bleed": {
-   "goodPart": {
-    "bar": 16,
-    "at": "My Crimson Liquid",
     "estimated": true
    }
   },
@@ -573,20 +517,6 @@
    "goodPart": {
     "bar": 75,
     "at": "Chorus",
-    "estimated": true
-   }
-  },
-  "fred": {
-   "goodPart": {
-    "bar": 218,
-    "at": "Part 17 · drums",
-    "estimated": true
-   }
-  },
-  "frizzlefry": {
-   "goodPart": {
-    "bar": 47,
-    "at": "Verse 1",
     "estimated": true
    }
   },
@@ -836,13 +766,6 @@
     "estimated": true
    }
   },
-  "tweekers": {
-   "goodPart": {
-    "bar": 84,
-    "at": "Bass Solo",
-    "estimated": true
-   }
-  },
   "vicarious": {
    "goodPart": {
     "bar": 154,
@@ -897,7 +820,6 @@
  ],
  "tagShuffle": true,
  "shuffleBars": {
-  "mitchell": 183,
   "moon": 183,
   "purdie": 177,
   "mobydick": 7,
@@ -905,10 +827,8 @@
   "danceeternity": 14
  },
  "tempoScale": {
-  "mitchell": 1.0204081632653061,
   "bitesdust": 0.9821428571428571,
-  "grudge": 0.9795918367346939,
-  "puppies": 0.9876543209876543
+  "grudge": 0.9795918367346939
  },
  "barFixes": {
   "4646": [
