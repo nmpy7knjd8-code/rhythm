@@ -169,6 +169,7 @@ export class RhythmEngine {
       const fl = this.feel
       if (p.humanize) { const r = Math.sin((this.songBar * 97 + step) * 12.9898) * 43758.5453; t += fl * (p.humanize.lateMs + ((r - Math.floor(r)) * 2 - 1) * p.humanize.jitterMs) / 1000 }
       this.hz = { bar: this.songBar, pos: step * tps, beat: beatTicksOf(p), sub: -1, stroke: stepSec }
+      if (p.grace) this.playGraces(SONG_ID, p, step, t, stepSec, f => this.feelShift(p, step + f, tps, stepSec))
       for (const h of hitsAt(p, step)) this.play(SONG_ID, h.voice, t + this.feelShift(p, step, tps, stepSec), h.velocity, h.graces, stepSec, p.variant?.[h.voice]?.[step])
       this.playSubs(SONG_ID, p, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec), fl); this.hz = null
       const b = this.songBar; Tone.getDraw().schedule(() => this.listeners.forEach(f => f({ [SONG_ID]: step }, b)), time)
@@ -261,6 +262,16 @@ export class RhythmEngine {
     const rate = (vr?.rate ?? 1) * ((isSn ? sp?.snare : isTom ? sp?.toms : isCr || voice === 'ride' ? sp?.cym : 1) ?? 1)
     const gate = (isSn ? sp?.snareGate : isTom ? sp?.tomGate : 0) ?? 0
     inst.trigger(t, vel, rate, isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1, gate, tip)
+  }
+  /** Tab grace notes for this step: soft strokes just before the onset, 18-35 ms apart and never closer than 40% of the gap to that drum's previous note. */
+  private playGraces(ch: string, p: Pattern, step: number, t: number, stepSec: number, shift: (frac: number) => number) {
+    for (const [voice, m] of Object.entries(p.grace!) as [Voice, Record<string, number>][]) for (const [k, n] of Object.entries(m)) {
+      const [st, fr] = k.split(':'); if (Number(st) !== step) continue
+      const f = fr ? fracOf(fr) : 0, at = t + f * stepSec + shift(f), inst = this.inst(ch, voice); if (!inst) continue
+      const prevT = this.lastHit.get(ch + voice) ?? -9, g = Math.min(Math.max(0.018, Math.min(0.035, stepSec / 2)), 0.4 * Math.max(0, at - prevT) / n)
+      const hh = hash(this.songBar, step + f, 11)
+      for (let i = n; i > 0; i--) inst.trigger(Math.max(0, at - g * i), 0.26 + 0.04 * hh + (n - i) * 0.03) // a drag's second grace a touch louder
+    }
   }
   /** Off-grid (sub-step) hits, grouped per drum. Only a real same-drum run (2+ off-grid strokes in the step, or one next to an
    *  on-step stroke of the same drum) gets roll shaping: softer inner strokes, hand alternation, crescendo and the small inner-stroke

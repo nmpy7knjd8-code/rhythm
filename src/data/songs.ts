@@ -39,13 +39,14 @@ export async function loadSongBars(song: Song): Promise<Song> {
   const data = (await r.json()) as { sections: SectionFile[] }
   const bars: Pattern[] = []
   data.sections.forEach((sec, si) => sec.bars.forEach((b, i) => {
-    const { _sub, _var, _tempo, _feel, ...strs } = b as Record<string, string> & { _feel?: '8th' | '16th'; _tempo?: [string, number][]; _sub?: Record<string, Record<string, [number | string, number][]>>; _var?: Record<string, Record<string, string>> }
+    const { _sub, _var, _tempo, _feel, _grace, ...strs } = b as Record<string, string> & { _grace?: Record<string, Record<string, number>>; _feel?: '8th' | '16th'; _tempo?: [string, number][]; _sub?: Record<string, Record<string, [number | string, number][]>>; _var?: Record<string, Record<string, string>> }
     const variant = _var ? Object.fromEntries(Object.entries(_var).flatMap(([k, m]) => VOICE_ALIASES[k] ? [[VOICE_ALIASES[k], m]] : [])) : undefined
     const steps = Object.values(strs)[0]?.length ?? 16
     const sub = _sub ? Object.fromEntries(Object.entries(_sub).flatMap(([k, m]) => VOICE_ALIASES[k] ? [[VOICE_ALIASES[k], m]] : [])) : undefined
+    const grace = _grace ? Object.fromEntries(Object.entries(_grace).flatMap(([k, m]) => VOICE_ALIASES[k] ? [[VOICE_ALIASES[k], m]] : [])) : undefined
     const [num] = (sec.timeSig[i] ?? '4/4').split('/').map(Number)
     const spb = Math.max(1, Math.round(steps / (sec.timeSig[i]?.endsWith('/8') ? num / (num % 3 === 0 ? 3 : 1) : num)))
-    bars.push({ id: `song-${song.raw.id}-b${bars.length}`, name: song.raw.song, steps, stepsPerBeat: spb, ticksPerStep: sec.ticksPerStep[i], suggestedBpm: sec.bpm[i], timeSig: sec.timeSig[i], humanize: sec.humanize, sub, variant, tempoAt: _tempo, feel: _feel, tracks: stringTracks(strs as Record<string, string>) })
+    bars.push({ id: `song-${song.raw.id}-b${bars.length}`, name: song.raw.song, steps, stepsPerBeat: spb, ticksPerStep: sec.ticksPerStep[i], suggestedBpm: sec.bpm[i], timeSig: sec.timeSig[i], humanize: sec.humanize, sub, grace, variant, tempoAt: _tempo, feel: _feel, tracks: stringTracks(strs as Record<string, string>) })
     void si
   }))
   song.bars = bars

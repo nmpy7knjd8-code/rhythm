@@ -32,6 +32,9 @@ export interface Pattern {
   sub?: Partial<Record<Voice, Record<string, [number | string, number][]>>>
   /** Instrument/pitch variant per hit: voice → step → variant id (see VARIANTS), e.g. splash on the crash row. */
   variant?: Partial<Record<Voice, Record<string, string>>>
+  /** Grace strokes from the tab: voice → onset key ('step' or 'step:n/d' off-grid) → 1 (flam) or 2 (drag). They sit just before that
+   *  instant, on their own drum (which may differ from the main note's); the main note keeps its written velocity. */
+  grace?: Partial<Record<Voice, Record<string, number>>>
   /** Tempo changes inside the bar: [fraction of the bar ('n/d'), quarter-note BPM]. */
   tempoAt?: [string, number][]
   /** Tab shuffle marking for this bar: off-beats were moved to 2/3 of each 8th or 16th pair. */

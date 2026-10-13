@@ -283,7 +283,12 @@
    "bpmNote": "About 110 BPM on the record (AcousticBrainz median of 624 analyses, via TempoPeek); the tab’s 112 was scaled to 110, which also matches the track length."
   },
   "grudge": {
-   "bpmNote": "About 96 on the record (SongBPM; Drumeo lists about 100); the tab’s 98 was scaled to 96, which also matches the track length."
+   "bpmNote": "About 96 on the record (SongBPM; Drumeo lists about 100); the tab’s 98 was scaled to 96, which also matches the track length.",
+   "lengthCheck": {
+    "seconds": 515,
+    "source": "Wikipedia track length (Lateralus, 8:35)",
+    "modelSeconds": 514
+   }
   },
   "puppies": {
    "bpmNote": "About 80 on the record (SongBPM 160 counted double); the tab’s 81 was scaled to 80."
