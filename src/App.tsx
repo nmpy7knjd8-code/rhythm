@@ -18,7 +18,7 @@ export default function App() {
           <div className="mt-3 flex flex-nowrap justify-center gap-x-5 whitespace-nowrap">{NAV.map(([k, l]) => <a key={k} href={`#/${k}`} aria-current={page === k ? 'page' : undefined} className={`py-1 text-[15px] ${page === k ? 'text-amber' : 'text-bone/80'}`}>{l}</a>)}</div>
         </nav>
         <PlayerBar />
-        <main key={route} className="pt-8 rise">
+        <main key={route} className={`${['about', 'theory', 'story', 'lens'].includes(page) ? 'pt-8' : 'pt-4'} rise`}>
           {page === 'about' ? <About /> : page === 'theory' ? <Theory /> : page === 'story' ? <Story /> : page === 'lens' ? <Lens id={sub} go={go} /> : <Library />}
         </main>
         <footer className="mt-24 mb-24 pt-8 border-t border-line flex justify-between text-xs text-mute"><span>Pulse</span><a href="#/about">About & credits</a></footer>

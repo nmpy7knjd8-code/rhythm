@@ -315,7 +315,7 @@ function FillPicker() {
 function Sheet({ open, onClose, children, title, subtitle, head, contentPull = true }: { open: boolean; onClose: () => void; children: ReactNode; title?: string; subtitle?: string; head?: ReactNode; contentPull?: boolean }) {
   const [dy, setDy] = useState(0); const drag = useRef<{ y: number; t: number; lastY: number; lastT: number; active: boolean; fromContent: boolean } | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
-  useEffect(() => { if (!open) setDy(0) }, [open])
+  useEffect(() => { if (!open) setDy(0); else if (scroller.current) scroller.current.scrollTop = 0 }, [open]) // every open starts at the top
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }; addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [onClose])
   const start = (y: number, fromContent: boolean) => { drag.current = { y, t: performance.now(), lastY: y, lastT: performance.now(), active: !fromContent, fromContent } }
   const move = (y: number, e?: { cancelable: boolean; preventDefault: () => void }) => {
@@ -350,8 +350,8 @@ function Sheet({ open, onClose, children, title, subtitle, head, contentPull = t
   return <>
     <div onClick={onClose} className={`fixed inset-0 z-40 bg-black/55 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} style={open && dy ? { opacity: Math.max(0.2, 1 - dy / 400) } : undefined} />
     <div role="dialog" aria-modal="true" aria-hidden={!open} className={`fixed inset-x-0 bottom-0 z-50 ${dragging ? '' : 'transition-transform duration-300 ease-out'} ${open ? '' : 'translate-y-full'}`} style={open && dy ? { transform: `translateY(${dy}px)` } : undefined}>
-      <div className="max-w-xl mx-auto rounded-t-[24px] bg-[#141416] border-t border-white/[0.08] shadow-2xl shadow-black pb-[env(safe-area-inset-bottom)]">
-        <div className="touch-none select-none cursor-grab rounded-t-[24px] border-b border-white/[0.06]"
+      <div className="max-w-xl mx-auto flex flex-col max-h-[calc(100dvh-0.5rem)] rounded-t-[24px] bg-[#141416] border-t border-white/[0.08] shadow-2xl shadow-black pb-[env(safe-area-inset-bottom)]">
+        <div className="shrink-0 touch-none select-none cursor-grab rounded-t-[24px] border-b border-white/[0.06]"
           onTouchStart={e => start(e.touches[0].clientY, false)} onTouchMove={e => move(e.touches[0].clientY)} onTouchEnd={end} onTouchCancel={end}
           onPointerDown={e => { if (e.pointerType === 'mouse' && !(e.target as HTMLElement).closest('button')) { start(e.clientY, false); const mm = (ev: PointerEvent) => move(ev.clientY); const mu = () => { end(); removeEventListener('pointermove', mm); removeEventListener('pointerup', mu) }; addEventListener('pointermove', mm); addEventListener('pointerup', mu) } }}>
           <div className="relative flex items-center h-14 pl-4 pr-1">
@@ -363,7 +363,7 @@ function Sheet({ open, onClose, children, title, subtitle, head, contentPull = t
           </div>
           {head && <div className="px-4 pb-3 flex justify-center">{head}</div>}
         </div>
-        <div ref={scroller} className="h-[min(72vh,calc(100dvh-10rem))] overflow-y-auto overscroll-contain px-4 pt-4 pb-5">{children}</div>
+        <div ref={scroller} className="h-[min(72vh,calc(100dvh-10rem))] min-h-0 shrink overflow-y-auto overscroll-contain px-4 pt-4 pb-5">{children}</div>
       </div>
     </div>
   </>
@@ -407,7 +407,7 @@ export function PlayerBar() {
     <Sheet open={open} onClose={() => setOpen(false)} title={sg ? sg.raw.song : title} subtitle={sg ? `${sg.raw.artist} · ${sg.raw.drummer}` : undefined}
       contentPull={tab !== 'sound'}
       head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} />{P.playing && sg?.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
-        className="mt-2 h-7 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}<UpNext /></div>}>
+        className="mt-2 h-7 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}<UpNext key={String(open)} /></div>}>
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
         {sg?.raw.tuning && <p className="text-[11px] text-mute">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}

@@ -20,14 +20,14 @@ import { PITCHED, noteName, midiToHz } from '../engine/pitch'
 import { TUNING_PRESETS, PITCH_TEXT, PITCH_PATTERNS } from '../data/pitch'
 import { LoadButtons, usePlayer, StepGrid, SongForm } from './player'
 
-const H1 = ({ t, sub, center }: { t: string; sub: string; center?: boolean }) => <header className={`mb-14 rise ${center ? 'text-center' : ''}`}><h1 className="text-[34px] leading-[1.1] font-semibold tracking-[-0.025em]">{t}</h1><p className={`mt-4 text-[17px] text-bone/60 leading-relaxed max-w-[34ch] ${center ? 'mx-auto' : ''}`}>{sub}</p></header>
+const H1 = ({ t, sub, center, tight }: { t: string; sub: string; center?: boolean; tight?: boolean }) => <header className={`${tight ? 'mb-7' : 'mb-14'} rise ${center ? 'text-center' : ''}`}><h1 className="text-[34px] leading-[1.1] font-semibold tracking-[-0.025em]">{t}</h1><p className={`${tight ? 'mt-3' : 'mt-4'} text-[17px] text-bone/60 leading-relaxed max-w-[34ch] ${center ? 'mx-auto' : ''}`}>{sub}</p></header>
 const Tag = ({ c }: { c: string }) => <span className="eyebrow">{c}</span>
 
 export function Library() {
   const [tab, setTab] = useState<'styles' | 'songs'>('songs')
   return <>
-    <H1 center t="Rhythm library" sub="Grooves from many songs and styles, each with notes on how it feels and why. Play one, then add layers." />
-    <div className="mb-12 flex justify-center"><div className="inline-flex p-0.5 rounded-full bg-white/[0.05]">{(['songs', 'styles'] as const).map(t => <button key={t} onClick={() => setTab(t)} className={`h-9 px-5 rounded-full text-sm capitalize transition-all duration-200 ${tab === t ? 'bg-bone text-ink' : 'text-bone/60'}`}>{t === 'songs' ? `Songs · ${SONGS.length}` : `Styles · ${RHYTHMS.length}`}</button>)}</div></div>
+    <H1 center tight t="Rhythm library" sub="Grooves from many songs and styles, each with notes on how it feels and why. Play one, then add layers." />
+    <div className={`${tab === 'songs' ? 'mb-4' : 'mb-12'} flex justify-center`}><div className="inline-flex p-0.5 rounded-full bg-white/[0.05]">{(['songs', 'styles'] as const).map(t => <button key={t} onClick={() => setTab(t)} className={`h-9 px-5 rounded-full text-sm capitalize transition-all duration-200 ${tab === t ? 'bg-bone text-ink' : 'text-bone/60'}`}>{t === 'songs' ? `Songs · ${SONGS.length}` : `Styles · ${RHYTHMS.length}`}</button>)}</div></div>
     {tab === 'styles' ? <Styles /> : <Songs />}
   </>
 }
@@ -142,17 +142,17 @@ function Songs() {
   const P = usePlayer()
   const pickArtist = () => { const n = document.getElementById('artists'); n?.scrollIntoView({ behavior: 'smooth', block: 'center' }); n?.querySelector('button')?.focus({ preventScroll: true }) }
   return <div className="rise">
-    <div className="-mt-8 mb-8 flex justify-center">
-      <button onClick={pickArtist} className="h-[42px] px-6 rounded-full text-base bg-white/[0.05] text-bone/80">Choose an artist</button>
+    <div className="mb-5 flex justify-center">
+      <button onClick={pickArtist} className="h-[42px] px-6 rounded-full text-base bg-white/[0.05] border border-white/[0.22] text-bone/80">Choose an artist</button>
     </div>
     <nav id="artists" aria-label="Artists" className={`scroll-mt-24 mx-auto max-w-md flex flex-wrap justify-center gap-1 overflow-hidden ${allArtists ? '' : 'max-h-[108px]'}`}>
       {artists.map(a => <button key={a} onClick={() => { setPicked(a); scrollToArtist(slug(a)) }}
         className={`h-6 px-2.5 rounded-full text-[12px] leading-none border transition-colors ${picked === a ? 'border-amber/60 text-amber bg-amber/[0.08]' : 'border-white/[0.07] bg-white/[0.035] text-bone/70 hover:text-amber hover:border-amber/40'}`}>{a}</button>)}
     </nav>
-    <div className="mt-1 mb-5 text-center"><button onClick={() => setAllArtists(v => !v)} className="text-[11px] text-mute hover:text-amber">{allArtists ? 'Fewer' : 'More artists'}</button></div>
+    <div className="mt-1 mb-4 text-center"><button onClick={() => setAllArtists(v => !v)} className="text-[11px] text-mute hover:text-amber">{allArtists ? 'Fewer' : 'More artists'}</button></div>
     <RequestSong />
     <div className="-mt-2 mb-6 flex justify-center">
-      <button aria-label="Shuffle songs" onClick={() => void P.shuffle(list.filter(isRealSong))} className="h-[42px] pl-6 pr-1 rounded-full text-base bg-white/[0.05] text-bone/80 flex items-center gap-3">
+      <button aria-label="Shuffle songs" onClick={() => void P.shuffle(list.filter(isRealSong))} className="h-[42px] pl-6 pr-1 rounded-full text-base bg-white/[0.05] border border-white/[0.22] text-bone/80 flex items-center gap-3">
         or shuffle
         <span className="w-[34px] h-[34px] rounded-full bg-amber text-ink grid place-items-center">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22M18 2l4 4-4 4M2 6h1.9c1.5 0 2.9.9 3.6 2.2M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8M18 14l4 4-4 4" /></svg>
