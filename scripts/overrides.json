@@ -62,7 +62,11 @@
      ]
     }
    ],
-   "firstDrumBar": 4
+   "firstDrumBar": 4,
+   "sound": {
+    "snareGate": 0.2,
+    "tomGate": 0.25
+   }
   },
   "holdtheline": {
    "bpmDisplay": 0.6666666666666666,
@@ -75,6 +79,154 @@
   "shookme": {
    "bpm": 130,
    "bpmNote": "Intro about 120, main groove about 130 (record listed around 127–128)."
+  },
+  "moon": {
+   "sound": {
+    "snare": 1.15,
+    "snareGate": 0.3
+   }
+  },
+  "driven": {
+   "sound": {
+    "snare": 1.15,
+    "snareGate": 0.3
+   }
+  },
+  "everybreath": {
+   "sound": {
+    "snare": 1.15,
+    "snareGate": 0.3
+   }
+  },
+  "levee": {
+   "sound": {
+    "snare": 0.93,
+    "toms": 0.94
+   }
+  },
+  "rocknroll": {
+   "sound": {
+    "snare": 0.93,
+    "toms": 0.94
+   }
+  },
+  "fool": {
+   "sound": {
+    "snare": 0.93,
+    "toms": 0.94
+   }
+  },
+  "mobydick": {
+   "sound": {
+    "snare": 0.93,
+    "toms": 0.94
+   }
+  },
+  "goodtimes": {
+   "sound": {
+    "snare": 0.93,
+    "toms": 0.94
+   }
+  },
+  "kashmir": {
+   "sound": {
+    "snare": 0.93,
+    "toms": 0.94
+   }
+  },
+  "tomsawyer": {
+   "sound": {
+    "snare": 1.07
+   }
+  },
+  "yyz": {
+   "sound": {
+    "snare": 1.07
+   }
+  },
+  "limelight": {
+   "sound": {
+    "snare": 1.07
+   }
+  },
+  "lavilla": {
+   "sound": {
+    "snare": 1.07
+   }
+  },
+  "cometogether": {
+   "sound": {
+    "snare": 0.92,
+    "snareGate": 0.16,
+    "toms": 0.95,
+    "tomGate": 0.2
+   }
+  },
+  "ticket": {
+   "sound": {
+    "snare": 0.92,
+    "snareGate": 0.16,
+    "toms": 0.95,
+    "tomGate": 0.2
+   }
+  },
+  "rain": {
+   "sound": {
+    "snare": 0.92,
+    "snareGate": 0.16,
+    "toms": 0.95,
+    "tomGate": 0.2
+   }
+  },
+  "airtonight": {
+   "sound": {
+    "snare": 0.95,
+    "snareGate": 0.22,
+    "toms": 0.95,
+    "tomGate": 0.25
+   }
+  },
+  "dontyou": {
+   "sound": {
+    "snareGate": 0.24,
+    "tomGate": 0.3
+   }
+  },
+  "prayer": {
+   "sound": {
+    "snareGate": 0.24,
+    "tomGate": 0.3
+   }
+  },
+  "sugar80": {
+   "sound": {
+    "snareGate": 0.24,
+    "tomGate": 0.3
+   }
+  },
+  "billiejean": {
+   "sound": {
+    "snare": 1.08,
+    "snareGate": 0.12
+   }
+  },
+  "funkydrummer": {
+   "sound": {
+    "snare": 1.1,
+    "snareGate": 0.2
+   }
+  },
+  "50ways": {
+   "sound": {
+    "snareGate": 0.2,
+    "tomGate": 0.25
+   }
+  },
+  "aja": {
+   "sound": {
+    "snareGate": 0.2,
+    "tomGate": 0.25
+   }
   }
  },
  "pinnedFiles": [

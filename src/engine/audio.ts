@@ -2,7 +2,7 @@ import * as Tone from 'tone'
 import type { Kit, KitVoice, Layer, Voice, Arrangement, Pattern, Fill } from './types'
 import { TICKS_PER_BAR, hitsAt, stepForTick, swingOffset, audibleLayers, ticksPerStep , subHitsAt, VARIANTS, fracOf } from './pattern'
 
-type Inst = { trigger: (t: number, v: number, r?: number) => void; choke?: (t: number) => void; dispose: () => void }
+type Inst = { trigger: (t: number, v: number, r?: number, gm?: number, gate?: number) => void; choke?: (t: number) => void; dispose: () => void }
 
 // ---- sample bank: lazy, cached, shared across kits/layers ----
 let SAMPLE_BASE = ''
@@ -50,7 +50,7 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode): Inst {
   const rr = layers.map(() => 0)
   const live = new Set<Tone.ToneBufferSource>()
   return {
-    trigger: (t, v, r = 1) => {
+    trigger: (t, v, r = 1, gm = 1, gate = 0) => {
       let li = layers.findIndex(l => v <= l.vel + 1e-6); if (li < 0) li = layers.length - 1
       const files = layers[li].files, f = files[rr[li]++ % files.length]
       const buf = buffers.get(f)
@@ -62,7 +62,8 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode): Inst {
       src.playbackRate.value = (kv.rate ?? 1) * r * wob
       src.onended = () => { live.delete(src); src.dispose() }
       live.add(src)
-      src.start(t, 0, undefined, 0.55 + 0.45 * Math.min(1, rel))
+      src.start(t, 0, undefined, (0.55 + 0.45 * Math.min(1, rel)) * gm)
+      if (gate > 0) { src.fadeOut = 0.03; src.stop(t + gate) } // gated / dampened drum
     },
     choke: t => { live.forEach(s => { try { s.stop(t + 0.01) } catch { /* already stopped */ } }); fb?.choke?.(t) },
     dispose: () => { fb?.dispose(); g.dispose() },
@@ -70,6 +71,7 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode): Inst {
 }
 
 interface Channel { gain: Tone.Gain; insts: Partial<Record<Voice, Inst>> }
+export interface SoundProfile { snare?: number; snareGate?: number; toms?: number; tomGate?: number; cym?: number }
 export type StepListener = (layerSteps: Record<string, number>, bar: number) => void
 const FILL_ID = 'fill', FX_ID = 'fx', SONG_ID = 'song'
 /** Inner roll strokes (between grid steps) are played softer than the stroke on the step, like real sticking:
@@ -224,7 +226,24 @@ export class RhythmEngine {
     if (voice === 'tick' || voice === 'pedal') this.channels.get(channelId)?.insts.open?.choke?.(t)
     const g = Math.max(0.025, Math.min(0.03, stepSec / 2)) // flam/drag grace spacing: 25-30 ms
     for (let i = graces; i > 0; i--) inst.trigger(Math.max(0, t - g * i), vel * 0.35)
-    inst.trigger(t, vel, vr?.rate ?? 1)
+    const sp = this.sound, isSn = voice === 'back', isCr = voice === 'crash1' || voice === 'crash2'
+    const isTom = voice === 'tomHi' || voice === 'tomMid' || voice === 'tomLo'
+    const rate = (vr?.rate ?? 1) * ((isSn ? sp?.snare : isTom ? sp?.toms : isCr || voice === 'ride' ? sp?.cym : 1) ?? 1)
+    const gate = (isSn ? sp?.snareGate : isTom ? sp?.tomGate : 0) ?? 0
+    inst.trigger(t, vel, rate, isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1, gate)
+  }
+  /** Per-song sound profile (playback rate / gate on the existing samples). */
+  sound: SoundProfile | null = null
+  private dens = new Map<string, { t: number; lvl: number }>()
+  /** Repeated snare hits within an 8th note (crash: within a quarter) duck by up to ~4.5 dB (−1.5 dB per dense hit), then recover
+   *  as hits space out. Single accents, normal backbeats and ghost notes (soft hits) are untouched. */
+  private density(key: string, t: number, vel: number, win: number) {
+    if (vel < 0.45) return 1
+    const eighth = win * 30 / Tone.getTransport().bpm.getValueAtTime(t), d = this.dens.get(key) ?? { t: -9, lvl: 1 }
+    const gap = t - d.t
+    if (gap < 0) return d.lvl // out-of-order (same step, other source)
+    d.lvl = gap <= eighth * 1.05 ? Math.max(0.6, d.lvl * 0.84) : Math.min(1, d.lvl + (gap / eighth) * 0.1)
+    d.t = t; this.dens.set(key, d); return d.lvl
   }
 
   private applySection(bar: number, time: number) {

@@ -81,16 +81,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     song, songBar, loopSection,
     loadSong: async (sg, sec) => {
       await loadSongBars(sg)
-      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); setArr(null); setSection(null); setLayers([])
-      en.setSong(sg.bars); const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0); setFeelS(1); en.setFeel(1)
+      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; setArr(null); setSection(null); setLayers([])
+      en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0); setFeelS(1); en.setFeel(1)
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
     },
     /** Play bars [start, end) of a song (0-based), looping that range. */
     playRange: async (sg, a, b) => {
       await loadSongBars(sg)
-      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); setArr(null); setSection(null); setLayers([])
+      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; setArr(null); setSection(null); setLayers([])
       const n = sg.bars.length; const st = Math.max(0, Math.min(a, n - 1)), end = Math.max(st + 1, Math.min(b, n))
-      en.setSong(sg.bars); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0); setFeelS(1); en.setFeel(1)
+      en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0); setFeelS(1); en.setFeel(1)
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm); en.setSongLoop([st, end])
       preload(kitId); await en.start(); setPlaying(true)
     },
