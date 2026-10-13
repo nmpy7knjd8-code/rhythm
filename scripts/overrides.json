@@ -3,7 +3,11 @@
   "j-shaman",
   "thetapulse",
   "quadrant4",
-  "blackpage"
+  "blackpage",
+  "westside",
+  "bluemondo",
+  "nautilus",
+  "islandmagic"
  ],
  "meta": {
   "hotforteacher": {
@@ -17,7 +21,8 @@
   "singsing": {
    "bpm": 220,
    "bpmDisplay": 0.5,
-   "bpmNote": "The tab counts double (about 220 in the main groove); the 1937 record is listed at about 112, so Pulse shows half and plays the tab at its written speed."
+   "bpmNote": "The tab counts double (about 220 in the main groove); the 1937 record is listed at about 112, so Pulse shows half and plays the tab at its written speed.",
+   "confidence": "transcribed (Songsterr community tab); excerpt: about 3 minutes of the 8:43 1937 recording"
   },
   "songforthedead": {
    "bpm": 106,
@@ -107,6 +112,11 @@
     "snare": 0.93,
     "toms": 0.94,
     "cym": 0.94
+   },
+   "lengthCheck": {
+    "seconds": 428,
+    "source": "Wikipedia track length (Led Zeppelin IV, 7:08)",
+    "modelSeconds": 443
    }
   },
   "rocknroll": {
@@ -231,7 +241,13 @@
    "sound": {
     "snare": 1.1,
     "snareGate": 0.2
-   }
+   },
+   "lengthCheck": {
+    "seconds": 174,
+    "source": "Wikipedia track length (In the Jungle Groove: \"Funky Drummer (Bonus Beat Reprise)\", 2:54; the full 1970 single edit is 9:13)",
+    "modelSeconds": 184
+   },
+   "confidence": "transcribed (Songsterr community tab); this is the Bonus Beat Reprise (2:54), not the full 9:13 track"
   },
   "50ways": {
    "sound": {
@@ -250,11 +266,24 @@
   "aenema": {
    "bpmDisplay": 0.6666666666666666,
    "bpmNote": "The tab counts dotted quarters (about 122 in the 12/8 intro, about 60 in the 6/8 sections written at half speed); Pulse shows the dotted-quarter pulse."
+  },
+  "cobham": {
+   "confidence": "transcribed (Songsterr community tab); excerpt: about 2:45 of a much longer track"
+  },
+  "meetingspirits": {
+   "confidence": "transcribed (Songsterr community tab); approximate: 13% shorter than the record, and the tab notes some bars were duplicated"
+  },
+  "mitchell": {
+   "bpm": 150,
+   "bpmNote": "About 150 BPM on the record (AcousticBrainz median of 156 analyses, via TempoPeek); the tab’s 147 was scaled to 150."
+  },
+  "bitesdust": {
+   "bpm": 110,
+   "bpmNote": "About 110 BPM on the record (AcousticBrainz median of 624 analyses, via TempoPeek); the tab’s 112 was scaled to 110, which also matches the track length."
   }
  },
  "pinnedFiles": [
-  "purdie",
-  "mobydick"
+  "purdie"
  ],
  "textFixes": [
   {
@@ -273,5 +302,9 @@
   "sugar": 35,
   "danceeternity": 14,
   "hotforteacher": 287
+ },
+ "tempoScale": {
+  "mitchell": 1.0204081632653061,
+  "bitesdust": 0.9821428571428571
  }
 }
