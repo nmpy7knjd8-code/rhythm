@@ -35,7 +35,7 @@ export const usePlayer = () => useContext(C)
 let n = 0
 
 /** Feel is fixed at 160% everywhere (Garrett): harder swing (still capped at 4:1) and a looser human touch. */
-const FEEL = 1.6
+const FEEL = 1.2
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const eng = useRef<RhythmEngine>()
   const [layers, setLayers] = useState<Layer[]>([])

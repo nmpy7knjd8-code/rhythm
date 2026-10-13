@@ -129,7 +129,7 @@ export class RhythmEngine {
   private kit!: Kit
   private swing = 0
   /** Song feel 0..1: 1 = as transcribed (tab shuffle + human roll feel), 0 = straight and exact. */
-  private feel = 1.6 // fixed at 160% by the player
+  private feel = 1.2 // fixed at 120% by the player
   /** Feel 0-2: 0 exact, 1 the natural feel (default), above 1 swings harder and loosens the human variation. */
   setFeel(f: number) { this.feel = Math.max(0, Math.min(2, f)) }
   /** Seconds to move a shuffled off-beat back toward straight (0 at feel 1). Straight bars never move. */
