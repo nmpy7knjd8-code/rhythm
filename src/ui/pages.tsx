@@ -142,9 +142,8 @@ function Songs() {
   const P = usePlayer()
   const pickArtist = () => { const n = document.getElementById('artists'); n?.scrollIntoView({ behavior: 'smooth', block: 'center' }); n?.querySelector('button')?.focus({ preventScroll: true }) }
   return <div className="rise">
-    <div className="-mt-8 mb-8 flex justify-center gap-2">
-      <button onClick={pickArtist} className="h-9 px-5 rounded-full text-sm bg-white/[0.05] text-bone/80">Click an artist</button>
-      <button onClick={() => void P.shuffle(list.filter(isRealSong))} className="h-9 px-5 rounded-full text-sm bg-amber text-ink">or shuffle</button>
+    <div className="-mt-8 mb-8 flex justify-center">
+      <button onClick={pickArtist} className="h-[42px] px-6 rounded-full text-base bg-white/[0.05] text-bone/80">Choose an artist</button>
     </div>
     <nav id="artists" aria-label="Artists" className={`scroll-mt-24 mx-auto max-w-md flex flex-wrap justify-center gap-1 overflow-hidden ${allArtists ? '' : 'max-h-[108px]'}`}>
       {artists.map(a => <button key={a} onClick={() => { setPicked(a); scrollToArtist(slug(a)) }}
@@ -152,6 +151,14 @@ function Songs() {
     </nav>
     <div className="mt-1 mb-5 text-center"><button onClick={() => setAllArtists(v => !v)} className="text-[11px] text-mute hover:text-amber">{allArtists ? 'Fewer' : 'More artists'}</button></div>
     <RequestSong />
+    <div className="-mt-2 mb-6 flex justify-center">
+      <button aria-label="Shuffle songs" onClick={() => void P.shuffle(list.filter(isRealSong))} className="h-[42px] pl-6 pr-1 rounded-full text-base bg-white/[0.05] text-bone/80 flex items-center gap-3">
+        or shuffle
+        <span className="w-[34px] h-[34px] rounded-full bg-amber text-ink grid place-items-center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22M18 2l4 4-4 4M2 6h1.9c1.5 0 2.9.9 3.6 2.2M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8M18 14l4 4-4 4" /></svg>
+        </span>
+      </button>
+    </div>
     <Note className="mb-8" line="Simplified drum-part transcriptions, for learning." more="Drum parts transcribed from Songsterr community tabs, simplified for learning. Drum part only: no audio or lyrics. Songs with lower confidence or partial tabs are marked on their cards. Details on the About page." />
     {list.map((s, i) => <article key={s.raw.id} id={i === 0 || list[i - 1].raw.artist !== s.raw.artist ? slug(s.raw.artist) : undefined} className="scroll-mt-20 mb-10 pb-10 border-b border-line last:border-0">
       <div className="flex items-baseline justify-between gap-3"><h2 className="text-xl font-medium tracking-tight">{s.raw.song}</h2><span className="text-xs text-mute tabular-nums shrink-0">{s.raw.timeSig}</span></div>
