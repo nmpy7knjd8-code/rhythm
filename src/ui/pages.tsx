@@ -26,7 +26,7 @@ const Tag = ({ c }: { c: string }) => <span className="eyebrow">{c}</span>
 export function Library() {
   const [tab, setTab] = useState<'styles' | 'songs'>('songs')
   return <>
-    <H1 center tight t="Rhythm library" sub="Visualize isolated drum tracks from your favorite songs or learn different styles, each with notes on how they feel and why. Play one, then add layers." />
+    <H1 center tight t="Rhythm library" sub="Hear and visualize isolated drum tracks from your favorite songs or learn different styles, each with notes on how they feel and why. Play one, then add layers." />
     <div className={`${tab === 'songs' ? 'mb-4' : 'mb-12'} flex justify-center`}><div className="inline-flex p-0.5 rounded-full bg-white/[0.05]">{(['songs', 'styles'] as const).map(t => <button key={t} onClick={() => setTab(t)} className={`h-9 px-5 rounded-full text-sm capitalize transition-all duration-200 ${tab === t ? 'bg-bone text-ink' : 'text-bone/60'}`}>{t === 'songs' ? `Songs · ${SONGS.length}` : `Styles · ${RHYTHMS.length}`}</button>)}</div></div>
     {tab === 'styles' ? <Styles /> : <Songs />}
   </>
