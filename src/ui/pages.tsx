@@ -20,13 +20,13 @@ import { PITCHED, noteName, midiToHz } from '../engine/pitch'
 import { TUNING_PRESETS, PITCH_TEXT, PITCH_PATTERNS } from '../data/pitch'
 import { LoadButtons, usePlayer, StepGrid, SongForm } from './player'
 
-const H1 = ({ t, sub, center, tight }: { t: string; sub: string; center?: boolean; tight?: boolean }) => <header className={`${tight ? 'mb-7' : 'mb-14'} rise ${center ? 'text-center' : ''}`}><h1 className="text-[34px] leading-[1.1] font-semibold tracking-[-0.025em]">{t}</h1><p className={`${tight ? 'mt-3' : 'mt-4'} ${tight ? 'text-[15px] max-w-[42ch]' : 'text-[17px] max-w-[34ch]'} text-bone/60 leading-relaxed ${center ? 'mx-auto' : ''}`}>{sub}</p></header>
+const H1 = ({ t, sub, center, tight }: { t: React.ReactNode; sub: string; center?: boolean; tight?: boolean }) => <header className={`${tight ? 'mb-7' : 'mb-14'} rise ${center ? 'text-center' : ''}`}><h1 className="text-[34px] leading-[1.1] font-semibold tracking-[-0.025em]">{t}</h1><p className={`${tight ? 'mt-3' : 'mt-4'} ${tight ? 'text-[15px] max-w-[42ch]' : 'text-[17px] max-w-[34ch]'} text-bone/60 leading-relaxed ${center ? 'mx-auto' : ''}`}>{sub}</p></header>
 const Tag = ({ c }: { c: string }) => <span className="eyebrow">{c}</span>
 
 export function Library() {
   const [tab, setTab] = useState<'styles' | 'songs'>('songs')
   return <>
-    <H1 center tight t="Rhythm library" sub="Hear and visualize isolated drum tracks from your favorite songs or learn different styles, each with notes on how they feel and why. Play one, then add layers." />
+    <H1 center tight t={<>Groove <span className="text-amber">Library</span></>} sub="Hear and visualize isolated drum tracks from your favorite songs or learn different styles, each with notes on how they feel and why. Play one, then add layers." />
     <div className={`${tab === 'songs' ? 'mb-4' : 'mb-12'} flex justify-center`}><div className="inline-flex p-0.5 rounded-full bg-white/[0.05]">{(['songs', 'styles'] as const).map(t => <button key={t} onClick={() => setTab(t)} className={`h-9 px-5 rounded-full text-sm capitalize transition-all duration-200 ${tab === t ? 'bg-bone text-ink' : 'text-bone/60'}`}>{t === 'songs' ? `Songs · ${SONGS.length}` : `Styles · ${RHYTHMS.length}`}</button>)}</div></div>
     {tab === 'styles' ? <Styles /> : <Songs />}
   </>
