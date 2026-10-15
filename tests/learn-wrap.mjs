@@ -29,12 +29,14 @@ for (const id of songs) {
   // play and watch the amber cell land on more than one line
   await secs.nth(0).click(); await p.waitForTimeout(100)
   await d.locator('button[aria-label="Play"]').first().click()
-  const seen = new Set()
+  // sample which line is lit, noting how many lines the bar had at that moment (bars can differ in length)
+  const seen = new Set(), seenMulti = new Set(); let multi = 0
   for (let t = 0; t < 40; t++) { await p.waitForTimeout(100)
-    const k = await p.evaluate(G => [...document.querySelector(G).children].findIndex(l => l.querySelector('.bg-amber\\/20')), G); if (k >= 0) seen.add(k) }
+    const [k, nl] = await p.evaluate(G => { const g = document.querySelector(G); return [[...g.children].findIndex(l => l.querySelector('.bg-amber\\/20')), g.children.length] }, G)
+    if (k < 0) continue
+    seen.add(k); if (nl > 1) { multi++; seenMulti.add(k) } }
   await d.locator('button[aria-label="Stop"]').first().click().catch(() => p.evaluate(() => window.__pulseEngine.stop()))
-  const nl = await p.locator(G).evaluate(g => g.children.length)
-  check(`${id}: highlight follows across lines`, nl === 1 ? seen.size === 1 : seen.size >= 2, `lines ${nl}, lit on ${[...seen].join(',')}`)
+  check(`${id}: highlight follows across lines`, multi ? seenMulti.size >= 2 : seen.size >= 1, `multi-line samples ${multi}, lit lines ${[...seenMulti].join(',') || [...seen].join(',')}`)
   if (shot && id === songs[0]) { await secs.nth(0).click(); await p.waitForTimeout(150); await p.locator(G).scrollIntoViewIfNeeded(); await p.screenshot({ path: shot }) }
 }
 await b.close()

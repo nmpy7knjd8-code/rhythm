@@ -160,7 +160,7 @@ function Songs() {
       </button>
     </div>
     <Note className="mb-8" line="Simplified drum-part transcriptions, for learning." more="Drum parts transcribed from Songsterr community tabs, simplified for learning. Drum part only: no audio or lyrics. Songs with lower confidence or partial tabs are marked on their cards. Details on the About page." />
-    {list.map((s, i) => <article key={s.raw.id} id={i === 0 || list[i - 1].raw.artist !== s.raw.artist ? slug(s.raw.artist) : undefined} className="scroll-mt-20 mb-10 pb-10 border-b border-line last:border-0">
+    {list.map((s, i) => <article key={s.raw.id} id={i === 0 || list[i - 1].raw.artist !== s.raw.artist ? slug(s.raw.artist) : undefined} className="scroll-mt-20 mb-10 pb-10 border-b border-line last:border-0 [content-visibility:auto] [contain-intrinsic-size:auto_640px]">
       <div className="flex items-baseline justify-between gap-3"><h2 className="text-xl font-medium tracking-tight">{s.raw.song}</h2><span className="text-xs text-mute tabular-nums shrink-0">{s.raw.timeSig}</span></div>
       <p className="mt-1 text-sm text-bone/60">{s.raw.artist} · {s.raw.drummer}{s.raw.category === 'Virtuoso' && <span className="ml-2 text-[10px] uppercase tracking-wider text-amber/70">Virtuoso</span>}</p>
       {lowConf(s.raw.confidence) && <p className="mt-0.5 text-[11px] text-mute">{lowConf(s.raw.confidence)}</p>}

@@ -28,6 +28,8 @@ interface Ctx {
   remove: (id: string) => void
   toggle: () => Promise<void>; setBpm: (n: number) => void; setSwing: (n: number) => void; setKit: (id: string) => void
   subscribe: RhythmEngine['subscribe']
+  /** the song step being heard right now (audio clock, output latency included) */
+  songPos: (ahead?: number) => { bar: number; step: number } | null
   song: Song | null; songBar: number; loopSection: number | null
   /** bar-range loop: loopMode on = bar taps pick [start, end] (inclusive, 0-based song bars) */
   loopMode: boolean; setLoopMode: (on: boolean) => void; barLoop: [number, number] | null; loopPick: number | null; pickBar: (n: number) => void; clearBarLoop: () => void
@@ -177,6 +179,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setSwing: v => { setSwingS(v); e().setSwing(v) },
     setKit: id => { setKitId(id); setKitProgress(0); preload(id) },
     subscribe: l => e().subscribe(l),
+    songPos: ahead => e().songPos(ahead),
     loadId, learn,
   }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue, loopMode, barLoop, loopPick, loadId, learn, resetPractice])
   live.current = value

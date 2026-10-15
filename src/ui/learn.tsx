@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import type { Voice } from '../engine/types'
 import { VOICES } from '../engine/types'
 import type { PulseEvent } from '../engine/audio'
@@ -44,7 +45,7 @@ function say(text: string) {
 const pill = (on: boolean) => `h-9 px-3 rounded-full text-[13px] border whitespace-nowrap active:scale-95 ${on ? 'bg-amber text-ink border-amber' : 'border-white/[0.18] text-bone/80'}`
 const sq = (on: boolean, kind: 'mute' | 'solo') => `w-9 h-9 rounded-full text-[12px] font-medium border active:scale-95 ${on ? (kind === 'solo' ? 'bg-amber text-ink border-amber' : 'bg-bone text-ink border-bone') : 'border-white/15 text-bone/70'}`
 
-interface Cell { voice: Voice; ghost: boolean; off: boolean }
+interface Cell { voice: Voice; ghost: boolean; off: boolean; strokes: number }
 
 /** Keep the active pill of a horizontal row in view (near center), scrolling only the row,
  *  and leave the row alone for 2 s after the user touches or scrolls it. */
@@ -95,7 +96,8 @@ function Notation({ bar, step, sounds }: { bar: LessonBar; step: number; sounds:
   const widest = Math.max(...lines.map(([a, b]) => b - a))
   const rows = LIMBS.map(limb => ({ limb, cells: Array.from({ length: steps }, (_, i): Cell | null => {
     const ns = bar.notes.filter(n => n.limb === limb && n.step === i).sort((x, y) => (x.frac ? 1 : 0) - (y.frac ? 1 : 0) || y.velocity - x.velocity)
-    return ns[0] ? { voice: ns[0].voice, ghost: ns[0].tier === 'ghost', off: !!ns[0].frac } : null
+    // strokes faster than the grid on the same drum (rolls, tremolos, 32nds) show as tremolo slashes on the cell
+    return ns[0] ? { voice: ns[0].voice, ghost: ns[0].tier === 'ghost', off: !!ns[0].frac, strokes: bar.notes.filter(n => n.step === i && n.voice === ns[0].voice).length } : null
   }) }))
   const span = (a: number, b: number) => Array.from({ length: b - a }, (_, j) => a + j)
   return <div className="mt-2" role="img" aria-label="Bar notation with the count under each beat">
@@ -107,8 +109,9 @@ function Notation({ bar, step, sounds }: { bar: LessonBar; step: number; sounds:
           <div className="flex-1"><div className="flex" style={{ width: `${(b - a) / widest * 100}%` }}>
             {span(a, b).map(i => {
               const c = cells[i], now = i === step, mine = c ? !sounds(c.voice) : false
-              return <div key={i} className={`flex-1 h-9 flex items-center justify-center ${beatStart.has(i) && i > a ? 'border-l border-white/10' : ''} ${now ? 'bg-amber/20' : ''}`}>
+              return <div key={i} data-s={i} className={`relative flex-1 h-9 flex items-center justify-center ${beatStart.has(i) && i > a ? 'border-l border-white/10' : ''} ${now ? 'bg-amber/20' : ''}`}>
                 {c && <span className={`grid place-items-center rounded-full font-semibold leading-none transition-transform duration-75 ${c.ghost || c.off ? 'w-3.5 h-3.5 text-[8px]' : 'w-[18px] h-[18px] text-[10px]'} ${now && !mine ? 'bg-amber text-ink scale-110' : mine ? 'bg-transparent text-bone/70 ring-1 ring-bone/40' : 'bg-bone/85 text-ink'}`}>{VOICE_MARK[c.voice]}</span>}
+                {c && c.strokes > 1 && <span aria-label={`${c.strokes} strokes`} className={`absolute top-0 left-1/2 ml-1.5 text-[9px] leading-none font-semibold tracking-[-0.15em] ${now ? 'text-amber' : 'text-bone/70'}`}>{'/'.repeat(c.strokes > 4 ? 3 : c.strokes > 2 ? 2 : 1)}</span>}
               </div>
             })}
           </div></div>
@@ -173,13 +176,29 @@ function Learn() {
   const stepBars = useMemo(() => stepOn && cur ? new Map(cur.bars.map(b => [b.songBar, b.pattern])) : null, [stepOn, cur])
 
   const sec = song.sections[selected]
-  const inSec = !!sec && P.songBar >= sec.start && P.songBar < sec.start + sec.bars
-  const view = pin !== null && sec && pin >= sec.start && pin < sec.start + sec.bars ? pin : inSec ? P.songBar : (sec?.start ?? 0)
+  // Follow the ear: each frame, read the step that is sounding now from the audio clock (output latency included).
+  const { songPos } = P
+  const [heard, setHeard] = useState<{ bar: number; step: number } | null>(null)
+  useEffect(() => {
+    if (!P.playing) { setHeard(null); return }
+    // Look one frame ahead (what we draw now reaches the screen at the next refresh) and render in the same frame.
+    let raf = 0, last = 0, frame = 1 / 60, cur: { bar: number; step: number } | null = null
+    const tick = (ts: number) => {
+      if (last) frame = Math.min(0.05, frame * 0.9 + (ts - last) / 1000 * 0.1)
+      last = ts
+      const h = songPos(frame)
+      if (h?.bar !== cur?.bar || h?.step !== cur?.step) { cur = h && { bar: h.bar, step: h.step }; flushSync(() => setHeard(cur)) }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [P.playing, songPos])
+  const playStep = heard?.step ?? -1
+  const nowBar = heard?.bar ?? P.songBar
+  const inSec = !!sec && nowBar >= sec.start && nowBar < sec.start + sec.bars
+  const view = pin !== null && sec && pin >= sec.start && pin < sec.start + sec.bars ? pin : inSec ? nowBar : (sec?.start ?? 0)
   const shown: LessonBar | undefined = (stepOn && cur ? cur.bars : full.bars).find(b => b.songBar === view) ?? full.bars.find(b => b.songBar === view)
 
-  const { subscribe } = P
-  const [playStep, setPlayStep] = useState(-1)
-  useEffect(() => subscribe(s => { if (!Object.keys(s).length) setPlayStep(-1); else if (s.song !== undefined) setPlayStep(s.song) }), [subscribe])
 
   const sounds = (v: Voice) => !allow || allow.includes(v)
   const pct = Math.round((P.bpm / (song.raw.bpm || 1)) * 100)
@@ -253,7 +272,7 @@ function Learn() {
   }
 
   const localBar = sec ? view - sec.start + 1 : 1
-  const playingNotes = full.bars.find(b => b.songBar === P.songBar)?.notes ?? []
+  const playingNotes = full.bars.find(b => b.songBar === (heard?.bar ?? P.songBar))?.notes ?? []
   const hotLimb = (l: Limb) => P.playing && playStep >= 0 && playingNotes.some(n => n.limb === l && n.step === playStep)
 
   if (!sec) return <p className="text-sm text-mute">Loading the part…</p>
@@ -294,7 +313,7 @@ function Learn() {
         {pin !== null && <button onClick={() => setPin(null)} className="h-9 px-3 rounded-full text-[13px] text-amber">Follow</button>}
       </div>
       {countFlash !== null && <div className="h-11 grid place-items-center text-[34px] leading-none font-medium text-amber tabular-nums" aria-live="polite">{countFlash}</div>}
-      {shown ? <Notation bar={shown} step={P.playing && view === P.songBar ? playStep : -1} sounds={sounds} /> : <p className="mt-3 text-sm text-mute">This bar hasn’t loaded.</p>}
+      {shown ? <Notation bar={shown} step={P.playing && heard && view === heard.bar ? playStep : -1} sounds={sounds} /> : <p className="mt-3 text-sm text-mute">This bar hasn’t loaded.</p>}
       <p className="mt-1.5 text-[11px] text-mute leading-snug">Amber is the note to play now. An outlined note is muted, so you play it. {shown ? `Count: ${shown.count.counting}` : ''}</p>
     </div>
 

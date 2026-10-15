@@ -306,7 +306,10 @@ export class RhythmEngine {
       const bt = (this.songBar * len + this.songTick) / 12 // song position in quarter beats (smooth for these steady-meter grooves)
       const notes = this.notesFor(p)
       if (notes.grace) this.playGraces(SONG_ID, notes, step, t, stepSec, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt))
-      for (const h of hitsAt(notes, step)) this.play(SONG_ID, h.voice, t + this.feelShift(p, step, tps, stepSec) + this.driftAt(h.voice, bt), h.velocity, h.graces, stepSec, notes.variant?.[h.voice]?.[step])
+      const hs = hitsAt(notes, step), fs = this.feelShift(p, step, tps, stepSec)
+      let heard = Infinity
+      for (const h of hs) { const at = t + fs + this.driftAt(h.voice, bt); heard = Math.min(heard, at); this.play(SONG_ID, h.voice, at, h.velocity, h.graces, stepSec, notes.variant?.[h.voice]?.[step]) }
+      this.timeline.push({ t: hs.length ? heard : t + fs, bar: this.songBar, step }); if (this.timeline.length > 512) this.timeline.splice(0, 256)
       this.playSubs(SONG_ID, notes, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt), fl); this.hz = null
       const b = this.songBar; Tone.getDraw().schedule(() => this.listeners.forEach(f => f({ [SONG_ID]: step }, b)), time)
     }
@@ -340,6 +343,16 @@ export class RhythmEngine {
   }
   /** Insert `fill` in the last bar of every `every` bars (0 = off). */
   setFill(fill: Fill | null, every: number) { this.fill = fill; this.fillEvery = every }
+  /** Song steps by the audio time they sound (feel and drift included), for a display that follows the ear. */
+  timeline: { t: number; bar: number; step: number }[] = []
+  /** Audio-context time of what is coming out of the speakers right now. */
+  heardNow() { const c = this.rawCtx(); return c.currentTime - (c.outputLatency || 0) - (c.baseLatency || 0) }
+  /** The song step being heard now (or `ahead` seconds from now), or null before the first one sounds. */
+  songPos(ahead = 0) {
+    const now = this.heardNow() + ahead, tl = this.timeline
+    for (let i = tl.length - 1; i >= 0; i--) if (tl[i].t <= now) return tl[i]
+    return null
+  }
   subscribe(l: StepListener) { this.listeners.add(l); return () => { this.listeners.delete(l) } }
 
   private channel(id: string, volume = 0.85): Channel {
@@ -544,6 +557,7 @@ export class RhythmEngine {
     ctx.addEventListener?.('statechange', () => { if (ctx.state !== 'running' && this.playing && document.visibilityState === 'visible') void this.wake() })
   }
   async start() {
+    this.timeline = []
     this.hookWake()
     await this.wake()
     this.backgroundAudio()
@@ -595,6 +609,7 @@ export class RhythmEngine {
   }
 
   stop() {
+    this.timeline = []
     this.countInTotal = 0; this.countInTick = 0
     const tr = Tone.getTransport()
     if (this.eventId !== null) tr.clear(this.eventId)

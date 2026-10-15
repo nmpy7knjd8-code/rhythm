@@ -17,7 +17,7 @@ const starts = await p.evaluate(async () => { const j = await (await fetch('song
 const secs = starts.length
 const names = await p.evaluate(async () => (await (await fetch('songs/ticks.json')).json()).sections.map(s => s.name))
 const settle = async k => { let s; for (let i = 0; i < 40; i++) { s = await state(); if (s.name === names[k] && s.visible && (Math.abs(s.off) < 40 || s.edge)) { await p.waitForTimeout(400); return await state() } await p.waitForTimeout(200) } return s }
-const jump = k => p.evaluate(a => window.__pulseEngine.jumpSong(a), starts[k])
+const jump = k => p.evaluate(a => window.__pulseEngine.jumpSong(a, true), starts[k])
 check('song has many sections', secs > 6, String(secs))
 const s0 = await state()
 await jump(8)
