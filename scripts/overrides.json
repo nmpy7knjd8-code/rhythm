@@ -942,6 +942,13 @@
         "at": "Pre-Chorus",
         "estimated": true
       }
+    },
+    "noone": {
+      "goodPart": {
+        "bar": 48,
+        "at": "Pre-Chorus 1",
+        "estimated": true
+      }
     }
   },
   "pinnedFiles": [
