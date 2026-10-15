@@ -17,6 +17,11 @@ body { font-family: Inter, ui-sans-serif, -apple-system, "SF Pro Text", "Segoe U
   .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 999px; background: #f4f1ea; margin-top: -7.5px; box-shadow: 0 1px 6px rgba(0,0,0,.5); transition: transform .15s; }
   .slider:active::-webkit-slider-thumb { transform: scale(1.2); }
   .slider::-moz-range-thumb { width: 18px; height: 18px; border: 0; border-radius: 999px; background: #f4f1ea; }
+  .slider-lg { touch-action: none; }
+  .slider-lg::-webkit-slider-runnable-track { height: 5px; }
+  .slider-lg::-moz-range-track { height: 5px; }
+  .slider-lg::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -8.5px; }
+  .slider-lg::-moz-range-thumb { width: 22px; height: 22px; }
 }
 @keyframes rise { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
 .rise { animation: rise .45s cubic-bezier(.2,.7,.2,1) both; }

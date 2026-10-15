@@ -46,6 +46,36 @@ const sq = (on: boolean, kind: 'mute' | 'solo') => `w-9 h-9 rounded-full text-[1
 
 interface Cell { voice: Voice; ghost: boolean; off: boolean }
 
+/** Keep the active pill of a horizontal row in view (near center), scrolling only the row,
+ *  and leave the row alone for 2 s after the user touches or scrolls it. */
+function useCenterActive(key: unknown) {
+  const ref = useRef<HTMLDivElement>(null)
+  const quiet = useRef(0)
+  const auto = useRef(0)
+  useEffect(() => {
+    const el = ref.current; if (!el) return
+    const hold = () => { if (performance.now() > auto.current) quiet.current = performance.now() + 2000 }
+    el.addEventListener('touchstart', hold, { passive: true }); el.addEventListener('pointerdown', hold); el.addEventListener('wheel', hold, { passive: true }); el.addEventListener('scroll', hold, { passive: true })
+    return () => { el.removeEventListener('touchstart', hold); el.removeEventListener('pointerdown', hold); el.removeEventListener('wheel', hold); el.removeEventListener('scroll', hold) }
+  }, [])
+  useEffect(() => {
+    let timer = 0
+    const go = () => {
+      const el = ref.current, pill = el?.querySelector<HTMLElement>('[data-active]')
+      if (!el || !pill) return
+      const wait = quiet.current - performance.now()
+      if (wait > 0) { timer = window.setTimeout(go, wait + 50); return } // the user is scrolling: try again when they stop
+      const left = pill.offsetLeft - (el.clientWidth - pill.offsetWidth) / 2
+      if (Math.abs(el.scrollLeft - left) < 2) return
+      auto.current = performance.now() + 800 // our own smooth scroll fires scroll events; don't count them as the user's
+      el.scrollTo({ left, behavior: 'smooth' })
+    }
+    go()
+    return () => clearTimeout(timer)
+  }, [key])
+  return ref
+}
+
 /** Big bar grid from the lesson's notes: one row per limb, the count under the beats, the current note lit. */
 function Notation({ bar, step, sounds }: { bar: LessonBar; step: number; sounds: (v: Voice) => boolean }) {
   const steps = bar.pattern.steps
@@ -53,37 +83,46 @@ function Notation({ bar, step, sounds }: { bar: LessonBar; step: number; sounds:
   const beatStart = new Set(bar.count.beats.map(b => b.step))
   const sticking = Array.from({ length: steps }, (_, i) => { const h = new Set(bar.notes.filter(n => n.step === i && !n.frac && (n.limb === 'rightHand' || n.limb === 'leftHand')).map(n => n.stick)); return h.size === 2 ? 'RL' : h.size ? [...h][0] : '' })
   const showStick = sticking.some(Boolean)
-  const minCol = syllables.some(x => x.length > 2) ? 34 : 18
-  const wide = steps * minCol + 48 > 364
+  const minCol = syllables.some(x => x.length > 2) ? 30 : 18
+  // Wrap at beat boundaries so the bar never scrolls sideways: as many whole beats per line as fit.
+  const fit = Math.max(1, Math.floor(310 / minCol))
+  const starts = bar.count.beats.map(b => b.step)
+  const lines: [number, number][] = []
+  starts.forEach((s, k) => {
+    const e = starts[k + 1] ?? steps, last = lines[lines.length - 1]
+    if (last && e - last[0] <= fit) last[1] = e; else lines.push([s, e])
+  })
+  const widest = Math.max(...lines.map(([a, b]) => b - a))
   const rows = LIMBS.map(limb => ({ limb, cells: Array.from({ length: steps }, (_, i): Cell | null => {
     const ns = bar.notes.filter(n => n.limb === limb && n.step === i).sort((x, y) => (x.frac ? 1 : 0) - (y.frac ? 1 : 0) || y.velocity - x.velocity)
     return ns[0] ? { voice: ns[0].voice, ghost: ns[0].tier === 'ghost', off: !!ns[0].frac } : null
   }) }))
-  return <div className={`mt-2 ${wide ? 'overflow-x-auto no-sheet-drag -mx-4 px-4' : ''}`}>
-    <div role="img" aria-label="Bar notation with the count under each beat" style={{ minWidth: wide ? steps * minCol + 48 : undefined }}>
+  const span = (a: number, b: number) => Array.from({ length: b - a }, (_, j) => a + j)
+  return <div className="mt-2" role="img" aria-label="Bar notation with the count under each beat">
+    {lines.map(([a, b]) => <div key={a} className={a > 0 ? 'mt-3' : ''}>
       {rows.map(({ limb, cells }) => {
-        const hot = step >= 0 && !!cells[step]
+        const hot = step >= a && step < b && !!cells[step]
         return <div key={limb} className="flex items-stretch">
           <span className={`w-12 shrink-0 self-center text-[11px] leading-none ${hot ? 'text-amber' : 'text-mute'}`}>{LIMB_SHORT[limb]}</span>
-          <div className="flex-1 flex">
-            {cells.map((c, i) => {
-              const now = i === step, mine = c ? !sounds(c.voice) : false
-              return <div key={i} className={`flex-1 h-9 flex items-center justify-center ${beatStart.has(i) && i > 0 ? 'border-l border-white/10' : ''} ${now ? 'bg-amber/20' : ''}`}>
+          <div className="flex-1"><div className="flex" style={{ width: `${(b - a) / widest * 100}%` }}>
+            {span(a, b).map(i => {
+              const c = cells[i], now = i === step, mine = c ? !sounds(c.voice) : false
+              return <div key={i} className={`flex-1 h-9 flex items-center justify-center ${beatStart.has(i) && i > a ? 'border-l border-white/10' : ''} ${now ? 'bg-amber/20' : ''}`}>
                 {c && <span className={`grid place-items-center rounded-full font-semibold leading-none transition-transform duration-75 ${c.ghost || c.off ? 'w-3.5 h-3.5 text-[8px]' : 'w-[18px] h-[18px] text-[10px]'} ${now && !mine ? 'bg-amber text-ink scale-110' : mine ? 'bg-transparent text-bone/70 ring-1 ring-bone/40' : 'bg-bone/85 text-ink'}`}>{VOICE_MARK[c.voice]}</span>}
               </div>
             })}
-          </div>
+          </div></div>
         </div>
       })}
       <div className="flex mt-0.5">
         <span className="w-12 shrink-0" />
-        <div className="flex-1 flex">{syllables.map((x, i) => <span key={i} className={`flex-1 text-center leading-none py-1 ${beatStart.has(i) ? 'text-[13px]' : 'text-[11px]'} ${i === step ? 'text-amber' : beatStart.has(i) ? 'text-bone' : 'text-mute'}`}>{x}</span>)}</div>
+        <div className="flex-1"><div className="flex" style={{ width: `${(b - a) / widest * 100}%` }}>{span(a, b).map(i => <span key={i} className={`flex-1 text-center leading-none py-1 ${beatStart.has(i) ? 'text-[13px]' : 'text-[11px]'} ${i === step ? 'text-amber' : beatStart.has(i) ? 'text-bone' : 'text-mute'}`}>{syllables[i]}</span>)}</div></div>
       </div>
       {showStick && <div className="flex">
         <span className="w-12 shrink-0 text-[10px] text-mute self-center">Stick</span>
-        <div className="flex-1 flex">{sticking.map((x, i) => <span key={i} className={`flex-1 text-center text-[10px] leading-none py-0.5 ${i === step ? 'text-amber' : 'text-mute'}`}>{x}</span>)}</div>
+        <div className="flex-1"><div className="flex" style={{ width: `${(b - a) / widest * 100}%` }}>{span(a, b).map(i => <span key={i} className={`flex-1 text-center text-[10px] leading-none py-0.5 ${i === step ? 'text-amber' : 'text-mute'}`}>{sticking[i]}</span>)}</div></div>
       </div>}
-    </div>
+    </div>)}
   </div>
 }
 
@@ -116,6 +155,8 @@ function Learn() {
   const [countFlash, setCountFlash] = useState<number | null>(null)
 
   const selected = P.barLoop ? sectionOf(song, P.barLoop[0]) : P.loopSection !== null ? P.loopSection : sectionOf(song, P.songBar)
+  const secRow = useCenterActive(`${song.raw.id}:${selected}`)
+  const barRow = useCenterActive(P.playing ? P.songBar : -1)
   const secR = song.sections[selected]
   // the bar-range loop (inclusive), clipped to this section; the steps and tempos then cover just those bars
   const range = useMemo((): [number, number] | undefined => {
@@ -218,21 +259,21 @@ function Learn() {
   if (!sec) return <p className="text-sm text-mute">Loading the part…</p>
 
   return <div className="space-y-4">
-    <div className="flex gap-1.5 overflow-x-auto no-sheet-drag -mx-4 px-4 pb-0.5" aria-label="Sections">
-      {song.sections.map((s, i) => <button key={i} aria-pressed={i === selected} onClick={() => lockSection(i)} className={`shrink-0 h-9 max-w-[148px] truncate px-3 rounded-full text-[13px] border active:scale-95 ${i === selected ? 'bg-amber text-ink border-amber' : 'border-white/[0.16] text-bone/80'}`}>{s.name}</button>)}
+    <div ref={secRow} className="relative flex gap-1.5 overflow-x-auto no-sheet-drag -mx-4 px-4 pb-0.5" aria-label="Sections">
+      {song.sections.map((s, i) => <button key={i} data-active={i === selected || undefined} aria-pressed={i === selected} onClick={() => lockSection(i)} className={`shrink-0 h-9 max-w-[148px] truncate px-3 rounded-full text-[13px] border active:scale-95 ${i === selected ? 'bg-amber text-ink border-amber' : 'border-white/[0.16] text-bone/80'}`}>{s.name}</button>)}
     </div>
 
     <div>
-      <div className="flex gap-1 overflow-x-auto no-sheet-drag -mx-4 px-4" aria-label={`${sec.name} bars`}>
+      <div ref={barRow} className="relative flex gap-1 overflow-x-auto no-sheet-drag -mx-4 px-4" aria-label={`${sec.name} bars`}>
         {Array.from({ length: sec.bars }, (_, j) => {
           const n = sec.start + j
           const inR = !!P.barLoop && n >= P.barLoop[0] && n <= P.barLoop[1]
-          return <button key={n} aria-label={`Learn bar ${n + 1}`} onClick={() => { setPin(null); P.pickBar(n) }} className={`shrink-0 w-9 h-9 rounded-md text-[13px] tabular-nums ${inR ? 'bg-amber text-ink font-medium' : P.loopPick === n ? 'ring-1 ring-amber text-amber bg-amber/10' : 'bg-white/[0.06] text-bone/75'} ${n === P.songBar && P.playing ? 'outline outline-1 outline-bone/70' : ''}`}>{j + 1}</button>
+          return <button key={n} data-active={(P.playing && n === P.songBar) || undefined} aria-label={`Learn bar ${n + 1}`} onClick={() => { setPin(null); P.pickBar(n) }} className={`shrink-0 w-9 h-9 rounded-md text-[13px] tabular-nums ${inR ? 'bg-amber text-ink font-medium' : P.loopPick === n ? 'ring-1 ring-amber text-amber bg-amber/10' : 'bg-white/[0.06] text-bone/75'} ${n === P.songBar && P.playing ? 'outline outline-1 outline-bone/70' : ''}`}>{j + 1}</button>
         })}
       </div>
-      <p className="mt-1.5 text-[12px] text-bone/60 leading-snug min-h-[16px]">
-        {P.barLoop ? <>Looping bars {P.barLoop[0] - sec.start + 1}–{P.barLoop[1] - sec.start + 1}. <button className="text-amber underline underline-offset-2" onClick={P.clearBarLoop}>Clear</button></> : P.loopPick !== null ? `Bar ${P.loopPick - sec.start + 1} selected. Tap the end bar.` : 'Tap a start bar, then an end bar, to loop part of the section.'}
-      </p>
+      {(P.barLoop || P.loopPick !== null) && <p className="mt-1.5 text-[12px] text-bone/60 leading-snug">
+        {P.barLoop ? <>Looping bars {P.barLoop[0] - sec.start + 1}–{P.barLoop[1] - sec.start + 1}. <button className="text-amber underline underline-offset-2" onClick={P.clearBarLoop}>Clear</button></> : P.loopPick !== null ? `Bar ${P.loopPick - sec.start + 1} selected. Tap the end bar.` : null}
+      </p>}
     </div>
 
     <p className="text-[14px] leading-snug text-bone/85">{lesson.overview.summary}</p>
@@ -275,7 +316,7 @@ function Learn() {
 
     <section>
       <div className="mb-1 text-[11px] uppercase tracking-[0.12em] text-mute">Practice tempo <span className="text-bone tabular-nums normal-case tracking-normal">{Math.min(999, Math.max(0, pct))}% · {shownBpm(song, P.bpm)} BPM</span></div>
-      <input type="range" min={50} max={100} step={5} value={Math.min(100, Math.max(50, Math.round(pct / 5) * 5))} onChange={e => setPct(+e.target.value)} className="slider no-sheet-drag touch-pan-x w-full" style={{ height: 36 }} aria-label="Practice tempo" />
+      <input type="range" min={50} max={100} step={5} value={Math.min(100, Math.max(50, Math.round(pct / 5) * 5))} onChange={e => setPct(+e.target.value)} className="slider slider-lg no-sheet-drag w-full" style={{ height: 44 }} aria-label="Practice tempo" />
       <div className="mt-1 flex gap-1">{([['Start', lesson.tempos.startBpm], ['Middle', lesson.tempos.middleBpm], ['Full', lesson.tempos.fullBpm]] as const).map(([l, bpm]) => { const n = Math.round(bpm / (lesson.tempos.songBpm || bpm) * 100)
         return <button key={l} onClick={() => setPct(n)} className={`h-9 flex-1 rounded-full text-[13px] border active:scale-95 ${pct === n ? 'bg-bone text-ink border-bone' : 'border-white/10 text-bone/70'}`}>{l} {Math.round(bpm)}</button> })}</div>
       <p className="mt-1.5 text-[11px] text-mute leading-snug">{lesson.tempos.note}</p>

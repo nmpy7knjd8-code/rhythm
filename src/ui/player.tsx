@@ -451,7 +451,7 @@ export function PlayerBar() {
           className="h-8 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}
         <button aria-pressed={P.loopMode} onClick={() => P.setLoopMode(!P.loopMode)} className={`h-8 px-3.5 rounded-full text-[12px] border active:scale-95 ${P.loopMode ? 'bg-amber text-ink border-amber' : 'border-white/[0.18] text-bone/75'}`}>Loop</button>
         {P.loopMode && (P.barLoop ? <button aria-label="Clear loop" onClick={P.clearBarLoop} className="h-8 pl-3 pr-2.5 rounded-full text-[12px] bg-white/[0.06] text-amber flex items-center gap-1.5">Looping bars {P.barLoop[0] + 1}{P.barLoop[1] > P.barLoop[0] ? `–${P.barLoop[1] + 1}` : ''}<span className="text-bone/60 text-[14px] leading-none">×</span></button>
-          : <span className="text-[11px] text-mute">{P.loopPick === null ? 'Tap a start bar' : `Bar ${P.loopPick + 1} · tap the end bar`}</span>)}
+          : P.loopPick !== null && <span className="text-[11px] text-mute">Bar {P.loopPick + 1} · tap the end bar</span>)}
       </div>}<UpNext key={String(open)} /></div>}>
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
