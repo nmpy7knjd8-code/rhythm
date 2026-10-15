@@ -299,3 +299,13 @@ test('barRange limits the lesson to those absolute bars', () => {
   assert.throws(() => getLesson(song, 3, [0, 2]), /outside this section/)
   assert.throws(() => getLesson(song, 99), /outside/)
 })
+
+test('every section of every song builds a lesson without throwing', () => {
+  const songs = JSON.parse(readFileSync('src/data/songs.json', 'utf8')) as { id: string; category?: string }[]
+  let n = 0
+  for (const meta of songs) {
+    const song = load(meta.id)
+    song.sections.forEach((_, i) => { const lesson = getLesson(song, i); assert.ok(lesson.steps.length > 0, `${meta.id} ${i}`); n++ })
+  }
+  assert.ok(n > 500, String(n))
+})
