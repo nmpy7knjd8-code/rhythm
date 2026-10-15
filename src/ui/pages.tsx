@@ -262,11 +262,11 @@ function VideoEmbed({ v }: { v: Video }) {
 export function Lens({ id, go }: { id?: string; go: (h: string) => void }) {
   const a = ARTISTS.find(x => x.id === id)
   if (!a) return <>
-    <H1 t="Drummer's Lens" sub="How these drummers create feeling and tell a story with the kit." />
+    <H1 t="Drummers" sub="How these drummers create feeling and tell a story with the kit." />
     <ul className="divide-y divide-line">{ARTISTS.map(x => <li key={x.id}><button onClick={() => go(`lens/${x.id}`)} className="w-full -mx-3 px-3 py-4 text-left flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.03] active:bg-white/[0.06]" style={{ width: 'calc(100% + 1.5rem)' }}><span className="min-w-0 flex-1"><span className="block text-lg leading-snug">{x.name}</span><span className="block mt-0.5 text-[13px] text-bone/45 leading-snug">{x.band.split(/\s*;\s*/).map(b => b[0].toUpperCase() + b.slice(1)).join(' · ')}</span></span><span aria-hidden className="text-bone/30 text-xl leading-none">›</span></button></li>)}</ul>
   </>
   return <>
-    <button onClick={() => go('lens')} className="text-sm text-bone/50 mb-8">← Drummer's Lens</button>
+    <button onClick={() => go('lens')} className="text-sm text-bone/50 mb-8">← Drummers</button>
     <H1 t={a.name} sub={`${a.band.split(/\s*;\s*/).map(b => b[0].toUpperCase() + b.slice(1)).join(' · ')} · ${a.era}`} />
     {videosFor(a.name).length > 0 && <section className="mb-12"><Tag c="Watch" />{videosFor(a.name).map(v => <VideoEmbed key={v.videoId} v={v} />)}</section>}
     {a.technique.length > 0 && <section className="mb-10"><Tag c="Technique" /><ul className="mt-3 space-y-3 text-bone/75 leading-relaxed">{a.technique.map(t => <li key={t}>{t}</li>)}</ul></section>}

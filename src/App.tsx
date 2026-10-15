@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { PlayerProvider, PlayerBar } from './ui/player'
 import { Library, Story, Lens, Theory, About } from './ui/pages'
 
-const NAV = [['library', 'Library'], ['theory', 'Theory'], ['story', 'Story'], ['lens', "Drummer's Lens"]] as const
+const NAV = [['library', 'Library'], ['theory', 'Theory'], ['story', 'Story'], ['lens', "Drummers"]] as const
 
 export default function App() {
   const read = () => location.hash.replace(/^#\/?/, '') || 'library'
