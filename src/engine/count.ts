@@ -1,7 +1,7 @@
 import * as Tone from 'tone'
 
 /** Spoken count clips (public/count/*.mp3), played as audio buffers at exact transport times. One voice at a time:
- *  a new word cuts the previous one, so fast counts never smear or queue. */
+ *  a new word fades the previous one out in 20 ms, so fast counts never smear or queue. */
 const WORDS = [...Array.from({ length: 19 }, (_, i) => String(i + 1)), 'e', 'and', 'ah', 'ta', 'trip', 'let', 'la', 'li']
 const TOKEN: Record<string, string> = { '&': 'and', a: 'ah' }
 export const countClip = (syllable: string) => { const w = TOKEN[syllable] ?? syllable; return WORDS.includes(w) ? w : null }
@@ -9,7 +9,7 @@ export const countClip = (syllable: string) => { const w = TOKEN[syllable] ?? sy
 export class CountVoice {
   private clips = new Map<string, { buf: AudioBuffer; onset: number }>()
   private loading: Promise<void> | null = null
-  private last: AudioBufferSourceNode | null = null
+  private last: { src: AudioBufferSourceNode; gain: GainNode } | null = null
   private out: Tone.Gain
   constructor(dest: Tone.InputNode) { this.out = new Tone.Gain(0.9).connect(dest) }
   get ready() { return this.clips.size === WORDS.length }
@@ -29,9 +29,10 @@ export class CountVoice {
     if (!c) return false
     const ctx = Tone.getContext().rawContext as AudioContext
     const src = ctx.createBufferSource(); src.buffer = c.buf
-    Tone.connect(src, this.out)
-    try { this.last?.stop(time) } catch { /* already stopped */ }
-    src.start(time, c.onset); this.last = src
+    const gain = ctx.createGain(); src.connect(gain); Tone.connect(gain, this.out)
+    // the next word fades the previous one out over 20 ms instead of chopping it
+    if (this.last) { const g = this.last.gain.gain; g.setValueAtTime(1, time); g.linearRampToValueAtTime(0, time + 0.02); try { this.last.src.stop(time + 0.03) } catch { /* already stopped */ } }
+    src.start(time, c.onset); this.last = { src, gain }
     return true
   }
   /** Seconds from a clip's start to its attack (for tests). */

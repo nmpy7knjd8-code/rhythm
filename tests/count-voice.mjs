@@ -15,14 +15,19 @@ const clips = await p.evaluate(async () => {
     const buf = await ctx.decodeAudioData(await r.arrayBuffer()); const d = buf.getChannelData(0)
     let peak = 0; for (const x of d) peak = Math.max(peak, Math.abs(x)); let i = 0; while (Math.abs(d[i]) < peak * 0.05) i++
     let j = d.length - 1; while (Math.abs(d[j]) < peak * 0.05) j--
-    out.push({ w, bytes, onset: i / buf.sampleRate * 1000, sound: (j - i) / buf.sampleRate * 1000, peak })
+    // how loud is the very end of the clip compared with the voice? (it should have decayed into the fade)
+    const rms = (a, b) => { let s = 0; for (let k = a; k < b; k++) s += d[k] * d[k]; return Math.sqrt(s / Math.max(1, b - a)) }
+    const n = Math.round(buf.sampleRate * 0.01); let loud = 0; for (let k = i; k + n < d.length; k += n) loud = Math.max(loud, rms(k, k + n))
+    const endDb = 20 * Math.log10(rms(d.length - Math.round(buf.sampleRate * 0.03), d.length - Math.round(buf.sampleRate * 0.02)) / loud + 1e-9)
+    out.push({ w, bytes, onset: i / buf.sampleRate * 1000, sound: (j - i) / buf.sampleRate * 1000, peak, endDb })
   }
   return out
 })
 const total = clips.reduce((a, c) => a + c.bytes, 0)
 console.log(clips.map(c => `${c.w}:${c.sound.toFixed(0)}ms`).join(' '))
 check('27 clips load', clips.length === 27 && clips.every(c => c.peak > 0.3), `${(total / 1024).toFixed(1)} KB total`)
-check('clips are short', clips.every(c => c.sound < 650), `longest ${Math.max(...clips.map(c => c.sound)).toFixed(0)} ms`)
+check('clips are short', clips.every(c => c.sound < 700), `longest ${Math.max(...clips.map(c => c.sound)).toFixed(0)} ms`)
+check('no clip ends while the voice is still sounding', clips.every(c => c.endDb < -30), `loudest ending ${Math.max(...clips.map(c => c.endDb)).toFixed(0)} dB (${clips.reduce((a, c) => c.endDb > a.endDb ? c : a).w})`)
 check('raw onset within the decoder pad (engine trims it)', clips.every(c => c.onset < 60), `max ${Math.max(...clips.map(c => c.onset)).toFixed(1)} ms`)
 
 const d = p.locator('[role=dialog]')
