@@ -211,15 +211,10 @@ function Learn() {
   const onBar = useRef<(bar: number) => void>(() => {})
   const lastBar = useRef<number | null>(null)
   const loopKey = useRef('')
-  const voiceOn = useRef(voice); voiceOn.current = voice
-  const words = useRef<string[]>([])
-  words.current = shown ? shown.count.beats.map(b => b.spoken.split(' ')[0]) : []
 
   onPulse.current = e => {
     if (e.countIn) setCountFlash(e.beat + 1)
     else if (countFlash !== null) setCountFlash(null)
-    if (!voiceOn.current) return
-    say(e.countIn ? String(e.beat + 1) : (words.current[e.beat] ?? String(e.beat + 1)))
   }
   onBar.current = bar => {
     const L = live.current
@@ -242,10 +237,10 @@ function Learn() {
   const { learn } = P
   useEffect(() => {
     // Only subscribe while something is listening. An idle tab adds no callbacks to the scheduler.
-    learn.onPulse(voice || countIn ? e => onPulse.current(e) : null)
+    learn.onPulse(countIn ? e => onPulse.current(e) : null)
     learn.onBar(trainer ? bar => onBar.current(bar) : null)
     return () => { learn.onPulse(null); learn.onBar(null) }
-  }, [learn, voice, countIn, trainer])
+  }, [learn, countIn, trainer])
   useEffect(() => () => { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel() }, [])
   useEffect(() => {
     learn.voices(allow)
@@ -253,6 +248,10 @@ function Learn() {
     learn.metronome(click)
     learn.countIn(countIn)
   }, [learn, allow, stepBars, click, countIn])
+  // spoken count: recorded clips scheduled by the engine on each grid step (numbers only when the subdivisions get fast)
+  const countMap = useMemo(() => voice ? new Map([...full.bars, ...lesson.bars].map(b => [b.songBar, b.count.beats.flatMap(x => x.grid)])) : null, [voice, full, lesson])
+  useEffect(() => { learn.count(countMap) }, [learn, countMap])
+  useEffect(() => () => learn.count(null), [learn])
 
   useEffect(() => { savePractice(song.raw.id, { countIn, click, voice, limb, muted, solo, stepOn, step: stepI, trainer, every, loops, pin }) }, [song.raw.id, countIn, click, voice, limb, muted, solo, stepOn, stepI, trainer, every, loops, pin])
 
@@ -350,7 +349,7 @@ function Learn() {
     <div className="flex flex-wrap gap-2">
       <button aria-pressed={countIn} onClick={() => setCountIn(v => !v)} className={pill(countIn)}>Count-in</button>
       <button aria-pressed={click} onClick={() => setClick(v => !v)} className={pill(click)}>Click</button>
-      <button aria-pressed={voice} onClick={() => { const next = !voice; setVoice(next); if (next) say('Counting out loud.'); else if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel() }} className={pill(voice)}>Voice</button>
+      <button aria-pressed={voice} onClick={() => setVoice(!voice)} className={pill(voice)}>Voice</button>
     </div>
 
     {!!allow && allow.length === 0 && <p className="text-[13px] text-amber leading-snug">{limb === 'all' ? 'Every voice is muted. Reset the limbs below to hear the part again.' : `Nothing in this step is played by the ${limb}. Switch back to All.`}</p>}

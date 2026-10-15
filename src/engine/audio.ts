@@ -1,5 +1,6 @@
 import * as Tone from 'tone'
 import type { Kit, KitVoice, Layer, Voice, Arrangement, Pattern, Fill } from './types'
+import { CountVoice } from './count'
 import { TICKS_PER_BAR, hitsAt, stepForTick, swingOffset, audibleLayers, ticksPerStep , subHitsAt, VARIANTS, fracOf } from './pattern'
 
 type Inst = { trigger: (t: number, v: number, r?: number, gm?: number, gate?: number, tip?: boolean, tier?: number) => void; choke?: (t: number) => void; dispose: () => void }
@@ -220,6 +221,21 @@ export class RhythmEngine {
   metronome = false
   /** When on, the next start() plays one silent bar of clicks before the song. */
   countInOn = false
+  /** Spoken count, per song bar: one syllable per grid step ('' = silent). null = counting off. */
+  countWords: Map<number, string[]> | null = null
+  private counter: CountVoice | null = null
+  /** Turn the spoken count on (with the bar → syllables map) or off. Clips load on first use. */
+  setCount(words: Map<number, string[]> | null) {
+    this.countWords = words
+    if (words) { this.counter ??= new CountVoice(this.master); void this.counter.load(import.meta.env.BASE_URL).catch(() => {}) }
+  }
+  get countReady() { return !!this.counter?.ready }
+  /** Subdivisions closer than this are not spoken; only the numbers are. */
+  static COUNT_FAST = 0.17
+  private speak(word: string, time: number) {
+    if (this.late || !this.counter?.say(word, time)) return
+    this.trace?.push({ t: time, src: 'count', voice: word as Voice, bar: this.songBar })
+  }
   private countInTotal = 0
   private countInTick = 0
   private countInBeat = 12
@@ -229,7 +245,7 @@ export class RhythmEngine {
   setSong(bars: Pattern[] | null) { this.song = bars ? { bars, loop: null } : null; this.songBar = 0; this.songTick = 0; this.pendingJump = null }
   /** Drop Learn it filters. Normal playback does not call this. */
   clearPractice() {
-    this.practiceVoices = null; this.practiceBars = null; this.metronome = false; this.countInOn = false
+    this.practiceVoices = null; this.practiceBars = null; this.metronome = false; this.countInOn = false; this.countWords = null
     this.countInTotal = 0; this.countInTick = 0; this.onPulse = undefined; this.onLearnBar = undefined
   }
   setSongLoop(loop: [number, number] | null) { if (this.song) this.song.loop = loop }
@@ -263,6 +279,7 @@ export class RhythmEngine {
     if (this.countInTick % this.countInBeat === 0) {
       const beat = this.countInTick / this.countInBeat, beats = this.countInTotal / this.countInBeat
       this.click(time, beat === 0)
+      if (this.countWords) this.speak(String(beat + 1), time)
       if (this.onPulse) { const ev: PulseEvent = { beat, beats, accent: beat === 0, countIn: true }; Tone.getDraw().schedule(() => this.onPulse?.(ev), time) }
     }
     if (++this.countInTick >= this.countInTotal) { this.countInTotal = 0; this.countInTick = 0 }
@@ -299,6 +316,10 @@ export class RhythmEngine {
     }
     if (this.songTick % tps === 0) {
       const step = this.songTick / tps; const stepSec = tickSec * tps
+      if (this.countWords) {
+        const w = this.countWords.get(this.songBar)?.[step]
+        if (w && (/^\d+$/.test(w) || stepSec >= RhythmEngine.COUNT_FAST)) this.speak(w, time)
+      }
       let t = time
       const fl = this.feel
       if (p.humanize) { const r = Math.sin((this.songBar * 97 + step) * 12.9898) * 43758.5453; t += fl * (p.humanize.lateMs + ((r - Math.floor(r)) * 2 - 1) * p.humanize.jitterMs) / 1000 }

@@ -43,6 +43,8 @@ interface Ctx {
     countIn: (on: boolean) => void
     onPulse: (fn: ((e: PulseEvent) => void) | null) => void
     onBar: (fn: ((bar: number) => void) | null) => void
+    /** spoken count: song bar → syllable per grid step, or null for off */
+    count: (words: Map<number, string[]> | null) => void
   }
 }
 export const sectionOf = (s: Song, bar: number) => Math.max(0, s.sections.findIndex(x => bar >= x.start && bar < x.start + x.bars))
@@ -100,7 +102,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const learnCountIn = useCallback((on: boolean) => { e().countInOn = on }, [e])
   const learnOnPulse = useCallback((fn: ((ev: PulseEvent) => void) | null) => { e().onPulse = fn ?? undefined }, [e])
   const learnOnBar = useCallback((fn: ((bar: number) => void) | null) => { e().onLearnBar = fn ?? undefined }, [e])
-  const learn = useMemo(() => ({ voices: learnVoices, bars: learnBars, metronome: learnMetronome, countIn: learnCountIn, onPulse: learnOnPulse, onBar: learnOnBar }), [learnVoices, learnBars, learnMetronome, learnCountIn, learnOnPulse, learnOnBar])
+  const learnCount = useCallback((w: Map<number, string[]> | null) => { e().setCount(w) }, [e])
+  const learn = useMemo(() => ({ voices: learnVoices, bars: learnBars, metronome: learnMetronome, countIn: learnCountIn, onPulse: learnOnPulse, onBar: learnOnBar, count: learnCount }), [learnVoices, learnBars, learnMetronome, learnCountIn, learnOnPulse, learnOnBar, learnCount])
 
   const preload = useCallback((id: string) => {
     const kit = KITS.find(k => k.id === id)!
