@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { RhythmEngine, preloadKit, setSampleBase, sampleAlign } from '../engine/audio'
+import { RhythmEngine, preloadKit, setSampleBase, sampleAlign, type PulseEvent } from '../engine/audio'
 import type { Arrangement, Fill, Layer, Pattern, Voice } from '../engine/types'
 import { VOICES } from '../engine/types'
 import { KitView } from './kitview'
@@ -11,6 +11,8 @@ import { FILLS, FILL_EVERY } from '../data/fills'
 import { SONGS, loadSongBars, shownBpm, type Song } from '../data/songs'
 import * as Tone from 'tone'
 import { applyTuning, applyShift, type Tuning } from '../engine/pitch'
+import { forgetPractice } from '../learn/memory'
+import { LearnPanel } from './learn'
 
 setSampleBase(`${import.meta.env.BASE_URL}samples/acoustic/`)
 export const ALL_FILLS: Fill[] = [...FILLS, ...SONGS.flatMap(s => s.fills.map(f => ({ ...f, category: 'Song fills' })))]
@@ -30,6 +32,16 @@ interface Ctx {
   /** bar-range loop: loopMode on = bar taps pick [start, end] (inclusive, 0-based song bars) */
   loopMode: boolean; setLoopMode: (on: boolean) => void; barLoop: [number, number] | null; loopPick: number | null; pickBar: (n: number) => void; clearBarLoop: () => void
   loadSong: (s: Song, section?: number) => Promise<void>; queue: Song[]; enqueue: (s: Song) => void; unqueue: (i: number) => void; next: () => Promise<void>; shuffle: (pool: Song[]) => Promise<void>; playRange: (s: Song, start: number, end: number) => Promise<void>; jumpBar: (bar: number, onBeat?: boolean) => void; jumpSection: (i: number) => void; setLoopSection: (i: number | null) => void
+  /** Bumps when a song is loaded, so Learn it can start clean. */
+  loadId: number
+  learn: {
+    voices: (v: Voice[] | null) => void
+    pattern: (p: Pattern | null) => void
+    metronome: (on: boolean) => void
+    countIn: (on: boolean) => void
+    onPulse: (fn: ((e: PulseEvent) => void) | null) => void
+    onBar: (fn: ((bar: number) => void) | null) => void
+  }
 }
 export const sectionOf = (s: Song, bar: number) => Math.max(0, s.sections.findIndex(x => bar >= x.start && bar < x.start + x.bars))
 const C = createContext<Ctx>(null!)
@@ -59,6 +71,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [songBar, setSongBar] = useState(0)
   const [loopSection, setLoopS] = useState<number | null>(null)
   const [loopMode, setLoopModeS] = useState(false), [barLoop, setBarLoop] = useState<[number, number] | null>(null), [loopPick, setLoopPick] = useState<number | null>(null)
+  const [loadId, setLoadId] = useState(0)
   const clearBars = () => { setBarLoop(null); setLoopPick(null) }
 
   const e = useCallback(() => {
@@ -77,6 +90,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     e().setKit(applyShift(applyTuning(kit, tuning), song?.raw.tuning?.shift as Partial<Record<Voice, number>> | undefined))
   }, [kitId, tuning, song, e])
   useEffect(() => { e().setFill(ALL_FILLS.find(f => f.pattern.id === fillId) ?? null, fillId ? fillEvery : 0) }, [fillId, fillEvery, e])
+
+  const resetPractice = useCallback((songId?: string) => { e().clearPractice(); if (songId) forgetPractice(songId); setLoadId(n => n + 1) }, [e])
+  const learnVoices = useCallback((v: Voice[] | null) => { e().practiceVoices = v ? new Set(v) : null }, [e])
+  const learnPattern = useCallback((p: Pattern | null) => { e().practicePattern = p }, [e])
+  const learnMetronome = useCallback((on: boolean) => { e().metronome = on }, [e])
+  const learnCountIn = useCallback((on: boolean) => { e().countInOn = on }, [e])
+  const learnOnPulse = useCallback((fn: ((ev: PulseEvent) => void) | null) => { e().onPulse = fn ?? undefined }, [e])
+  const learnOnBar = useCallback((fn: ((bar: number) => void) | null) => { e().onLearnBar = fn ?? undefined }, [e])
+  const learn = useMemo(() => ({ voices: learnVoices, pattern: learnPattern, metronome: learnMetronome, countIn: learnCountIn, onPulse: learnOnPulse, onBar: learnOnBar }), [learnVoices, learnPattern, learnMetronome, learnCountIn, learnOnPulse, learnOnBar])
 
   const preload = useCallback((id: string) => {
     const kit = KITS.find(k => k.id === id)!
@@ -113,14 +135,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     },
     loadSong: async (sg, sec) => {
       await loadSongBars(sg)
-      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([]); clearBars()
+      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([]); clearBars(); resetPractice(sg.raw.id)
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
     },
     /** Play bars [start, end) of a song (0-based), looping that range. */
     playRange: async (sg, a, b) => {
       await loadSongBars(sg)
-      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([])
+      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([]); resetPractice(sg.raw.id)
       const n = sg.bars.length; const st = Math.max(0, Math.min(a, n - 1)), end = Math.max(st + 1, Math.min(b, n))
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm); en.setSongLoop([st, end])
@@ -131,7 +153,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (loopSection !== null && loopSection !== i) { setLoopS(i); e().setSongLoop([st, st + song.sections[i].bars]) } },
     setLoopSection: i => { setLoopS(i); clearBars(); e().setSongLoop(i === null || !song ? null : [song.sections[i].start, song.sections[i].start + song.sections[i].bars]) },
     load: (p, add) => {
-      e().setSong(null); e().sound = null; e().drift = 0; setSong(null)
+      resetPractice(); e().setSong(null); e().sound = null; e().drift = 0; setSong(null)
       e().setArrangement(null); setArr(null); setSection(null)
       const l: Layer = { id: `l${n++}`, pattern: p, volume: 0.85, mute: false, solo: false }
       setLayers(prev => (add ? [...prev, l] : [l]))
@@ -139,7 +161,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (!add) { const s = p.suggestedSwing ?? 0; setSwingS(s); e().setSwing(s) }
     },
     loadArrangement: a => {
-      e().setSong(null); e().sound = null; e().drift = 0; setSong(null)
+      resetPractice(); e().setSong(null); e().sound = null; e().drift = 0; setSong(null)
       setArr(a); setBpmS(a.bpm); e().setBpm(a.bpm); setLayers([])
       e().setArrangement(a, ids => ids.map(id => PATTERNS[id]))
       e().stop(); setPlaying(false)
@@ -155,7 +177,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setSwing: v => { setSwingS(v); e().setSwing(v) },
     setKit: id => { setKitId(id); setKitProgress(0); preload(id) },
     subscribe: l => e().subscribe(l),
-  }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue, loopMode, barLoop, loopPick])
+    loadId, learn,
+  }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue, loopMode, barLoop, loopPick, loadId, learn, resetPractice])
   live.current = value
   // Lock screen / Control Center: song title and artist, play/pause and next (the queue)
   useEffect(() => {
@@ -256,8 +279,8 @@ function LayerCard({ layer }: { layer: Layer }) {
 
 function Segmented<T extends string | number>({ value, options, onChange }: { value: T; options: { v: T; l: string }[]; onChange: (v: T) => void }) {
   return (
-    <div className="inline-flex p-0.5 rounded-full bg-white/[0.05]">
-      {options.map(o => <button key={String(o.v)} onClick={() => onChange(o.v)} className={`h-8 px-3.5 rounded-full text-xs transition-all duration-200 ${value === o.v ? 'bg-bone text-ink shadow' : 'text-bone/60'}`}>{o.l}</button>)}
+    <div className="inline-flex p-0.5 rounded-full bg-white/[0.05] max-w-full">
+      {options.map(o => <button key={String(o.v)} onClick={() => onChange(o.v)} className={`h-9 px-2.5 rounded-full text-[12px] whitespace-nowrap transition-all duration-200 ${value === o.v ? 'bg-bone text-ink shadow' : 'text-bone/60'}`}>{o.l}</button>)}
     </div>
   )
 }
@@ -387,13 +410,13 @@ function Sheet({ open, onClose, children, title, subtitle, head, lead, contentPu
 export function PlayerBar() {
   const P = usePlayer()
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<'now' | 'kit' | 'browse' | 'sound'>('now')
+  const [tab, setTab] = useState<'now' | 'kit' | 'browse' | 'sound' | 'learn'>('now')
   const sg = P.song; const si = sg ? sectionOf(sg, P.songBar) : 0
   const title = sg ? sg.raw.song : P.arrangement ? P.arrangement.name : P.layers.length ? P.layers.map(l => l.pattern.name).join(' + ') : 'Choose a rhythm'
   const sub = sg && sg.sections[si] ? `${sg.sections[si].name} · bar ${P.songBar - sg.sections[si].start + 1}/${sg.sections[si].bars}${P.loopSection !== null ? ' · looping' : ''}` : P.arrangement && P.section !== null ? P.arrangement.sections[P.section].name : P.inFill ? 'Fill' : P.layers.length ? `${P.layers.length} layer${P.layers.length > 1 ? 's' : ''} · ${KITS.find(k => k.id === P.kitId)!.name}` : 'Tap + to browse'
   const kitLoading = P.kitProgress < 1 && P.playing && KITS.find(k => k.id === P.kitId)!.voices.low.kind === 'sample'
   const show = (t: typeof tab) => { setTab(t); setOpen(true) }
-  useEffect(() => { if (sg && tab === 'browse') setTab('now') }, [sg, tab])
+  useEffect(() => { if ((sg && tab === 'browse') || (!sg && tab === 'learn')) setTab('now') }, [sg, tab])
   // live tempo: follows the song's tempo map (per-bar and mid-bar changes) as it plays
   const [live, setLive] = useState<number | null>(null)
   useEffect(() => { if (!sg || !P.playing) { setLive(null); return }
@@ -422,8 +445,8 @@ export function PlayerBar() {
       </div>
     </div></div>
     <Sheet open={open} onClose={() => setOpen(false)} lead={transport} title={sg ? sg.raw.song : title} subtitle={sg ? `${sg.raw.artist} · ${sg.raw.drummer}` : undefined}
-      contentPull={tab !== 'sound'}
-      head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} />{sg && tab === 'now' && <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
+      contentPull={tab !== 'sound' && tab !== 'learn'}
+      head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }, ...(sg ? [{ v: 'learn' as const, l: 'Learn it' }] : [])]} />{sg && tab === 'now' && <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
         {P.playing && sg.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
           className="h-8 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}
         <button aria-pressed={P.loopMode} onClick={() => P.setLoopMode(!P.loopMode)} className={`h-8 px-3.5 rounded-full text-[12px] border active:scale-95 ${P.loopMode ? 'bg-amber text-ink border-amber' : 'border-white/[0.18] text-bone/75'}`}>Loop</button>
@@ -439,6 +462,7 @@ export function PlayerBar() {
       </div>}
       {tab === 'kit' && <KitView bars={sg ? sg.bars : P.layers.map(l => l.pattern)} />}
       {tab === 'browse' && !sg && <Browser />}
+      {tab === 'learn' && sg && <LearnPanel key={`${sg.raw.id}:${P.loadId}`} />}
       {tab === 'sound' && <div className="space-y-6">
         <section><Label>Tempo <span className="text-bone tabular-nums">{sg ? shownBpm(sg, live ?? P.bpm) : Math.round(P.bpm)}</span> <span className="normal-case tracking-normal">BPM</span></Label>
           <input type="range" min={40} max={260} value={sg ? shownBpm(sg, P.bpm) : P.bpm} onChange={e => P.setBpm(+e.target.value / (sg?.raw.bpmDisplay ?? 1))} className="slider no-sheet-drag touch-pan-x" aria-label="Tempo" />
