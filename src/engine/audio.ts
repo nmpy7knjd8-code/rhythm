@@ -148,6 +148,8 @@ const hash = (a: number, b: number, c: number) => { const x = Math.sin(a * 12.98
 /** Beat length in ticks for accents: dotted quarter (18) in compound x/8 meters, else quarter (12). */
 const beatTicksOf = (p: Pattern) => { const m = /^(\d+)\/8$/.exec(p.timeSig ?? ''); return m && +m[1] % 3 === 0 && +m[1] > 3 ? 18 : 12 }
 export type StepListener = (layerSteps: Record<string, number>, bar: number) => void
+/** A felt beat, for the Learn it count-in, metronome, and spoken count. */
+export interface PulseEvent { beat: number; beats: number; accent: boolean; countIn: boolean }
 const FILL_ID = 'fill', FX_ID = 'fx', SONG_ID = 'song'
 /** Deterministic ±0.8 ms drift (kept under the 1 ms timing-audit tolerance) on inner roll strokes so rolls aren't machine-perfect. */
 /** Timing drift for inner roll strokes only (the on-step strokes stay exactly on the grid). Below 12 strokes/s: the old ±0.8 ms.
@@ -210,13 +212,69 @@ export class RhythmEngine {
   onSongBar?: (bar: number) => void
   /** Fired when a song plays past its last bar (not when a section loop wraps). */
   onSongEnd?: () => void
+  /** Learn it: voices that may sound. null keeps the full mix (every existing call path). */
+  practiceVoices: Set<Voice> | null = null
+  /** Learn it: per song bar, the lesson step's bar (a subset of the recorded notes). Used only when its grid matches the recorded bar. */
+  practiceBars: Map<number, Pattern> | null = null
+  /** Felt-beat click. Off adds nothing to the scheduler. */
+  metronome = false
+  /** When on, the next start() plays one silent bar of clicks before the song. */
+  countInOn = false
+  private countInTotal = 0
+  private countInTick = 0
+  private countInBeat = 12
+  onPulse?: (e: PulseEvent) => void
+  /** Every bar line, including a one-bar loop that repeats the same bar index. */
+  onLearnBar?: (bar: number) => void
   setSong(bars: Pattern[] | null) { this.song = bars ? { bars, loop: null } : null; this.songBar = 0; this.songTick = 0; this.pendingJump = null }
+  /** Drop Learn it filters. Normal playback does not call this. */
+  clearPractice() {
+    this.practiceVoices = null; this.practiceBars = null; this.metronome = false; this.countInOn = false
+    this.countInTotal = 0; this.countInTick = 0; this.onPulse = undefined; this.onLearnBar = undefined
+  }
   setSongLoop(loop: [number, number] | null) { if (this.song) this.song.loop = loop }
   /** Jump to a bar: immediately if stopped, otherwise at the next bar line. */
   jumpSong(bar: number, onBeat = false) { if (!this.playing) { this.songBar = bar; this.songTick = 0 } else if (onBeat) this.pendingBeatJump = bar; else this.pendingJump = bar }
   /** Bar to restart at on the next beat (12 ticks = one quarter), set by section taps. */
   private pendingBeatJump: number | null = null
+  /** Felt beat in ticks: the meter's pulse when it divides the bar, otherwise the step grouping. */
+  private pulseTicks(p: Pattern, tps: number, len: number) {
+    const beat = beatTicksOf(p)
+    if (beat > 0 && len % beat === 0) return beat
+    const grouped = tps * Math.max(1, p.stepsPerBeat || 1)
+    if (grouped > 0 && len % grouped === 0) return grouped
+    return Math.max(1, tps)
+  }
+  private armCountIn() {
+    const bars = this.song?.bars; if (!bars?.length) return
+    const p = bars[Math.max(0, Math.min(this.songBar, bars.length - 1))]
+    const tps = Math.max(1, ticksPerStep(p) || 1); const len = p.steps * tps
+    if (!(len > 0)) return
+    this.countInBeat = this.pulseTicks(p, tps, len); this.countInTotal = len; this.countInTick = 0
+  }
+  private clicker: Tone.MembraneSynth | null = null
+  /** A short tick on the master bus, not a kit voice, so mute and solo never eat the click. */
+  private click(time: number, accent: boolean) {
+    if (this.late || !isFinite(time)) return
+    const s = this.clicker ??= new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 2, envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.01 } }).connect(this.master)
+    s.triggerAttackRelease(accent ? 1400 : 900, 0.02, time, accent ? 0.35 : 0.18)
+  }
+  private tickCountIn(time: number) {
+    if (this.countInTick % this.countInBeat === 0) {
+      const beat = this.countInTick / this.countInBeat, beats = this.countInTotal / this.countInBeat
+      this.click(time, beat === 0)
+      if (this.onPulse) { const ev: PulseEvent = { beat, beats, accent: beat === 0, countIn: true }; Tone.getDraw().schedule(() => this.onPulse?.(ev), time) }
+    }
+    if (++this.countInTick >= this.countInTotal) { this.countInTotal = 0; this.countInTick = 0 }
+  }
+  /** Recorded bar, or the simplified practice bar when the grids match. */
+  private notesFor(p: Pattern): Pattern {
+    const o = this.practiceBars?.get(this.songBar)
+    if (!o || o.steps !== p.steps || ticksPerStep(o) !== ticksPerStep(p)) return p
+    return o
+  }
   private songStep(time: number, tickSec: number) {
+    if (this.countInTotal > 0) { this.tickCountIn(time); return }
     if (this.pendingBeatJump !== null && this.songTick % 12 === 0) { this.songBar = this.pendingBeatJump; this.songTick = 0; this.pendingBeatJump = null; this.pendingJump = null }
     const song = this.song!
     if (!song.bars.length) return
@@ -226,13 +284,19 @@ export class RhythmEngine {
     if (!(len > 0) || !isFinite(len)) len = TICKS_PER_BAR // guard: a bar can never be empty or non-finite
     if (this.songTick >= len) this.songTick = len - 1
     if (this.songTick === 0) {
-      const b = this.songBar; Tone.getDraw().schedule(() => this.onSongBar?.(b), time)
+      const b = this.songBar; Tone.getDraw().schedule(() => { this.onSongBar?.(b); this.onLearnBar?.(b) }, time)
       // tempo map: each bar may carry its own tempo; change it exactly on the bar line
       const want = (p.suggestedBpm ?? 0) * this.songTempoScale
       if (want > 0 && isFinite(want) && Math.abs(Tone.getTransport().bpm.getValueAtTime(time) - want) > 0.01) Tone.getTransport().bpm.setValueAtTime(want, time)
     }
     tickSec = 5 / Tone.getTransport().bpm.getValueAtTime(time + 1e-6) // after any tempo change at this instant
     if (p.tempoAt) for (const [f, bpm] of p.tempoAt) { const at = fracOf(f) * len; if (this.songTick === Math.ceil(at - 1e-9)) Tone.getTransport().bpm.setValueAtTime(bpm * this.songTempoScale, Math.max(time - (Math.ceil(at - 1e-9) - at) * tickSec, this.lastTime)) }
+    const pulse = this.pulseTicks(p, tps, len)
+    if ((this.metronome || this.onPulse) && this.songTick % pulse === 0) {
+      const beat = this.songTick / pulse, beats = len / pulse
+      if (this.metronome) this.click(time, beat === 0)
+      if (this.onPulse) { const ev: PulseEvent = { beat, beats, accent: beat === 0, countIn: false }; Tone.getDraw().schedule(() => this.onPulse?.(ev), time) }
+    }
     if (this.songTick % tps === 0) {
       const step = this.songTick / tps; const stepSec = tickSec * tps
       let t = time
@@ -240,9 +304,10 @@ export class RhythmEngine {
       if (p.humanize) { const r = Math.sin((this.songBar * 97 + step) * 12.9898) * 43758.5453; t += fl * (p.humanize.lateMs + ((r - Math.floor(r)) * 2 - 1) * p.humanize.jitterMs) / 1000 }
       this.hz = { bar: this.songBar, pos: step * tps, beat: beatTicksOf(p), sub: -1, stroke: stepSec }
       const bt = (this.songBar * len + this.songTick) / 12 // song position in quarter beats (smooth for these steady-meter grooves)
-      if (p.grace) this.playGraces(SONG_ID, p, step, t, stepSec, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt))
-      for (const h of hitsAt(p, step)) this.play(SONG_ID, h.voice, t + this.feelShift(p, step, tps, stepSec) + this.driftAt(h.voice, bt), h.velocity, h.graces, stepSec, p.variant?.[h.voice]?.[step])
-      this.playSubs(SONG_ID, p, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt), fl); this.hz = null
+      const notes = this.notesFor(p)
+      if (notes.grace) this.playGraces(SONG_ID, notes, step, t, stepSec, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt))
+      for (const h of hitsAt(notes, step)) this.play(SONG_ID, h.voice, t + this.feelShift(p, step, tps, stepSec) + this.driftAt(h.voice, bt), h.velocity, h.graces, stepSec, notes.variant?.[h.voice]?.[step])
+      this.playSubs(SONG_ID, notes, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt), fl); this.hz = null
       const b = this.songBar; Tone.getDraw().schedule(() => this.listeners.forEach(f => f({ [SONG_ID]: step }, b)), time)
     }
     if (++this.songTick >= len) {
@@ -311,6 +376,7 @@ export class RhythmEngine {
     return p.barTicks ?? (len <= TICKS_PER_BAR * 2 && len % 6 === 0 && len !== TICKS_PER_BAR * 2 ? len : TICKS_PER_BAR)
   }
   private play(channelId: string, voice: Voice, t: number, vel: number, graces = 0, stepSec = 0.1, variant?: string) {
+    if (this.practiceVoices && !this.practiceVoices.has(voice)) return
     if (this.late || !isFinite(t)) { this.skipped++; return }
     this.trace?.push({ t, src: channelId, voice, bar: this.bar, variant, tier: voice === 'back' ? snareTier(vel) : undefined })
     const vr = variant ? VARIANTS[variant] : undefined
@@ -342,6 +408,7 @@ export class RhythmEngine {
   /** Tab grace notes for this step: soft strokes just before the onset, 18-35 ms apart and never closer than 40% of the gap to that drum's previous note. */
   private playGraces(ch: string, p: Pattern, step: number, t: number, stepSec: number, shift: (frac: number) => number) {
     for (const [voice, m] of Object.entries(p.grace!) as [Voice, Record<string, number>][]) for (const [k, n] of Object.entries(m)) {
+      if (this.practiceVoices && !this.practiceVoices.has(voice)) continue
       const [st, fr] = k.split(':'); if (Number(st) !== step) continue
       const f = fr ? fracOf(fr) : 0, at = t + f * stepSec + shift(f), inst = this.inst(ch, voice); if (!inst) continue
       const prevT = this.lastHit.get(ch + voice) ?? -9, g = Math.min(Math.max(0.018, Math.min(0.035, stepSec / 2)), 0.4 * Math.max(0, at - prevT) / n)
@@ -486,6 +553,8 @@ export class RhythmEngine {
     const tickLen = `${(tr.PPQ * 4) / TICKS_PER_BAR}i`
     this.songTick = 0
     this.lastTime = -1
+    this.countInTotal = 0; this.countInTick = 0
+    if (this.countInOn && this.song?.bars.length) this.armCountIn()
     this.eventId = tr.scheduleRepeat(time => {
       // guards: never process the same instant twice (time must increase), and if the main thread stalled and Tone is
       // catching up on ticks that are already in the past, advance the counters silently instead of bursting notes
@@ -526,6 +595,7 @@ export class RhythmEngine {
   }
 
   stop() {
+    this.countInTotal = 0; this.countInTick = 0
     const tr = Tone.getTransport()
     if (this.eventId !== null) tr.clear(this.eventId)
     this.eventId = null; tr.stop(); tr.position = 0
