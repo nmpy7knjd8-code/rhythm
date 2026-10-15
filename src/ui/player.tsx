@@ -27,6 +27,8 @@ interface Ctx {
   toggle: () => Promise<void>; setBpm: (n: number) => void; setSwing: (n: number) => void; setKit: (id: string) => void
   subscribe: RhythmEngine['subscribe']
   song: Song | null; songBar: number; loopSection: number | null
+  /** bar-range loop: loopMode on = bar taps pick [start, end] (inclusive, 0-based song bars) */
+  loopMode: boolean; setLoopMode: (on: boolean) => void; barLoop: [number, number] | null; loopPick: number | null; pickBar: (n: number) => void; clearBarLoop: () => void
   loadSong: (s: Song, section?: number) => Promise<void>; queue: Song[]; enqueue: (s: Song) => void; unqueue: (i: number) => void; next: () => Promise<void>; shuffle: (pool: Song[]) => Promise<void>; playRange: (s: Song, start: number, end: number) => Promise<void>; jumpBar: (bar: number, onBeat?: boolean) => void; jumpSection: (i: number) => void; setLoopSection: (i: number | null) => void
 }
 export const sectionOf = (s: Song, bar: number) => Math.max(0, s.sections.findIndex(x => bar >= x.start && bar < x.start + x.bars))
@@ -56,6 +58,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [song, setSong] = useState<Song | null>(null)
   const [songBar, setSongBar] = useState(0)
   const [loopSection, setLoopS] = useState<number | null>(null)
+  const [loopMode, setLoopModeS] = useState(false), [barLoop, setBarLoop] = useState<[number, number] | null>(null), [loopPick, setLoopPick] = useState<number | null>(null)
+  const clearBars = () => { setBarLoop(null); setLoopPick(null) }
 
   const e = useCallback(() => {
     if (!eng.current) {
@@ -84,6 +88,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     layers, playing, bpm, swing, feel, setFeel: (f: number) => { setFeelS(f); e().setFeel(f) }, kitId, section, arrangement, tuning, setTuning, fillId, fillEvery, inFill, kitProgress,
     setFill: (id, every) => { setFillId(id); if (every !== undefined) setFillEvery(every) },
     song, songBar, loopSection,
+    loopMode, barLoop, loopPick,
+    setLoopMode: on => { setLoopModeS(on); if (!on && barLoop) e().setSongLoop(null); clearBars() },
+    clearBarLoop: () => { if (barLoop) e().setSongLoop(null); clearBars() },
+    pickBar: n => {
+      if (loopPick === null) { setLoopPick(n); return }
+      const a = Math.min(loopPick, n), b = Math.max(loopPick, n); setLoopPick(null); setBarLoop([a, b]); setLoopS(null)
+      const en = e(); en.setSongLoop([a, b + 1])
+      if (en.playing) { if (songBar < a || songBar > b) { void en.wake(); en.jumpSong(a, true) } } else { en.jumpSong(a); setSongBar(a) }
+    },
     queue,
     enqueue: sg => setQueue(q => [...q, sg]),
     unqueue: i => setQueue(q => q.filter((_, j) => j !== i)),
@@ -100,7 +113,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     },
     loadSong: async (sg, sec) => {
       await loadSongBars(sg)
-      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([])
+      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([]); clearBars()
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
     },
@@ -116,7 +129,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     jumpBar: (b, onBeat) => { void e().wake(); e().jumpSong(b, onBeat); if (!e().playing) setSongBar(b) },
     jumpSection: i => { if (!song) return; const st = song.sections[i].start; void e().wake(); e().jumpSong(st, true); if (!e().playing) setSongBar(st)
       if (loopSection !== null && loopSection !== i) { setLoopS(i); e().setSongLoop([st, st + song.sections[i].bars]) } },
-    setLoopSection: i => { setLoopS(i); e().setSongLoop(i === null || !song ? null : [song.sections[i].start, song.sections[i].start + song.sections[i].bars]) },
+    setLoopSection: i => { setLoopS(i); clearBars(); e().setSongLoop(i === null || !song ? null : [song.sections[i].start, song.sections[i].start + song.sections[i].bars]) },
     load: (p, add) => {
       e().setSong(null); e().sound = null; e().drift = 0; setSong(null)
       e().setArrangement(null); setArr(null); setSection(null)
@@ -142,7 +155,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setSwing: v => { setSwingS(v); e().setSwing(v) },
     setKit: id => { setKitId(id); setKitProgress(0); preload(id) },
     subscribe: l => e().subscribe(l),
-  }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue])
+  }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue, loopMode, barLoop, loopPick])
   live.current = value
   // Lock screen / Control Center: song title and artist, play/pause and next (the queue)
   useEffect(() => {
@@ -410,8 +423,13 @@ export function PlayerBar() {
     </div></div>
     <Sheet open={open} onClose={() => setOpen(false)} lead={transport} title={sg ? sg.raw.song : title} subtitle={sg ? `${sg.raw.artist} · ${sg.raw.drummer}` : undefined}
       contentPull={tab !== 'sound'}
-      head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} />{P.playing && sg?.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
-        className="mt-3.5 h-7 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}<UpNext key={String(open)} /></div>}>
+      head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }]} />{sg && tab === 'now' && <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
+        {P.playing && sg.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
+          className="h-8 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}
+        <button aria-pressed={P.loopMode} onClick={() => P.setLoopMode(!P.loopMode)} className={`h-8 px-3.5 rounded-full text-[12px] border active:scale-95 ${P.loopMode ? 'bg-amber text-ink border-amber' : 'border-white/[0.18] text-bone/75'}`}>Loop</button>
+        {P.loopMode && (P.barLoop ? <button aria-label="Clear loop" onClick={P.clearBarLoop} className="h-8 pl-3 pr-2.5 rounded-full text-[12px] bg-white/[0.06] text-amber flex items-center gap-1.5">Looping bars {P.barLoop[0] + 1}{P.barLoop[1] > P.barLoop[0] ? `–${P.barLoop[1] + 1}` : ''}<span className="text-bone/60 text-[14px] leading-none">×</span></button>
+          : <span className="text-[11px] text-mute">{P.loopPick === null ? 'Tap a start bar' : `Bar ${P.loopPick + 1} · tap the end bar`}</span>)}
+      </div>}<UpNext key={String(open)} /></div>}>
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
         {sg?.raw.tuning && <p className="text-[11px] text-mute">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
@@ -493,7 +511,12 @@ export function SongForm({ song }: { song?: Song }) {
           <div className={`w-full text-left text-sm ${on ? 'text-amber' : 'text-bone/70'}`}>
             <span className="truncate block">{s.name}{V && V.repeats.has(V.secGroup[i]) && V.secGroup.indexOf(V.secGroup[i]) !== i && <span className="ml-1.5 text-[10px] text-mute">= {sg.sections[V.secGroup.indexOf(V.secGroup[i])].name}</span>}</span>
           </div>
-          {V && (on || s.bars <= 64) && <div className={`flex gap-[2px] mt-1 ${on ? 'h-6' : 'h-1.5 pointer-events-none'}`} aria-label={`${s.name} bar variations`}>
+          {P.loopMode && live && <div className="flex flex-wrap gap-1 mt-1.5" aria-label={`${s.name} bars`}>
+            {Array.from({ length: s.bars }, (_, j) => { const n = s.start + j, inR = !!P.barLoop && n >= P.barLoop[0] && n <= P.barLoop[1]
+              return <button key={j} aria-label={`Loop bar ${n + 1}`} onClick={ev => { ev.stopPropagation(); P.pickBar(n) }}
+                className={`w-8 h-8 rounded-md text-[10px] tabular-nums ${inR ? 'bg-amber text-ink font-medium' : P.loopPick === n ? 'ring-1 ring-amber text-amber bg-amber/10' : 'bg-white/[0.06] text-bone/60'} ${n === P.songBar && P.playing ? 'outline outline-1 outline-bone/70' : ''}`}>{n + 1}</button> })}
+          </div>}
+          {!(P.loopMode && live) && V && (on || s.bars <= 64) && <div className={`flex gap-[2px] mt-1 ${on ? 'h-6' : 'h-1.5 pointer-events-none'}`} aria-label={`${s.name} bar variations`}>
             {V.bars.slice(s.start, s.start + s.bars).map((b, j) => { const n = s.start + j; const now = live && n === P.songBar
               return <button key={j} aria-label={`Bar ${j + 1}, pattern ${String.fromCharCode(65 + b.k)}`} onClick={ev => { if (!on || !live) return; ev.stopPropagation(); P.jumpBar(n) }}
                 className={`relative flex-1 min-w-[3px] rounded-[2px] ${now ? 'ring-1 ring-amber' : ''}`} style={{ background: VAR_COLORS[b.k % VAR_COLORS.length], opacity: on ? (live && n <= P.songBar ? 1 : 0.55) : 0.4 }}>
