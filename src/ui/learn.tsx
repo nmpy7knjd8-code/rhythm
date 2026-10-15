@@ -4,7 +4,7 @@ import type { Voice } from '../engine/types'
 import { VOICES } from '../engine/types'
 import type { PulseEvent } from '../engine/audio'
 import type { Song } from '../data/songs'
-import { loadSongBars, shownBpm } from '../data/songs'
+import { loadSongBars } from '../data/songs'
 import { getLesson, type Lesson, type LessonBar, type Limb } from '../learn'
 import { LIMBS, LIMB_NAME, VOICE_LABEL } from '../learn/speech'
 import { AUTHORED } from '../learn/authored'
@@ -84,7 +84,7 @@ function Notation({ bar, step, sounds }: { bar: LessonBar; step: number; sounds:
   const beatStart = new Set(bar.count.beats.map(b => b.step))
   const sticking = Array.from({ length: steps }, (_, i) => { const h = new Set(bar.notes.filter(n => n.step === i && !n.frac && (n.limb === 'rightHand' || n.limb === 'leftHand')).map(n => n.stick)); return h.size === 2 ? 'RL' : h.size ? [...h][0] : '' })
   const showStick = sticking.some(Boolean)
-  const minCol = syllables.some(x => x.length > 2) ? 30 : 18
+  const minCol = syllables.some(x => x.length > 2) ? 22 : 18 // long syllables (trip, let) get a smaller font instead of wider columns
   // Wrap at beat boundaries so the bar never scrolls sideways: as many whole beats per line as fit.
   const fit = Math.max(1, Math.floor(310 / minCol))
   const starts = bar.count.beats.map(b => b.step)
@@ -119,7 +119,7 @@ function Notation({ bar, step, sounds }: { bar: LessonBar; step: number; sounds:
       })}
       <div className="flex mt-0.5">
         <span className="w-12 shrink-0" />
-        <div className="flex-1"><div className="flex" style={{ width: `${(b - a) / widest * 100}%` }}>{span(a, b).map(i => <span key={i} className={`flex-1 text-center leading-none py-1 ${beatStart.has(i) ? 'text-[13px]' : 'text-[11px]'} ${i === step ? 'text-amber' : beatStart.has(i) ? 'text-bone' : 'text-mute'}`}>{syllables[i]}</span>)}</div></div>
+        <div className="flex-1"><div className="flex" style={{ width: `${(b - a) / widest * 100}%` }}>{span(a, b).map(i => <span key={i} className={`flex-1 text-center leading-none py-1 ${beatStart.has(i) ? 'text-[13px]' : syllables[i].length > 2 ? 'text-[9px] tracking-tight' : 'text-[11px]'} ${i === step ? 'text-amber' : beatStart.has(i) ? 'text-bone' : 'text-mute'}`}>{syllables[i]}</span>)}</div></div>
       </div>
       {showStick && <div className="flex">
         <span className="w-12 shrink-0 text-[10px] text-mute self-center">Stick</span>
@@ -334,7 +334,7 @@ function Learn() {
     </section>
 
     <section>
-      <div className="mb-1 text-[11px] uppercase tracking-[0.12em] text-mute">Practice tempo <span className="text-bone tabular-nums normal-case tracking-normal">{Math.min(999, Math.max(0, pct))}% · {shownBpm(song, P.bpm)} BPM</span></div>
+      <div className="mb-1 text-[11px] uppercase tracking-[0.12em] text-mute">Practice tempo <span className="text-bone tabular-nums normal-case tracking-normal">{Math.min(999, Math.max(0, pct))}% · {Math.round(lesson.tempos.songBpm * pct / 100)} BPM</span></div>
       <input type="range" min={50} max={100} step={5} value={Math.min(100, Math.max(50, Math.round(pct / 5) * 5))} onChange={e => setPct(+e.target.value)} className="slider slider-lg no-sheet-drag w-full" style={{ height: 44 }} aria-label="Practice tempo" />
       <div className="mt-1 flex gap-1">{([['Start', lesson.tempos.startBpm], ['Middle', lesson.tempos.middleBpm], ['Full', lesson.tempos.fullBpm]] as const).map(([l, bpm]) => { const n = Math.round(bpm / (lesson.tempos.songBpm || bpm) * 100)
         return <button key={l} onClick={() => setPct(n)} className={`h-9 flex-1 rounded-full text-[13px] border active:scale-95 ${pct === n ? 'bg-bone text-ink border-bone' : 'border-white/10 text-bone/70'}`}>{l} {Math.round(bpm)}</button> })}</div>
