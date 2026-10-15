@@ -51,7 +51,7 @@ export interface LessonNote {
 }
 
 export interface CountBeat {
-  /** 1-based beat inside the bar. Continuous across an odd bar (1…7, not restarted). */
+  /** 1-based position of the beat in the bar (1…7). The spoken number is in `syllables` (restarts per group in x/8 odd meters). */
   number: number
   /**
    * What to say for this beat. "1 e & a", "2 trip let", "3 &".

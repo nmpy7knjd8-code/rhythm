@@ -284,6 +284,8 @@ test('Forty Six & 2 drum solo counts 7/8 in groups of 2 and 3', () => {
     assert.equal(bar.count.kind, 'additive')
     assert.equal(bar.count.grouping.reduce((sum, part) => sum + part, 0), 7)
     assert.ok(bar.count.counting.includes('|'))
+    // like the Theory page (7/8 = 1-2 1-2 1-2-3): every group restarts at 1
+    for (const group of bar.count.counting.split('|')) assert.equal(group.trim().split(' ')[0], '1')
   }
 })
 

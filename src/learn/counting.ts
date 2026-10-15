@@ -6,9 +6,10 @@ import type { BarCount, CountBeat, MeterKind } from './types'
  * Counting follows the syllables already used in src/data/theory.ts:
  * eighths "1 &", sixteenths "1 e & a", triplets "1 trip let".
  * Odd meters use groups of 2 and 3. 7/8 defaults to 2+2+3, 5/4 to 3+2,
- * matching the meter page. Beat numbers run through the bar (1…7), and
- * "|" marks the groups. Restarting each group ("1 2, 1 2, 1 2 3") is the
- * other common count; this one stays unambiguous when read aloud.
+ * matching the meter page. Eighth-note odd meters restart the count in each
+ * group, as the Theory page does: 7/8 (2+2+3) is "1 2 | 1 2 | 1 2 3".
+ * Quarter-note odd meters run through the bar (5/4 is "1 2 3 | 4 5"), also as on
+ * the Theory page. `CountBeat.number` is always the beat's position in the bar.
  */
 export function countBar(pattern: Pattern, fallbackSig = '4/4'): BarCount {
   const parsed = parseSig(pattern.timeSig || fallbackSig)
@@ -39,13 +40,17 @@ export function countBar(pattern: Pattern, fallbackSig = '4/4'): BarCount {
   const beatCount = kind === 'compound' ? parsed.num / 3 : parsed.num
   const spans = divide(steps, Math.max(1, beatCount))
   const tripletBeat = kind === 'compound'
+  // spoken number of each beat: restarts per group in x/8 (and finer) odd meters, else the beat's position
+  const restart = kind === 'additive' && parsed.den >= 8
+  const said: number[] = []
+  for (const size of grouping) for (let k = 1; k <= size; k++) said.push(restart ? k : said.length + 1)
   const beats: CountBeat[] = []
   let step = 0
   for (let i = 0; i < spans.length; i++) {
     const columns = spans[i]
-    const number = i + 1
-    const grid = gridLabels(number, columns, tripletBeat)
-    const syllables = tripletBeat || columns === 3 ? `${number} trip let` : grid.join(' ')
+    const number = i + 1, label = said[i] ?? number
+    const grid = gridLabels(label, columns, tripletBeat)
+    const syllables = tripletBeat || columns === 3 ? `${label} trip let` : grid.join(' ')
     beats.push({
       number,
       syllables,
