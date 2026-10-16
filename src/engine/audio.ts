@@ -1,5 +1,5 @@
 import * as Tone from 'tone'
-import type { Kit, KitVoice, Layer, Voice, Arrangement, Pattern, Fill } from './types'
+import { sectionIndex, type Kit, type KitVoice, type Layer, type Voice, type Arrangement, type ArrangementPos, type SectionIndex, type Pattern, type Fill } from './types'
 import { CountVoice } from './count'
 import { TICKS_PER_BAR, hitsAt, stepForTick, swingOffset, audibleLayers, ticksPerStep , subHitsAt, VARIANTS, fracOf } from './pattern'
 
@@ -166,6 +166,13 @@ export const rollJitter = (bar: number, step: number, frac: number, stroke = 1, 
 }
 /** Visual hit bus: Kit view subscribes; callbacks fire via Tone.Draw at the hit's audio time. */
 export const hitBus = new Set<(voice: Voice, vel: number, variant?: string) => void>()
+function positionIn(arr: Arrangement, bar: number) {
+  const total = arr.sections.reduce((a, s) => a + s.bars, 0)
+  const wrapped = ((bar % total) + total) % total
+  let offset = wrapped, section = 0
+  while (offset >= arr.sections[section].bars) { offset -= arr.sections[section].bars; section++ }
+  return { bar: wrapped, section, offset }
+}
 
 /** Thin Tone.js wrapper. All timing runs on Tone.Transport at a 48-tick-per-bar grid. */
 export class RhythmEngine {
@@ -200,7 +207,8 @@ export class RhythmEngine {
   private arrangement: { arr: Arrangement; resolve: (ids: string[]) => Pattern[] } | null = null
   private fill: Fill | null = null
   private fillEvery = 0
-  onSection?: (index: number) => void
+  onArrangementPos?: (pos: ArrangementPos) => void
+  private arrSeek: number | null = null
   /** Song-form mode: a flat list of one-bar patterns played in order. */
   private song: { bars: Pattern[]; loop: [number, number] | null } | null = null
   private songBar = 0
@@ -392,6 +400,13 @@ export class RhythmEngine {
 
   setArrangement(arr: Arrangement | null, resolve?: (ids: string[]) => Pattern[]) {
     this.arrangement = arr && resolve ? { arr, resolve } : null
+    this.arrSeek = null
+  }
+  /** Move to the first bar of `section` on the next beat, or on the first tick after start() when stopped. */
+  seekArrangement(section: SectionIndex) {
+    const arr = this.arrangement?.arr
+    if (!arr || this.song || sectionIndex(section, arr.sections.length) === null) return
+    this.arrSeek = arr.sections.slice(0, section).reduce((a, s) => a + s.bars, 0)
   }
 
   private clearInsts(c: Channel) { for (const i of Object.values(c.insts)) i?.dispose(); c.insts = {} }
@@ -521,14 +536,13 @@ export class RhythmEngine {
   private applySection(bar: number, time: number) {
     if (!this.arrangement) return
     const { arr, resolve } = this.arrangement
-    const total = arr.sections.reduce((a, s) => a + s.bars, 0)
-    let b = bar % total, idx = 0
-    while (b >= arr.sections[idx].bars) { b -= arr.sections[idx].bars; idx++ }
-    if (b !== 0 && bar !== 0) return
-    const pats = resolve(arr.sections[idx].patternIds)
-    this.setLayers(pats.map((p, i) => ({ id: `arr-${i}`, pattern: p, volume: 0.85, mute: false, solo: false })))
-    if (arr.sections[idx].crash && bar > 0) this.play(FX_ID, 'crash1', time, 0.9)
-    Tone.getDraw().schedule(() => this.onSection?.(idx), time)
+    const p = positionIn(arr, bar)
+    const idx = sectionIndex(p.section, arr.sections.length)
+    Tone.getDraw().schedule(() => { if (this.playing && idx !== null) this.onArrangementPos?.({ bar: p.bar, section: idx }) }, time)
+    if (p.offset !== 0) return
+    const section = arr.sections[p.section]
+    this.setLayers(resolve(section.patternIds).map((pat, i) => ({ id: `arr-${i}`, pattern: pat, volume: 0.85, mute: false, solo: false })))
+    if (section.crash && bar > 0) this.play(FX_ID, 'crash1', time, 0.9)
   }
 
   private inFill(bar: number) { return !!this.fill && this.fillEvery > 0 && !this.arrangement && bar % this.fillEvery === this.fillEvery - 1 }
@@ -597,6 +611,11 @@ export class RhythmEngine {
       this.lastTime = time
       this.late = time < Tone.now() - 0.08
       if (this.song) { this.songStep(time, 5 / tr.bpm.getValueAtTime(time)); this.tick++; return } // one tick = 1/48 bar of 4/4 = 5/bpm s
+      if (this.arrSeek !== null && this.tick % 12 === 0) {
+        this.bar = this.arrSeek
+        this.tick = 0
+        this.arrSeek = null
+      }
       const BT = this.barTicks()
       const barStart = this.tick % BT === 0
       const fillBar = this.inFill(this.bar)
@@ -632,6 +651,7 @@ export class RhythmEngine {
   stop() {
     this.timeline = []
     this.countInTotal = 0; this.countInTick = 0
+    this.arrSeek = null
     const tr = Tone.getTransport()
     if (this.eventId !== null) tr.clear(this.eventId)
     this.eventId = null; tr.stop(); tr.position = 0

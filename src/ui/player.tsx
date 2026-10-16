@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { RhythmEngine, preloadKit, setSampleBase, sampleAlign, type PulseEvent } from '../engine/audio'
-import type { Arrangement, Fill, Layer, Pattern, Voice } from '../engine/types'
-import { VOICES } from '../engine/types'
+import type { Arrangement, ArrangementPos, Fill, Layer, Pattern, SectionIndex, Voice } from '../engine/types'
+import { VOICES, sectionIndex } from '../engine/types'
 import { KitView } from './kitview'
 import { velocityOf, ticksPerStep, VARIANTS, fracOf } from '../engine/pattern'
 import { KITS } from '../data/kits'
@@ -18,12 +18,15 @@ setSampleBase(`${import.meta.env.BASE_URL}samples/acoustic/`)
 export const ALL_FILLS: Fill[] = [...FILLS, ...SONGS.flatMap(s => s.fills.map(f => ({ ...f, category: 'Song fills' })))]
 
 interface Ctx {
-  layers: Layer[]; playing: boolean; bpm: number; swing: number; feel: number; setFeel: (f: number) => void; kitId: string; section: number | null; arrangement: Arrangement | null
+  layers: Layer[]; playing: boolean; bpm: number; swing: number; feel: number; setFeel: (f: number) => void; kitId: string; arrangementPos: ArrangementPos | null; arrangement: Arrangement | null
   tuning: Tuning; setTuning: (t: Tuning) => void
   fillId: string | null; fillEvery: number; setFill: (id: string | null, every?: number) => void; inFill: boolean
   kitProgress: number // 0..1 sample loading
   load: (p: Pattern, add?: boolean) => void
-  loadArrangement: (a: Arrangement) => void
+  /** Play `a` from the start of section `from` (default 0).
+   *  Already playing this arrangement: seek on the next beat, keep the current tempo.
+   *  Otherwise load `a` (tempo becomes a.bpm, song and layers cleared) and start there. */
+  playArrangement: (a: Arrangement, from?: SectionIndex) => Promise<void>
   update: (id: string, patch: Partial<Layer>) => void
   remove: (id: string) => void
   toggle: () => Promise<void>; setBpm: (n: number) => void; setSwing: (n: number) => void; setKit: (id: string) => void
@@ -65,7 +68,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<Song[]>([])
   const live = useRef<Ctx | null>(null) // latest context, for engine callbacks
   const [arrangement, setArr] = useState<Arrangement | null>(null)
-  const [section, setSection] = useState<number | null>(null)
+  const [arrangementPos, setArrPos] = useState<ArrangementPos | null>(null)
   const [tuning, setTuning] = useState<Tuning>({})
   const [fillId, setFillId] = useState<string | null>(null)
   const [fillEvery, setFillEvery] = useState(4)
@@ -80,10 +83,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const e = useCallback(() => {
     if (!eng.current) {
-      eng.current = new RhythmEngine(); eng.current.setKit(KITS[0]); eng.current.setFeel(FEEL); eng.current.onSection = setSection
+      eng.current = new RhythmEngine(); eng.current.setKit(KITS[0]); eng.current.setFeel(FEEL); eng.current.onArrangementPos = setArrPos
       eng.current.onBar = (_b, f) => setInFill(f); eng.current.onSongBar = setSongBar
       eng.current.onSongEnd = () => { if (live.current?.queue.length) void live.current.next() }
-      ;(window as unknown as { __pulseEngine?: RhythmEngine; __pulseAlign?: typeof sampleAlign }).__pulseEngine = eng.current; (window as unknown as { __pulseAlign?: typeof sampleAlign }).__pulseAlign = sampleAlign // used by the timing test
+      ;(window as unknown as { __pulseEngine?: RhythmEngine; __pulseAlign?: typeof sampleAlign }).__pulseEngine = eng.current; (window as unknown as { __pulseAlign?: typeof sampleAlign }).__pulseAlign = sampleAlign
     }
     return eng.current
   }, [])
@@ -112,7 +115,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<Ctx>(() => ({
-    layers, playing, bpm, swing, feel, setFeel: (f: number) => { setFeelS(f); e().setFeel(f) }, kitId, section, arrangement, tuning, setTuning, fillId, fillEvery, inFill, kitProgress,
+    layers, playing, bpm, swing, feel, setFeel: (f: number) => { setFeelS(f); e().setFeel(f) }, kitId, arrangementPos, arrangement, tuning, setTuning, fillId, fillEvery, inFill, kitProgress,
     setFill: (id, every) => { setFillId(id); if (every !== undefined) setFillEvery(every) },
     song, songBar, loopSection,
     loopMode, barLoop, loopPick,
@@ -140,14 +143,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     },
     loadSong: async (sg, sec) => {
       await loadSongBars(sg)
-      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([]); clearBars(); resetPractice(sg.raw.id)
+      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setArrPos(null); setLayers([]); clearBars(); resetPractice(sg.raw.id)
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
     },
     /** Play bars [start, end) of a song (0-based), looping that range. */
     playRange: async (sg, a, b) => {
       await loadSongBars(sg)
-      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setSection(null); setLayers([]); resetPractice(sg.raw.id)
+      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setArrPos(null); setLayers([]); resetPractice(sg.raw.id)
       const n = sg.bars.length; const st = Math.max(0, Math.min(a, n - 1)), end = Math.max(st + 1, Math.min(b, n))
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm); en.setSongLoop([st, end])
@@ -159,23 +162,27 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setLoopSection: i => { setLoopS(i); clearBars(); e().setSongLoop(i === null || !song ? null : [song.sections[i].start, song.sections[i].start + song.sections[i].bars]) },
     load: (p, add) => {
       resetPractice(); e().setSong(null); e().sound = null; e().drift = 0; setSong(null)
-      e().setArrangement(null); setArr(null); setSection(null)
+      e().setArrangement(null); setArr(null); setArrPos(null)
       const l: Layer = { id: `l${n++}`, pattern: p, volume: 0.85, mute: false, solo: false }
       setLayers(prev => (add ? [...prev, l] : [l]))
       if (!add && p.suggestedBpm) { setBpmS(p.suggestedBpm); e().setBpm(p.suggestedBpm) }
       if (!add) { const s = p.suggestedSwing ?? 0; setSwingS(s); e().setSwing(s) }
     },
-    loadArrangement: a => {
-      resetPractice(); e().setSong(null); e().sound = null; e().drift = 0; setSong(null)
-      setArr(a); setBpmS(a.bpm); e().setBpm(a.bpm); setLayers([])
-      e().setArrangement(a, ids => ids.map(id => PATTERNS[id]))
-      e().stop(); setPlaying(false)
+    playArrangement: async (a, from) => {
+      const en = e()
+      const target = from ?? sectionIndex(0, a.sections.length)!
+      if (arrangement?.id === a.id && en.playing) { void en.wake(); en.seekArrangement(target); return }
+      resetPractice(); en.setSong(null); en.sound = null; en.drift = 0; setSong(null)
+      setArr(a); setBpmS(a.bpm); en.setBpm(a.bpm); setLayers([]); setArrPos(null)
+      en.stop(); en.setArrangement(a, ids => ids.map(id => PATTERNS[id]))
+      en.seekArrangement(target)
+      preload(kitId); await en.start(); setPlaying(true)
     },
     update: (id, patch) => setLayers(ls => ls.map(l => (l.id === id ? { ...l, ...patch } : l))),
     remove: id => setLayers(ls => ls.filter(l => l.id !== id)),
     toggle: async () => {
       const en = e()
-      if (en.playing) { en.stop(); setPlaying(false); setSection(null); setInFill(false); if (song) { en.jumpSong(songBar) } }
+      if (en.playing) { en.stop(); setPlaying(false); setArrPos(null); setInFill(false); if (song) { en.jumpSong(songBar) } }
       else { preload(kitId); await en.start(); setPlaying(true) }
     },
     setBpm: v => { setBpmS(v); e().setBpm(v) },
@@ -184,7 +191,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     subscribe: l => e().subscribe(l),
     songPos: ahead => e().songPos(ahead),
     loadId, learn,
-  }), [layers, playing, bpm, swing, feel, kitId, section, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue, loopMode, barLoop, loopPick, loadId, learn, resetPractice])
+  }), [layers, playing, bpm, swing, feel, kitId, arrangementPos, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue, loopMode, barLoop, loopPick, loadId, learn, resetPractice])
   live.current = value
   // Lock screen / Control Center: song title and artist, play/pause and next (the queue)
   useEffect(() => {
@@ -419,7 +426,7 @@ export function PlayerBar() {
   const [tab, setTab] = useState<'now' | 'kit' | 'browse' | 'sound' | 'learn'>('now')
   const sg = P.song; const si = sg ? sectionOf(sg, P.songBar) : 0
   const title = sg ? sg.raw.song : P.arrangement ? P.arrangement.name : P.layers.length ? P.layers.map(l => l.pattern.name).join(' + ') : 'Choose a rhythm'
-  const sub = sg && sg.sections[si] ? `${sg.sections[si].name} · bar ${P.songBar - sg.sections[si].start + 1}/${sg.sections[si].bars}${P.loopSection !== null ? ' · looping' : ''}` : P.arrangement && P.section !== null ? P.arrangement.sections[P.section].name : P.inFill ? 'Fill' : P.layers.length ? `${P.layers.length} layer${P.layers.length > 1 ? 's' : ''} · ${KITS.find(k => k.id === P.kitId)!.name}` : 'Tap + to browse'
+  const sub = sg && sg.sections[si] ? `${sg.sections[si].name} · bar ${P.songBar - sg.sections[si].start + 1}/${sg.sections[si].bars}${P.loopSection !== null ? ' · looping' : ''}` : P.arrangement && P.arrangementPos ? P.arrangement.sections[P.arrangementPos.section].name : P.inFill ? 'Fill' : P.layers.length ? `${P.layers.length} layer${P.layers.length > 1 ? 's' : ''} · ${KITS.find(k => k.id === P.kitId)!.name}` : 'Tap + to browse'
   const kitLoading = P.kitProgress < 1 && P.playing && KITS.find(k => k.id === P.kitId)!.voices.low.kind === 'sample'
   const show = (t: typeof tab) => { setTab(t); setOpen(true) }
   useEffect(() => { if ((sg && tab === 'browse') || (!sg && tab === 'learn')) setTab('now') }, [sg, tab])
@@ -462,7 +469,7 @@ export function PlayerBar() {
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
         {sg?.raw.tuning && <p className="text-[13px] text-bone">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
-        {!sg && P.arrangement && <ol className="space-y-1.5 text-[15px]">{P.arrangement.sections.map((s, i) => <li key={i} className={P.section === i ? 'text-amber' : 'text-mute'}>{s.name} · {s.bars} bars</li>)}</ol>}
+        {!sg && P.arrangement && <ol className="space-y-1.5 text-[15px]">{P.arrangement.sections.map((s, i) => <li key={i} className={P.arrangementPos?.section === i ? 'text-amber' : 'text-mute'}>{s.name} · {s.bars} bars</li>)}</ol>}
         {!sg && !P.arrangement && (P.layers.length ? P.layers.map(l => <LayerCard key={l.id} layer={l} />) : <p className="text-sm text-mute">Nothing loaded. Open Browse to pick a rhythm, then tap + to stack layers.</p>)}
         {!sg && !P.arrangement && <button className="w-full h-11 rounded-xl bg-white/[0.06] text-[15px] text-bone" onClick={() => setTab('browse')}>+ Add a layer</button>}
       </div>}

@@ -15,7 +15,7 @@ const STUDIES = ALL_SONGS.filter(s => !isRealSong(s) && !isJourney(s))
 import LENS from '../data/lens-deep.json'
 import STORY from '../data/story-deep.json'
 import { videosFor, type Video } from '../data/videos'
-import type { Pattern, Voice } from '../engine/types'
+import { sectionIndex, type Arrangement, type Pattern, type SectionIndex, type Voice } from '../engine/types'
 import { PITCHED, noteName, midiToHz } from '../engine/pitch'
 import { TUNING_PRESETS, PITCH_TEXT, PITCH_PATTERNS } from '../data/pitch'
 import { LoadButtons, usePlayer, StepGrid, SongForm } from './player'
@@ -219,12 +219,46 @@ function StoryChapters() {
   </section>
 }
 
+type Scene = Readonly<{ name: string; first: SectionIndex; start: number; bars: number }>
+function scenesOf(arr: Arrangement): Scene[] {
+  const out: Scene[] = []; let at = 0
+  arr.sections.forEach((s, i) => {
+    const last = out[out.length - 1]
+    if (last?.name === s.name) out[out.length - 1] = { ...last, bars: last.bars + s.bars }
+    else out.push({ name: s.name, first: sectionIndex(i, arr.sections.length)!, start: at, bars: s.bars })
+    at += s.bars
+  })
+  return out
+}
+const STORY_SCENES = scenesOf(STORY_ARRANGEMENT)
+
+function StoryExample() {
+  const { playArrangement, playing, arrangement, arrangementPos } = usePlayer()
+  const pos = arrangement?.id === STORY_ARRANGEMENT.id ? arrangementPos : null
+  return <div className="mb-14">
+    <button className="h-11 px-5 rounded-full bg-amber text-ink text-[15px] font-medium" onClick={() => playArrangement(STORY_ARRANGEMENT)}>
+      {playing && arrangement?.id === STORY_ARRANGEMENT.id ? 'Restart example' : 'Play the 18-bar example'}
+    </button>
+    <div role="group" aria-label={STORY_ARRANGEMENT.name} className="mt-6 flex items-stretch gap-1.5">
+      {STORY_SCENES.map(sc => {
+        const lit = pos !== null && pos.bar >= sc.start && pos.bar < sc.start + sc.bars
+        return <button key={sc.start} type="button" onClick={() => playArrangement(STORY_ARRANGEMENT, sc.first)} aria-current={lit || undefined}
+          className="flex flex-col justify-end gap-1.5 text-left" style={{ flex: `${sc.bars} 1 0%` }}>
+          <span className={`pt-px text-[13px] leading-tight ${lit ? 'text-amber' : 'text-bone/60'}`}>{sc.name}</span>
+          <span className="flex gap-0.5 h-6">{Array.from({ length: sc.bars }, (_, j) =>
+            <span key={j} data-bar={sc.start + j} className={`flex-1 rounded-[3px] ${pos?.bar === sc.start + j ? 'bg-amber' : lit ? 'bg-amber/30' : 'bg-white/10'}`} />)}</span>
+        </button>
+      })}
+    </div>
+    <p className="mt-3 min-h-[4.5rem] text-[15px] text-bone/60 leading-snug">{pos ? STORY_ARRANGEMENT.sections[pos.section].note : ''}</p>
+  </div>
+}
+
 export function Story() {
-  const { loadArrangement, loadSong, toggle, playing, section, arrangement } = usePlayer()
+  const { loadSong, toggle } = usePlayer()
   return <>
     <H1 t={STORY.title} sub={STORY.subtitle} />
-    <button className="h-11 px-5 rounded-full bg-amber text-ink text-sm font-medium mb-10" onClick={async () => { loadArrangement(STORY_ARRANGEMENT); await toggle() }}>{playing && arrangement ? 'Restart example' : 'Play the 18-bar example'}</button>
-    <ol className="mb-14 space-y-3">{STORY_ARRANGEMENT.sections.map((s, i) => <li key={i} className={`text-sm ${arrangement && section === i ? 'text-amber' : 'text-bone/60'}`}><span className="font-medium">{s.name}</span> · {s.bars} bars. {s.note}</li>)}</ol>
+    <StoryExample />
     <StoryChapters />
     {JOURNEYS.length > 0 && <section className="mb-10"><h2 className="text-xl font-medium">Drum journeys</h2>
       <p className="mt-2 text-bone leading-relaxed">Original multi-section pieces that put these ideas to work over a few minutes each.</p>
@@ -263,7 +297,14 @@ export function Lens({ id, go }: { id?: string; go: (h: string) => void }) {
   const a = ARTISTS.find(x => x.id === id)
   if (!a) return <>
     <H1 t="Drummers" sub="How these drummers create feeling and tell a story with the kit." />
-    <ul className="divide-y divide-line">{ARTISTS.map(x => <li key={x.id}><button onClick={() => go(`lens/${x.id}`)} className="w-full -mx-3 px-3 py-4 text-left flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.03] active:bg-white/[0.06]" style={{ width: 'calc(100% + 1.5rem)' }}><span className="min-w-0 flex-1"><span className="block text-lg leading-snug">{x.name}</span><span className="block mt-0.5 text-[13px] text-bone/45 leading-snug">{x.band.split(/\s*;\s*/).map(b => b[0].toUpperCase() + b.slice(1)).join(' · ')}</span></span><span aria-hidden className="text-bone/30 text-xl leading-none">›</span></button></li>)}</ul>
+    <ul className="space-y-1">{ARTISTS.map(x => <li key={x.id}>
+      <button onClick={() => go(`lens/${x.id}`)} className="w-full -mx-3 px-3 py-3 text-left flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.03] active:bg-white/[0.06]" style={{ width: 'calc(100% + 1.5rem)' }}>
+        <span className="min-w-0 flex-1">
+          <span className="block text-lg leading-snug">{x.name}</span>
+          <span className="block mt-0.5 text-[13px] text-bone/45 leading-snug">{x.band.split(/\s*;\s*/).map(b => b[0].toUpperCase() + b.slice(1)).join(' · ')}</span>
+        </span>
+        <span aria-hidden className="text-bone/30 text-xl leading-none">›</span>
+      </button></li>)}</ul>
   </>
   return <>
     <button onClick={() => go('lens')} className="text-[15px] text-bone/50 mb-8">← Drummers</button>
