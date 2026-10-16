@@ -298,9 +298,12 @@ export function Lens({ id, go }: { id?: string; go: (h: string) => void }) {
   if (!a) return <>
     <H1 t="Drummers" sub="How these drummers create feeling and tell a story with the kit." />
     <ul className="space-y-1">{ARTISTS.map(x => <li key={x.id}>
-      <button onClick={() => go(`lens/${x.id}`)} className="w-full -mx-3 px-3 py-3 text-left rounded-lg transition-colors hover:bg-white/[0.03] active:bg-white/[0.06]" style={{ width: 'calc(100% + 1.5rem)' }}>
-        <span className="block text-lg leading-snug">{x.name}</span>
-        <span className="block mt-0.5 text-[13px] text-bone/45 leading-snug">{x.band.split(/\s*;\s*/).map(b => b[0].toUpperCase() + b.slice(1)).join(' · ')}</span>
+      <button onClick={() => go(`lens/${x.id}`)} className="w-full -mx-3 px-3 py-3 text-left flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.03] active:bg-white/[0.06]" style={{ width: 'calc(100% + 1.5rem)' }}>
+        <span className="min-w-0 flex-1">
+          <span className="block text-lg leading-snug">{x.name}</span>
+          <span className="block mt-0.5 text-[13px] text-bone/45 leading-snug">{x.band.split(/\s*;\s*/).map(b => b[0].toUpperCase() + b.slice(1)).join(' · ')}</span>
+        </span>
+        <span aria-hidden className="text-bone/30 text-xl leading-none">›</span>
       </button></li>)}</ul>
   </>
   return <>
