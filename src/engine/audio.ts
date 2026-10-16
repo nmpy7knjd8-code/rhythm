@@ -208,7 +208,6 @@ export class RhythmEngine {
   private fill: Fill | null = null
   private fillEvery = 0
   onArrangementPos?: (pos: ArrangementPos) => void
-  /** Arrangement bar, always a section start, that the scheduler moves to on its next beat. */
   private arrSeek: number | null = null
   /** Song-form mode: a flat list of one-bar patterns played in order. */
   private song: { bars: Pattern[]; loop: [number, number] | null } | null = null

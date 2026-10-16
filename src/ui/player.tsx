@@ -86,7 +86,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       eng.current = new RhythmEngine(); eng.current.setKit(KITS[0]); eng.current.setFeel(FEEL); eng.current.onArrangementPos = setArrPos
       eng.current.onBar = (_b, f) => setInFill(f); eng.current.onSongBar = setSongBar
       eng.current.onSongEnd = () => { if (live.current?.queue.length) void live.current.next() }
-      ;(window as unknown as { __pulseEngine?: RhythmEngine; __pulseAlign?: typeof sampleAlign }).__pulseEngine = eng.current; (window as unknown as { __pulseAlign?: typeof sampleAlign }).__pulseAlign = sampleAlign // used by the timing test
+      ;(window as unknown as { __pulseEngine?: RhythmEngine; __pulseAlign?: typeof sampleAlign }).__pulseEngine = eng.current; (window as unknown as { __pulseAlign?: typeof sampleAlign }).__pulseAlign = sampleAlign
     }
     return eng.current
   }, [])

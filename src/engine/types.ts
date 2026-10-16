@@ -63,14 +63,13 @@ export interface Section { name: string; bars: number; patternIds: string[]; not
 export interface Arrangement { id: string; name: string; bpm: number; sections: Section[] }
 
 declare const sectionIndexBrand: unique symbol
-/** Index into Arrangement.sections. Not a bar offset. */
 export type SectionIndex = number & { readonly [sectionIndexBrand]: 'SectionIndex' }
-/** Null when `i` is not an integer in `[0, count)`. The only constructor. */
+/** Null when `i` is not an integer in `[0, count)`. */
 export function sectionIndex(i: number, count: number): SectionIndex | null {
   return Number.isInteger(i) && i >= 0 && i < count ? i as SectionIndex : null
 }
 
-/** Where a playing arrangement is. `bar` is 0-based in arrangement coordinates, in `[0, total)`. `section` contains that bar. Only the engine produces this. */
+/** Where a playing arrangement is. `bar` is 0-based in arrangement coordinates, in `[0, total)`. */
 export type ArrangementPos = Readonly<{ bar: number; section: SectionIndex }>
 
 export interface SampleLayer { /** upper velocity bound 0..1 */ vel: number; files: string[] }

@@ -1,4 +1,3 @@
-// Story strip at 390px: five scene blocks over 18 bar cells follow playback, a tap seeks on the next beat; Drummers list has no dividers or chevrons.
 import { chromium } from 'playwright'
 const url = process.argv[2] ?? 'http://localhost:4173/rhythm/'
 const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] })
