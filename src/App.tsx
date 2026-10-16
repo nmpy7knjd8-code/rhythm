@@ -14,14 +14,14 @@ export default function App() {
     <PlayerProvider>
       <div className="max-w-xl mx-auto px-6 pb-16">
         <nav className="pt-5 pb-2">
-          <a href="#/library" className="flex items-center gap-2 text-[17.6px] font-semibold tracking-tight"><span className="w-[8.8px] h-[8.8px] rounded-full bg-amber" />Pulse</a>
+          <a href="#/library" className="flex items-center gap-2 text-[20px] font-semibold tracking-tight"><span className="w-[10px] h-[10px] rounded-full bg-amber" />Pulse</a>
           <div className="mt-3 flex flex-nowrap justify-center gap-x-5 whitespace-nowrap">{NAV.map(([k, l]) => <a key={k} href={`#/${k}`} aria-current={page === k ? 'page' : undefined} className={`py-1 text-[15px] ${page === k ? 'text-amber' : 'text-bone/80'}`}>{l}</a>)}</div>
         </nav>
         <PlayerBar />
         <main key={route} className={`${['about', 'theory', 'story', 'lens'].includes(page) ? 'pt-8' : 'pt-4'} rise`}>
           {page === 'about' ? <About /> : page === 'theory' ? <Theory /> : page === 'story' ? <Story /> : page === 'lens' ? <Lens id={sub} go={go} /> : <Library />}
         </main>
-        <footer className="mt-24 mb-24 pt-8 border-t border-line flex justify-between text-xs text-mute"><span>Pulse</span><a href="#/about">About & credits</a></footer>
+        <footer className="mt-24 mb-24 pt-8 flex justify-between text-[13px] text-mute"><span>Pulse</span><a href="#/about">About & credits</a></footer>
       </div>
     </PlayerProvider>
   )

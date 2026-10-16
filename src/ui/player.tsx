@@ -213,7 +213,7 @@ export function LoadButtons({ pattern }: { pattern: Pattern }) {
         <PlayGlyph /> Play
       </button>
       <button className="btn-ghost" onClick={() => load(pattern, true)}>{active ? 'Add again' : 'Add layer'}</button>
-      {pattern.suggestedBpm && <span className="ml-auto text-xs text-mute tabular-nums" title={pattern.bpmNote}>{pattern.suggestedBpm} BPM</span>}
+      {pattern.suggestedBpm && <span className="ml-auto text-[13px] text-mute tabular-nums" title={pattern.bpmNote}>{pattern.suggestedBpm} BPM</span>}
     </div>
   )
 }
@@ -233,7 +233,7 @@ export function StepGrid({ pattern, current }: { pattern: Pattern; current: numb
       <div className="space-y-1" style={{ minWidth: dense ? pattern.steps * 11 : undefined }}>
         {rows.map(v => (
           <div key={v} className="flex items-center gap-2">
-            <span className="w-12 shrink-0 text-[10px] uppercase tracking-wider text-mute">{VOICE_LABEL[v]}</span>
+            <span className="w-16 shrink-0 text-[13px] text-mute">{VOICE_LABEL[v]}</span>
             <div className="flex-1 flex gap-[2px]">
               {Array.from({ length: pattern.steps }, (_, i) => {
                 const c = pattern.tracks[v]?.[i]; const vel = velocityOf(c)
@@ -271,11 +271,11 @@ function LayerCard({ layer }: { layer: Layer }) {
       <div className="flex items-center gap-2">
         <div className="flex-1 min-w-0">
           <div className="text-[15px] font-medium truncate">{layer.pattern.name}</div>
-          <div className="text-[11px] text-mute tabular-nums">{layer.pattern.steps} steps · {(layer.pattern.steps * ticksPerStep(layer.pattern)) / 12} beats</div>
+          <div className="text-[13px] text-mute tabular-nums">{layer.pattern.steps} steps · {(layer.pattern.steps * ticksPerStep(layer.pattern)) / 12} beats</div>
         </div>
         <button aria-pressed={layer.mute} onClick={() => P.update(layer.id, { mute: !layer.mute })} className={`chip-sq ${layer.mute ? 'bg-bone text-ink' : ''}`}>M</button>
-        <button aria-pressed={layer.solo} onClick={() => P.update(layer.id, { solo: !layer.solo })} className={`chip-sq ${layer.solo ? 'bg-amber text-ink border-amber' : ''}`}>S</button>
-        <button aria-label="Remove layer" onClick={() => P.remove(layer.id)} className="chip-sq border-transparent text-mute">✕</button>
+        <button aria-pressed={layer.solo} onClick={() => P.update(layer.id, { solo: !layer.solo })} className={`chip-sq ${layer.solo ? 'bg-amber text-ink' : ''}`}>S</button>
+        <button aria-label="Remove layer" onClick={() => P.remove(layer.id)} className="chip-sq bg-transparent text-mute">✕</button>
       </div>
       <StepGrid pattern={layer.pattern} current={cur} />
       <input type="range" min={0} max={1} step={0.01} value={layer.volume} onChange={e => P.update(layer.id, { volume: +e.target.value })} className="slider mt-3" aria-label="Layer volume" />
@@ -286,7 +286,7 @@ function LayerCard({ layer }: { layer: Layer }) {
 function Segmented<T extends string | number>({ value, options, onChange }: { value: T; options: { v: T; l: string }[]; onChange: (v: T) => void }) {
   return (
     <div className="inline-flex p-0.5 rounded-full bg-white/[0.05] max-w-full">
-      {options.map(o => <button key={String(o.v)} onClick={() => onChange(o.v)} className={`h-9 px-2.5 rounded-full text-[12px] whitespace-nowrap transition-all duration-200 ${value === o.v ? 'bg-bone text-ink shadow' : 'text-bone/60'}`}>{o.l}</button>)}
+      {options.map(o => <button key={String(o.v)} onClick={() => onChange(o.v)} className={`h-9 px-2.5 rounded-full text-[13px] whitespace-nowrap transition-all duration-200 ${value === o.v ? 'bg-bone text-ink shadow' : 'text-bone/60'}`}>{o.l}</button>)}
     </div>
   )
 }
@@ -327,12 +327,12 @@ function Browser({ onPicked }: { onPicked?: () => void }) {
       <select value={cat} onChange={e => setCat(e.target.value)} className="sel flex-1"><option value="">All categories</option>{cats.map(c => <option key={c}>{c}</option>)}</select>
       <select value={meter} onChange={e => setMeter(e.target.value)} className="sel w-28"><option value="">Any meter</option>{meters.map(m => <option key={m}>{m}</option>)}</select>
     </div>
-    <ul className="mt-3 divide-y divide-line">{items.slice(0, 200).map(i => <li key={i.id} className="flex items-center gap-2 py-2">
-      <div className="flex-1 min-w-0"><div className="text-[15px] truncate">{i.name}</div><div className="text-[11px] text-mute truncate">{i.cat} · {i.meter}{i.bpm ? ` · ${i.bpm} BPM` : ''}</div></div>
+    <ul className="mt-3">{items.slice(0, 200).map(i => <li key={i.id} className="flex items-center gap-2 py-2">
+      <div className="flex-1 min-w-0"><div className="text-[15px] truncate">{i.name}</div><div className="text-[13px] text-mute truncate">{i.cat} · {i.meter}{i.bpm ? ` · ${i.bpm} BPM` : ''}</div></div>
       <button aria-label={`Play ${i.name}`} className="w-10 h-10 grid place-items-center rounded-full bg-white/[0.06] active:scale-90" onClick={async () => { if (i.song) { await P.loadSong(i.song) } else P.load(i.pattern!); if (!P.playing || i.song) await P.toggle(); onPicked?.() }}><PlayGlyph /></button>
       {i.pattern && <button aria-label={`Add ${i.name} as a layer`} className="w-10 h-10 grid place-items-center rounded-full bg-white/[0.06] text-lg active:scale-90" onClick={() => P.load(i.pattern!, true)}>+</button>}
     </li>)}</ul>
-    {items.length === 0 && <p className="py-6 text-sm text-mute">Nothing matches.</p>}
+    {items.length === 0 && <p className="py-6 text-[15px] text-mute">Nothing matches.</p>}
   </div>
 }
 
@@ -348,7 +348,7 @@ function FillPicker() {
       </select>
       <select value={P.fillEvery} onChange={e => P.setFill(P.fillId, +e.target.value)} className="sel w-28 shrink-0" disabled={!P.fillId}>{FILL_EVERY.filter(Boolean).map(v => <option key={v} value={v}>Every {v}</option>)}</select>
     </div>
-    {P.fillId && <p className="mt-2 text-[11px] text-mute">{ALL_FILLS.find(f => f.pattern.id === P.fillId)?.description}</p>}
+    {P.fillId && <p className="mt-2 text-[13px] text-bone">{ALL_FILLS.find(f => f.pattern.id === P.fillId)?.description}</p>}
   </section>
 }
 
@@ -399,8 +399,8 @@ function Sheet({ open, onClose, children, title, subtitle, head, lead, contentPu
           <div className="pt-2 pb-0.5 flex justify-center"><span className="w-10 h-1.5 rounded-full bg-white/30" /></div>
           <div className="relative flex items-center h-12 pl-3 pr-1 gap-3">
             {lead && <div className="flex items-center gap-3 shrink-0">{lead}</div>}
-            <div className="min-w-0 flex-1 pr-2"><div className="text-[14px] font-medium truncate">{title || 'Player'}</div>{subtitle && <div className="text-[11px] text-mute truncate">{subtitle}</div>}</div>
-            <button aria-label="Close player" onClick={onClose} className="ml-auto h-12 pl-4 pr-3 flex items-center gap-1.5 rounded-full text-sm text-bone/85 active:scale-95 shrink-0">
+            <div className="min-w-0 flex-1 pr-2"><div className="text-[15px] font-medium truncate">{title || 'Player'}</div>{subtitle && <div className="text-[13px] text-bone leading-snug">{subtitle}</div>}</div>
+            <button aria-label="Close player" onClick={onClose} className="ml-auto h-12 pl-4 pr-3 flex items-center gap-1.5 rounded-full text-[15px] text-bone/85 active:scale-95 shrink-0">
               Close <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
             </button>
           </div>
@@ -443,10 +443,10 @@ export function PlayerBar() {
       <div className="flex items-center gap-3 h-14 px-2 rounded-2xl bg-white/[0.05] border border-white/[0.06]">
         {transport}
         <button className="flex-1 min-w-0 text-left" onClick={() => show('now')}>
-          <div className="text-[14px] font-medium truncate">{title}</div>
-          <div className="text-[11px] text-mute truncate">{kitLoading ? `Loading samples ${Math.round(P.kitProgress * 100)}%` : sub}</div>
+          <div className="text-[15px] font-medium truncate">{title}</div>
+          <div className="text-[13px] text-mute truncate">{kitLoading ? `Loading samples ${Math.round(P.kitProgress * 100)}%` : sub}</div>
         </button>
-        <button onClick={() => show('sound')} className="text-xs tabular-nums text-mute px-1 h-10" aria-label="Current tempo">{sg ? shownBpm(sg, live ?? P.bpm) : Math.round(P.bpm)}</button>
+        <button onClick={() => show('sound')} className="text-[13px] tabular-nums text-mute px-1 h-10" aria-label="Current tempo">{sg ? shownBpm(sg, live ?? P.bpm) : Math.round(P.bpm)}</button>
         <button aria-label="Browse rhythms" onClick={() => show(sg ? 'now' : 'browse')} className="w-10 h-10 shrink-0 grid place-items-center rounded-full bg-white/[0.08] text-xl active:scale-90">{sg ? '⌃' : '+'}</button>
       </div>
     </div></div>
@@ -454,36 +454,36 @@ export function PlayerBar() {
       contentPull={tab !== 'sound' && tab !== 'learn'}
       head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }, ...(sg ? [{ v: 'learn' as const, l: 'Learn it' }] : [])]} />{sg && tab === 'now' && <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
         {P.playing && sg.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
-          className="h-8 px-3.5 rounded-full text-[12px] border border-amber/40 text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}
-        <button aria-pressed={P.loopMode} onClick={() => P.setLoopMode(!P.loopMode)} className={`h-8 px-3.5 rounded-full text-[12px] border active:scale-95 ${P.loopMode ? 'bg-amber text-ink border-amber' : 'border-white/[0.18] text-bone/75'}`}>Loop</button>
-        {P.loopMode && (P.barLoop ? <button aria-label="Clear loop" onClick={P.clearBarLoop} className="h-8 pl-3 pr-2.5 rounded-full text-[12px] bg-white/[0.06] text-amber flex items-center gap-1.5">Looping bars {P.barLoop[0] + 1}{P.barLoop[1] > P.barLoop[0] ? `–${P.barLoop[1] + 1}` : ''}<span className="text-bone/60 text-[14px] leading-none">×</span></button>
-          : P.loopPick !== null && <span className="text-[11px] text-mute">Bar {P.loopPick + 1} · tap the end bar</span>)}
+          className="h-8 px-3.5 rounded-full text-[13px] text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}
+        <button aria-pressed={P.loopMode} onClick={() => P.setLoopMode(!P.loopMode)} className={`h-8 px-3.5 rounded-full text-[13px] active:scale-95 ${P.loopMode ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/75'}`}>Loop</button>
+        {P.loopMode && (P.barLoop ? <button aria-label="Clear loop" onClick={P.clearBarLoop} className="h-8 pl-3 pr-2.5 rounded-full text-[13px] bg-white/[0.06] text-amber flex items-center gap-1.5">Looping bars {P.barLoop[0] + 1}{P.barLoop[1] > P.barLoop[0] ? `–${P.barLoop[1] + 1}` : ''}<span className="text-bone/60 text-[15px] leading-none">×</span></button>
+          : P.loopPick !== null && <span className="text-[13px] text-mute">Bar {P.loopPick + 1} · tap the end bar</span>)}
       </div>}<UpNext key={String(open)} /></div>}>
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
-        {sg?.raw.tuning && <p className="text-[11px] text-mute">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
-        {!sg && P.arrangement && <ol className="space-y-1.5 text-sm">{P.arrangement.sections.map((s, i) => <li key={i} className={P.section === i ? 'text-amber' : 'text-mute'}>{s.name} · {s.bars} bars</li>)}</ol>}
+        {sg?.raw.tuning && <p className="text-[13px] text-bone">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
+        {!sg && P.arrangement && <ol className="space-y-1.5 text-[15px]">{P.arrangement.sections.map((s, i) => <li key={i} className={P.section === i ? 'text-amber' : 'text-mute'}>{s.name} · {s.bars} bars</li>)}</ol>}
         {!sg && !P.arrangement && (P.layers.length ? P.layers.map(l => <LayerCard key={l.id} layer={l} />) : <p className="text-sm text-mute">Nothing loaded. Open Browse to pick a rhythm, then tap + to stack layers.</p>)}
-        {!sg && !P.arrangement && <button className="w-full h-11 rounded-xl border border-dashed border-white/15 text-sm text-bone/70" onClick={() => setTab('browse')}>+ Add a layer</button>}
+        {!sg && !P.arrangement && <button className="w-full h-11 rounded-xl bg-white/[0.06] text-[15px] text-bone" onClick={() => setTab('browse')}>+ Add a layer</button>}
       </div>}
       {tab === 'kit' && <KitView bars={sg ? sg.bars : P.layers.map(l => l.pattern)} />}
       {tab === 'browse' && !sg && <Browser />}
       {tab === 'learn' && sg && <LearnPanel key={`${sg.raw.id}:${P.loadId}`} />}
       {tab === 'sound' && <div className="space-y-6">
-        <section><Label>Tempo <span className="text-bone tabular-nums">{sg ? shownBpm(sg, live ?? P.bpm) : Math.round(P.bpm)}</span> <span className="normal-case tracking-normal">BPM</span></Label>
+        <section><Label>Tempo <span className="text-bone tabular-nums">{sg ? shownBpm(sg, live ?? P.bpm) : Math.round(P.bpm)}</span> <span>BPM</span></Label>
           <input type="range" min={40} max={260} value={sg ? shownBpm(sg, P.bpm) : P.bpm} onChange={e => P.setBpm(+e.target.value / (sg?.raw.bpmDisplay ?? 1))} className="slider no-sheet-drag touch-pan-x" aria-label="Tempo" />
-          {sg && <p className="mt-1.5 text-[11px] text-mute leading-snug">{sg.raw.bpmNote ?? 'Follows the tab\'s tempo map; the slider scales every tempo change proportionally.'}</p>}
-          {P.layers[0]?.pattern.bpmNote && <p className="mt-1.5 text-[11px] text-mute leading-snug">{P.layers[0].pattern.bpmNote}{P.layers[0].pattern.bpmSource && <> <a className="underline underline-offset-2" href={P.layers[0].pattern.bpmSource} target="_blank" rel="noreferrer">source</a></>}</p>}</section>
+          {sg && <p className="mt-1.5 text-[13px] text-bone leading-snug">{sg.raw.bpmNote ?? 'Follows the tab\'s tempo map; the slider scales every tempo change proportionally.'}</p>}
+          {P.layers[0]?.pattern.bpmNote && <p className="mt-1.5 text-[13px] text-bone leading-snug">{P.layers[0].pattern.bpmNote}{P.layers[0].pattern.bpmSource && <> <a className="underline underline-offset-2" href={P.layers[0].pattern.bpmSource} target="_blank" rel="noreferrer">source</a></>}</p>}</section>
         <section><Label>Kit</Label>
           <select value={P.kitId} onChange={e => P.setKit(e.target.value)} className="sel w-full">{KITS.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}</select>
-          <p className="mt-1.5 text-[11px] text-mute">{KITS.find(k => k.id === P.kitId)!.blurb}</p>
+          <p className="mt-1.5 text-[13px] text-bone">{KITS.find(k => k.id === P.kitId)!.blurb}</p>
           {P.kitProgress > 0 && P.kitProgress < 1 && <div className="mt-2 h-0.5 rounded bg-white/10 overflow-hidden"><div className="h-full bg-amber transition-[width] duration-200" style={{ width: `${P.kitProgress * 100}%` }} /></div>}</section>
         <FillPicker />
       </div>}
     </Sheet>
   </>, document.body)
 }
-const Label = ({ children, className = '' }: { children: ReactNode; className?: string }) => <div className={`mb-2 text-[11px] uppercase tracking-[0.12em] text-mute flex gap-1.5 items-baseline ${className}`}>{children}</div>
+const Label = ({ children, className = '' }: { children: ReactNode; className?: string }) => <div className={`mb-2 text-[13px] text-mute flex gap-1.5 items-baseline ${className}`}>{children}</div>
 
 /** Section list for the loaded song: tap a row to jump, tap the loop icon to repeat that section. */
 
@@ -532,19 +532,19 @@ export function SongForm({ song }: { song?: Song }) {
   }, [cur, live])
   return <div>
     {live && sg.bars[P.songBar] && <div ref={gridRef} className="sticky -top-4 z-10 -mx-4 -mt-4 px-4 pt-4 pb-2 bg-[#141416]"><StepGrid pattern={sg.bars[P.songBar]} current={P.playing ? cur_step : -1} /></div>}
-    <ol ref={listRef} className="mt-1 divide-y divide-line">{sg.sections.map((s, i) => {
+    <ol ref={listRef} className="mt-1">{sg.sections.map((s, i) => {
       const on = i === cur; const pct = on ? ((P.songBar - s.start + 1) / s.bars) * 100 : 0
       const go = async () => { if (!live) { await P.loadSong(sg, i); await P.toggle() } else P.jumpSection(i) }
       return <li key={i} role="button" tabIndex={0} aria-label={`Jump to ${s.name}`} onClick={go} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void go() } }} className="flex items-center gap-2 py-2 cursor-pointer active:bg-white/[0.03] rounded-lg">
         {V && <span title={V.repeats.has(V.secGroup[i]) ? 'Same bars as another section' : undefined} className="w-1.5 self-stretch my-1 rounded-full shrink-0" style={{ background: VAR_COLORS[V.secGroup[i] % VAR_COLORS.length], opacity: V.repeats.has(V.secGroup[i]) ? 0.9 : 0.35 }} />}
         <div className="flex-1 min-w-0">
-          <div className={`w-full text-left text-sm ${on ? 'text-amber' : 'text-bone/70'}`}>
-            <span className="truncate block">{s.name}{V && V.repeats.has(V.secGroup[i]) && V.secGroup.indexOf(V.secGroup[i]) !== i && <span className="ml-1.5 text-[10px] text-mute">= {sg.sections[V.secGroup.indexOf(V.secGroup[i])].name}</span>}</span>
+          <div className={`w-full text-left text-[15px] ${on ? 'text-amber' : 'text-bone'}`}>
+            <span className="truncate block">{s.name}{V && V.repeats.has(V.secGroup[i]) && V.secGroup.indexOf(V.secGroup[i]) !== i && <span className="ml-1.5 text-[13px] text-mute">= {sg.sections[V.secGroup.indexOf(V.secGroup[i])].name}</span>}</span>
           </div>
           {P.loopMode && live && <div className="flex flex-wrap gap-1 mt-1.5" aria-label={`${s.name} bars`}>
             {Array.from({ length: s.bars }, (_, j) => { const n = s.start + j, inR = !!P.barLoop && n >= P.barLoop[0] && n <= P.barLoop[1]
               return <button key={j} aria-label={`Loop bar ${n + 1}`} onClick={ev => { ev.stopPropagation(); P.pickBar(n) }}
-                className={`w-8 h-8 rounded-md text-[10px] tabular-nums ${inR ? 'bg-amber text-ink font-medium' : P.loopPick === n ? 'ring-1 ring-amber text-amber bg-amber/10' : 'bg-white/[0.06] text-bone/60'} ${n === P.songBar && P.playing ? 'outline outline-1 outline-bone/70' : ''}`}>{n + 1}</button> })}
+                className={`w-8 h-8 rounded-md text-[13px] tabular-nums ${inR ? 'bg-amber text-ink font-medium' : P.loopPick === n ? 'ring-1 ring-amber text-amber bg-amber/10' : 'bg-white/[0.06] text-bone/60'} ${n === P.songBar && P.playing ? 'outline outline-1 outline-bone/70' : ''}`}>{n + 1}</button> })}
           </div>}
           {!(P.loopMode && live) && V && (on || s.bars <= 64) && <div className={`flex gap-[2px] mt-1 ${on ? 'h-6' : 'h-1.5 pointer-events-none'}`} aria-label={`${s.name} bar variations`}>
             {V.bars.slice(s.start, s.start + s.bars).map((b, j) => { const n = s.start + j; const now = live && n === P.songBar
@@ -556,7 +556,7 @@ export function SongForm({ song }: { song?: Song }) {
           </div>}
           {!V && on && <span className="block mt-1 h-0.5 rounded bg-white/10 overflow-hidden"><span className="block h-full bg-amber transition-[width] duration-150" style={{ width: `${pct}%` }} /></span>}
         </div>
-        <span className="text-[11px] tabular-nums text-mute">{s.bars}</span>
+        <span className="text-[13px] tabular-nums text-mute">{s.bars}</span>
         {live && <button aria-label={`Loop ${s.name}`} aria-pressed={P.loopSection === i} onClick={ev => { ev.stopPropagation(); P.setLoopSection(P.loopSection === i ? null : i) }} className={`w-8 h-8 grid place-items-center rounded-full text-xs ${P.loopSection === i ? 'bg-amber text-ink' : 'text-mute'}`}>↻</button>}
       </li>
     })}</ol>
@@ -569,18 +569,18 @@ function UpNext() {
   if (!P.queue.length) return null
   return <div className="mt-2.5 w-full text-left">
     <div className="flex items-center gap-3">
-    <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="flex-1 min-w-0 h-9 flex items-center gap-2 text-[12px] text-mute">
-      <span className="uppercase tracking-wider text-[10px]">Up next</span>
-      <span className="flex-1 min-w-0 truncate text-left text-bone/70">{P.queue[0].raw.song}{P.queue.length > 1 ? ` +${P.queue.length - 1}` : ''}</span>
+    <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="flex-1 min-w-0 h-9 flex items-center gap-2 text-[13px] text-mute">
+      <span>Up next</span>
+      <span className="flex-1 min-w-0 truncate text-left text-bone">{P.queue[0].raw.song}{P.queue.length > 1 ? ` +${P.queue.length - 1}` : ''}</span>
       <span className={`text-[18px] leading-none text-bone/60 transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
     </button>
-    <button aria-label="Play next song" onClick={() => void P.next()} className="shrink-0 h-9 pl-3 pr-3.5 flex items-center gap-1.5 rounded-full text-[12px] text-bone/85 bg-white/[0.06] active:scale-95">
+    <button aria-label="Play next song" onClick={() => void P.next()} className="shrink-0 h-9 pl-3 pr-3.5 flex items-center gap-1.5 rounded-full text-[13px] text-bone/85 bg-white/[0.06] active:scale-95">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5v11l8-5.5z" /><rect x="11.5" y="2.5" width="2" height="11" rx="0.6" /></svg>Next
     </button>
     </div>
-    {open && <ol>{P.queue.map((q, i) => <li key={i} className="flex items-center gap-2 h-11 border-t border-white/[0.05]">
-      <span className="w-4 text-[11px] text-mute tabular-nums">{i + 1}</span>
-      <span className="flex-1 min-w-0 truncate text-sm">{q.raw.song}<span className="text-mute"> · {q.raw.artist}</span></span>
+    {open && <ol>{P.queue.map((q, i) => <li key={i} className="flex items-center gap-2 h-11">
+      <span className="w-4 text-[13px] text-mute tabular-nums">{i + 1}</span>
+      <span className="flex-1 min-w-0 truncate text-[15px]">{q.raw.song} · {q.raw.artist}</span>
       <button aria-label={`Remove ${q.raw.song} from queue`} onClick={() => P.unqueue(i)} className="w-10 h-10 grid place-items-center rounded-full text-mute active:bg-white/[0.06]">✕</button>
     </li>)}</ol>}
   </div>

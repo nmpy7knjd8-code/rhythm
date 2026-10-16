@@ -4,13 +4,13 @@ html, body { background: #0a0a0b; color: #f4f1ea; -webkit-tap-highlight-color: t
 body { font-family: Inter, ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif; font-feature-settings: "ss01", "cv11"; }
 ::selection { background: #ffb00055; }
 @layer components {
-  .btn-primary { @apply inline-flex items-center gap-2 h-10 px-4 rounded-full bg-amber text-ink text-sm font-medium transition-transform duration-150 active:scale-95; }
-  .btn-ghost { @apply inline-flex items-center h-10 px-4 rounded-full border border-white/10 text-sm text-bone/80 transition-colors duration-150 hover:border-white/25 active:scale-95; }
-  .chip { @apply h-8 px-3 rounded-full text-xs border border-white/10 text-bone/70 transition-all duration-200 active:scale-95; }
-  .chip-on { @apply bg-bone text-ink border-bone; }
-  .chip-sq { @apply w-8 h-8 rounded-full text-[11px] font-medium border border-white/10 text-bone/70 transition-all duration-150 active:scale-90; }
-  .card { @apply rounded-2xl bg-white/[0.03] border border-white/[0.06] p-3.5; }
-  .eyebrow { @apply text-[11px] uppercase tracking-[0.14em] text-mute; }
+  .btn-primary { @apply inline-flex items-center gap-2 h-10 px-4 rounded-full bg-amber text-ink text-[15px] font-medium transition-transform duration-150 active:scale-95; }
+  .btn-ghost { @apply inline-flex items-center h-10 px-4 rounded-full bg-white/[0.06] text-[15px] text-bone/80 transition-colors duration-150 hover:bg-white/[0.1] active:scale-95; }
+  .chip { @apply h-8 px-3 rounded-full text-[13px] bg-white/[0.06] text-bone/70 transition-all duration-200 active:scale-95; }
+  .chip-on { @apply bg-bone text-ink; }
+  .chip-sq { @apply w-8 h-8 rounded-full text-[13px] font-medium bg-white/[0.06] text-bone/70 transition-all duration-150 active:scale-90; }
+  .card { @apply rounded-2xl bg-white/[0.03] p-3.5; }
+  .eyebrow { @apply text-[13px] text-mute; }
   .slider { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; }
   .slider::-webkit-slider-runnable-track { height: 3px; border-radius: 3px; background: rgba(255,255,255,.12); }
   .slider::-moz-range-track { height: 3px; border-radius: 3px; background: rgba(255,255,255,.12); }
@@ -30,9 +30,9 @@ body { font-family: Inter, ui-sans-serif, -apple-system, "SF Pro Text", "Segoe U
 @media (prefers-reduced-motion: reduce) { .rise, .pulse-ring { animation: none } * { transition: none !important } }
 
 @layer components {
-  .sel { @apply h-10 px-3 rounded-xl bg-white/[0.06] text-sm text-bone outline-none appearance-none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 28px; }
+  .sel { @apply h-10 px-3 rounded-xl bg-white/[0.06] text-[15px] text-bone outline-none appearance-none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 28px; }
   .sel option, .sel optgroup { background: #141416; color: #eee; }
 }
 /* iOS Safari zooms into fields under 16px: keep every input at 16px on touch screens; placeholders may stay visually smaller */
 @media (pointer: coarse) { input:not([type=range]):not([type=checkbox]), textarea, select { font-size: 16px !important } }
-.req-input::placeholder { font-size: 14px }
+.req-input::placeholder { font-size: 13px }
