@@ -192,6 +192,8 @@ export class RhythmEngine {
     // a written triplet run (a note on the middle partial too) stays an even triplet: only a lone swung off-beat gets the feel
     const mid = pos - (u / 3) * TICKS_PER_BAR / tps
     if (Number.isInteger(Math.round(mid * 1e6) / 1e6) && Object.values(p.tracks ?? {}).some(t => typeof t === 'string' && t[Math.round(mid)] && t[Math.round(mid)] !== '.')) return 0
+    // a stroke that starts a written roll (off-grid strokes follow it in the same step) is part of the run, not a swung off-beat
+    if (Number.isInteger(pos) && p.sub && Object.values(p.sub).some(m => m && (m as Record<string, unknown>)[String(pos)])) return 0
     // the written shuffle off-beat sits at 2/3 of the pair (2:1). Feel f puts it at 1/2 + f/6: 0 straight, 1 triplet, capped at 0.8 (4:1) so it never reaches the next note
     return (u / 6) * (Math.min(this.feel, 1.8) - 1) * (TICKS_PER_BAR / tps) * stepSec
   }
