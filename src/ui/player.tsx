@@ -399,7 +399,7 @@ function Sheet({ open, onClose, children, title, subtitle, head, lead, contentPu
           <div className="pt-2 pb-0.5 flex justify-center"><span className="w-10 h-1.5 rounded-full bg-white/30" /></div>
           <div className="relative flex items-center h-12 pl-3 pr-1 gap-3">
             {lead && <div className="flex items-center gap-3 shrink-0">{lead}</div>}
-            <div className="min-w-0 flex-1 pr-2"><div className="text-[15px] font-medium truncate">{title || 'Player'}</div>{subtitle && <div className="text-[13px] text-bone leading-snug">{subtitle}</div>}</div>
+            <div className="min-w-0 flex-1 pr-2"><div className="text-[15px] font-medium truncate">{title || 'Player'}</div>{subtitle && <div className="text-[13px] text-bone truncate">{subtitle}</div>}</div>
             <button aria-label="Close player" onClick={onClose} className="ml-auto h-12 pl-4 pr-3 flex items-center gap-1.5 rounded-full text-[15px] text-bone/85 active:scale-95 shrink-0">
               Close <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
             </button>
