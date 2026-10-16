@@ -52,7 +52,7 @@ export function KitView({ bars }: { bars: Pattern[] }) {
       {shown.map(p => <g key={p.id}>
         <g fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.22)" strokeWidth={1.2}><Shape p={p} /></g>
         <g ref={el => { refs.current[p.id] = el }} fill="#ffb000" stroke="#ffb000" strokeWidth={1.2} opacity={0} style={{ transformBox: 'fill-box', transformOrigin: 'center', filter: 'drop-shadow(0 0 6px rgba(255,176,0,.55))' }}><Shape p={p} /></g>
-        <text x={p.x} y={p.draw === 'kick' ? p.y + 4 : p.y + (p.draw === 'cym' || p.draw === 'hat' ? 20 : p.r * 0.55 + 14)} textAnchor="middle" className="fill-[#8a8a90]" fontSize={9} letterSpacing={0.6}>{p.label.toUpperCase()}</text>
+        <text x={p.x} y={p.draw === 'kick' ? p.y + 4 : p.y + (p.draw === 'cym' || p.draw === 'hat' ? 20 : p.r * 0.55 + 14)} textAnchor="middle" className="fill-[#8a8a90]" fontSize={13} letterSpacing={0}>{p.label}</text>
       </g>)}
     </svg>
   </figure>
