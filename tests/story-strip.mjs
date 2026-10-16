@@ -98,9 +98,19 @@ const list = await p.evaluate(() => {
   return {
     rows: rows.length,
     borders: rows.filter(li => { const s = getComputedStyle(li); return parseFloat(s.borderTopWidth) > 0 || parseFloat(s.borderBottomWidth) > 0 }).length,
-    chevron: document.querySelector('main').textContent.includes('\u203a'),
+    chevrons: btns.map(btn => {
+      const leaves = [...btn.querySelectorAll('span')].filter(s => s.children.length === 0)
+      const name = leaves.find(s => s.className.includes('text-lg'))
+      const mark = leaves.find(s => s.textContent === '\u203a')
+      if (!name || !mark) return null
+      return { hidden: mark.getAttribute('aria-hidden') !== null, rightOfName: mark.getBoundingClientRect().left >= name.getBoundingClientRect().right - 0.5, alpha: alpha(getComputedStyle(mark).color) }
+    }),
     nameColors: [...new Set(btns.map(x => getComputedStyle(x.querySelector('span.text-lg')).color))],
-    bandAlphas: btns.map(x => alpha(getComputedStyle(x.querySelector('span:nth-child(2)')).color)),
+    bandAlphas: btns.map(x => {
+      const leaves = [...x.querySelectorAll('span')].filter(s => s.children.length === 0)
+      const band = leaves.find(s => !s.className.includes('text-lg') && s.textContent !== '\u203a')
+      return alpha(getComputedStyle(band).color)
+    }),
     gaps: btns.slice(1).map((x, i) => Math.round((x.getBoundingClientRect().top - btns[i].getBoundingClientRect().bottom) * 10) / 10),
     imgs: document.querySelectorAll('main img').length,
     firstName: btns[0]?.querySelector('span.text-lg').textContent,
@@ -108,7 +118,7 @@ const list = await p.evaluate(() => {
 })
 check('drummers list has rows', list.rows > 1, String(list.rows))
 check('no row has a top or bottom border', list.borders === 0, String(list.borders))
-check('no chevron in the list', !list.chevron)
+check('each row shows a muted chevron to the right of the name', list.chevrons.length === list.rows && list.chevrons.every(c => c && c.hidden && c.rightOfName && c.alpha < 1), JSON.stringify(list.chevrons))
 check('names use the default bone color', JSON.stringify(list.nameColors) === '["rgb(244, 241, 234)"]', JSON.stringify(list.nameColors))
 check('bands are dimmed', list.bandAlphas.every(a => a < 1), JSON.stringify(list.bandAlphas))
 check('rows are separated by a gap', list.gaps.every(g => g > 0), JSON.stringify(list.gaps))
