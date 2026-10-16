@@ -236,7 +236,7 @@ function StoryExample() {
   const { playArrangement, playing, arrangement, arrangementPos } = usePlayer()
   const pos = arrangement?.id === STORY_ARRANGEMENT.id ? arrangementPos : null
   return <div className="mb-14">
-    <button className="h-11 px-5 rounded-full bg-amber text-ink text-sm font-medium" onClick={() => playArrangement(STORY_ARRANGEMENT)}>
+    <button className="h-11 px-5 rounded-full bg-amber text-ink text-[15px] font-medium" onClick={() => playArrangement(STORY_ARRANGEMENT)}>
       {playing && arrangement?.id === STORY_ARRANGEMENT.id ? 'Restart example' : 'Play the 18-bar example'}
     </button>
     <div role="group" aria-label={STORY_ARRANGEMENT.name} className="mt-6 flex items-stretch gap-1.5">
@@ -244,13 +244,13 @@ function StoryExample() {
         const lit = pos !== null && pos.bar >= sc.start && pos.bar < sc.start + sc.bars
         return <button key={sc.start} type="button" onClick={() => playArrangement(STORY_ARRANGEMENT, sc.first)} aria-current={lit || undefined}
           className="flex flex-col justify-end gap-1.5 text-left" style={{ flex: `${sc.bars} 1 0%` }}>
-          <span className={`pt-px text-[11px] leading-tight ${lit ? 'text-amber' : 'text-bone/60'}`}>{sc.name}</span>
+          <span className={`pt-px text-[13px] leading-tight ${lit ? 'text-amber' : 'text-bone/60'}`}>{sc.name}</span>
           <span className="flex gap-0.5 h-6">{Array.from({ length: sc.bars }, (_, j) =>
             <span key={j} data-bar={sc.start + j} className={`flex-1 rounded-[3px] ${pos?.bar === sc.start + j ? 'bg-amber' : lit ? 'bg-amber/30' : 'bg-white/10'}`} />)}</span>
         </button>
       })}
     </div>
-    <p className="mt-3 min-h-[2.5rem] text-sm text-bone/60 leading-snug">{pos ? STORY_ARRANGEMENT.sections[pos.section].note : ''}</p>
+    <p className="mt-3 min-h-[4.5rem] text-[15px] text-bone/60 leading-snug">{pos ? STORY_ARRANGEMENT.sections[pos.section].note : ''}</p>
   </div>
 }
 
