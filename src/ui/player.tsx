@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
 import { RhythmEngine, preloadKit, setSampleBase, sampleAlign, type PulseEvent } from '../engine/audio'
 import type { Arrangement, ArrangementPos, Fill, Layer, Pattern, SectionIndex, Voice } from '../engine/types'
 import { VOICES, sectionIndex } from '../engine/types'
@@ -246,8 +246,8 @@ export function StepGrid({ pattern, current }: { pattern: Pattern; current: numb
                 const c = pattern.tracks[v]?.[i]; const vel = velocityOf(c)
                 const beat = i % pattern.stepsPerBeat === 0 && i > 0
                 return (
-                  <span key={i} className={`relative flex-1 h-5 rounded-[3px] overflow-hidden transition-colors duration-75 ${beat ? 'ml-[3px]' : ''} ${i === current ? 'bg-amber/25' : 'bg-white/[0.04]'}`}>
-                    {vel > 0 && <span className={`absolute inset-x-0 bottom-0 rounded-[3px] transition-[background-color,transform] duration-100 ${i === current ? 'bg-amber scale-y-110' : 'bg-bone/70'}`} style={{ height: `${Math.round(25 + vel * 75)}%` }} />}
+                  <span key={i} className={`relative flex-1 h-5 rounded-[3px] overflow-hidden ${beat ? 'ml-[3px]' : ''} ${i === current ? 'bg-amber/25' : 'bg-white/[0.04]'}`}>
+                    {vel > 0 && <span className={`absolute inset-x-0 bottom-0 rounded-[3px] transition-transform duration-100 ${i === current ? 'bg-amber scale-y-110' : 'bg-bone/70'}`} style={{ height: `${Math.round(25 + vel * 75)}%` }} />}
                     {(c === 'f' || c === 'r') && <span className="absolute top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-ink" />}
                     {pattern.variant?.[v]?.[String(i)] && <span title={VARIANTS[pattern.variant[v]![String(i)]]?.label} className="absolute inset-x-0 bottom-0 grid place-items-center text-[7px] leading-none font-semibold text-ink/75" style={{ height: `max(8px, ${vel > 0 ? Math.round(25 + vel * 75) : 100}%)` }}>{VARIANTS[pattern.variant[v]![String(i)]]?.short}</span>}
                     {pattern.sub?.[v]?.[String(i)]?.map(([fr, sv], j) => <span key={j} className={`absolute bottom-0 w-[2px] rounded-full ${i === current ? 'bg-amber' : 'bg-bone/80'}`} style={{ left: `${fracOf(fr) * 100}%`, height: `${Math.round(25 + sv * 75)}%` }} />)}
@@ -260,6 +260,29 @@ export function StepGrid({ pattern, current }: { pattern: Pattern; current: numb
       </div>
     </div>
   )
+}
+
+/** The song bar and step being heard now, read each frame from the audio clock (output latency included).
+ *  What is drawn now reaches the screen at the next refresh, somewhere in the frame after it, so it looks 1.5 frames ahead:
+ *  the switch lands within half a frame of the sound instead of up to a whole frame late.
+ *  `barOnly` re-renders only when the bar changes. An inactive caller runs no frame loop. */
+export function useHeardPos(barOnly = false, active = true) {
+  const { playing, songPos } = usePlayer()
+  const [heard, setHeard] = useState<{ bar: number; step: number } | null>(null)
+  useEffect(() => {
+    if (!playing || !active) { setHeard(null); return }
+    let raf = 0, last = 0, frame = 1 / 60, cur: { bar: number; step: number } | null = null
+    const tick = (ts: number) => {
+      if (last) frame = Math.min(0.05, frame * 0.9 + (ts - last) / 1000 * 0.1)
+      last = ts
+      const h = songPos(frame * 1.5)
+      if (h?.bar !== cur?.bar || (!barOnly && h?.step !== cur?.step)) { cur = h && { bar: h.bar, step: h.step }; flushSync(() => setHeard(cur)) }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [playing, songPos, barOnly, active])
+  return heard
 }
 
 function useStep(id: string) {
@@ -519,8 +542,9 @@ export function SongForm({ song }: { song?: Song }) {
   const P = usePlayer()
   const sg = song ?? P.song!
   const live = P.song?.raw.id === sg.raw.id
-  const cur = live ? sectionOf(sg, P.songBar) : -1
-  const cur_step = useStep('song')
+  const heardBar = useHeardPos(true, live)?.bar
+  const bar = live && P.playing && heardBar !== undefined ? heardBar : P.songBar
+  const cur = live ? sectionOf(sg, bar) : -1
   const V = useMemo(() => sg.bars.length ? variation(sg) : null, [sg, sg.bars.length])
   // keep the active section in view as playback moves on; hand scrolling pauses this for a few seconds
   const listRef = useRef<HTMLOListElement>(null), gridRef = useRef<HTMLDivElement>(null), lastUser = useRef(0)
@@ -538,9 +562,9 @@ export function SongForm({ song }: { song?: Song }) {
     if (r.top < b.top + top || r.bottom > b.bottom - 8) sc.scrollTo({ top: sc.scrollTop + (r.top - b.top) - top, behavior: 'smooth' })
   }, [cur, live])
   return <div>
-    {live && sg.bars[P.songBar] && <div ref={gridRef} className="sticky -top-4 z-10 -mx-4 -mt-4 px-4 pt-4 pb-2 bg-[#141416]"><StepGrid pattern={sg.bars[P.songBar]} current={P.playing ? cur_step : -1} /></div>}
+    {live && <div ref={gridRef} className="sticky -top-4 z-10 -mx-4 -mt-4 px-4 pt-4 pb-2 bg-[#141416]"><NowGrid song={sg} /></div>}
     <ol ref={listRef} className="mt-1">{sg.sections.map((s, i) => {
-      const on = i === cur; const pct = on ? ((P.songBar - s.start + 1) / s.bars) * 100 : 0
+      const on = i === cur; const pct = on ? ((bar - s.start + 1) / s.bars) * 100 : 0
       const go = async () => { if (!live) { await P.loadSong(sg, i); await P.toggle() } else P.jumpSection(i) }
       return <li key={i} role="button" tabIndex={0} aria-label={`Jump to ${s.name}`} onClick={go} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void go() } }} className="flex items-center gap-2 py-2 cursor-pointer active:bg-white/[0.03] rounded-lg">
         {V && <span title={V.repeats.has(V.secGroup[i]) ? 'Same bars as another section' : undefined} className="w-1.5 self-stretch my-1 rounded-full shrink-0" style={{ background: VAR_COLORS[V.secGroup[i] % VAR_COLORS.length], opacity: V.repeats.has(V.secGroup[i]) ? 0.9 : 0.35 }} />}
@@ -551,12 +575,12 @@ export function SongForm({ song }: { song?: Song }) {
           {P.loopMode && live && <div className="flex flex-wrap gap-1 mt-1.5" aria-label={`${s.name} bars`}>
             {Array.from({ length: s.bars }, (_, j) => { const n = s.start + j, inR = !!P.barLoop && n >= P.barLoop[0] && n <= P.barLoop[1]
               return <button key={j} aria-label={`Loop bar ${n + 1}`} onClick={ev => { ev.stopPropagation(); P.pickBar(n) }}
-                className={`w-8 h-8 rounded-md text-[13px] tabular-nums ${inR ? 'bg-amber text-ink font-medium' : P.loopPick === n ? 'ring-1 ring-amber text-amber bg-amber/10' : 'bg-white/[0.06] text-bone/60'} ${n === P.songBar && P.playing ? 'outline outline-1 outline-bone/70' : ''}`}>{n + 1}</button> })}
+                className={`w-8 h-8 rounded-md text-[13px] tabular-nums ${inR ? 'bg-amber text-ink font-medium' : P.loopPick === n ? 'ring-1 ring-amber text-amber bg-amber/10' : 'bg-white/[0.06] text-bone/60'} ${n === bar && P.playing ? 'outline outline-1 outline-bone/70' : ''}`}>{n + 1}</button> })}
           </div>}
           {!(P.loopMode && live) && V && (on || s.bars <= 64) && <div className={`flex gap-[2px] mt-1 ${on ? 'h-6' : 'h-1.5 pointer-events-none'}`} aria-label={`${s.name} bar variations`}>
-            {V.bars.slice(s.start, s.start + s.bars).map((b, j) => { const n = s.start + j; const now = live && n === P.songBar
+            {V.bars.slice(s.start, s.start + s.bars).map((b, j) => { const n = s.start + j; const now = live && n === bar
               return <button key={j} aria-label={`Bar ${j + 1}, pattern ${String.fromCharCode(65 + b.k)}`} onClick={ev => { if (!on || !live) return; ev.stopPropagation(); P.jumpBar(n) }}
-                className={`relative flex-1 min-w-[3px] rounded-[2px] ${now ? 'ring-1 ring-amber' : ''}`} style={{ background: VAR_COLORS[b.k % VAR_COLORS.length], opacity: on ? (live && n <= P.songBar ? 1 : 0.55) : 0.4 }}>
+                className={`relative flex-1 min-w-[3px] rounded-[2px] ${now ? 'ring-1 ring-amber' : ''}`} style={{ background: VAR_COLORS[b.k % VAR_COLORS.length], opacity: on ? (live && n <= bar ? 1 : 0.55) : 0.4 }}>
                 {b.accent && <span className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-[3px] h-[3px] rounded-full bg-amber" />}
                 {on && s.bars <= 16 && <span className="absolute inset-0 grid place-items-center text-[9px] leading-none text-ink/70 font-medium">{String.fromCharCode(65 + Math.min(b.k, 25))}</span>}
               </button> })}
@@ -568,6 +592,13 @@ export function SongForm({ song }: { song?: Song }) {
       </li>
     })}</ol>
   </div>
+}
+
+/** The bar being heard, with the step being heard lit. Its own component so the per-step update repaints only the grid. */
+function NowGrid({ song }: { song: Song }) {
+  const P = usePlayer(), h = useHeardPos()
+  const p = song.bars[h?.bar ?? P.songBar]
+  return p ? <StepGrid pattern={p} current={P.playing && h ? h.step : -1} /> : null
 }
 
 /** "Up next" queue: a quiet one-line summary that opens into a removable list. */
