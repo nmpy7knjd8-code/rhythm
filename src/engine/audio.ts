@@ -342,7 +342,6 @@ export class RhythmEngine {
       for (const h of hs) { const at = t + fs + this.driftAt(h.voice, bt); heard = Math.min(heard, at); this.play(SONG_ID, h.voice, at, h.velocity, h.graces, stepSec, notes.variant?.[h.voice]?.[step]) }
       this.timeline.push({ t: hs.length ? heard : t + fs, bar: this.songBar, step }); if (this.timeline.length > 512) this.timeline.splice(0, 256)
       this.playSubs(SONG_ID, notes, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt), fl); this.hz = null
-      const b = this.songBar; Tone.getDraw().schedule(() => this.listeners.forEach(f => f({ [SONG_ID]: step }, b)), time)
     }
     if (++this.songTick >= len) {
       this.songTick = 0

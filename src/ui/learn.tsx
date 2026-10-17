@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 import type { Voice } from '../engine/types'
 import { VOICES } from '../engine/types'
 import type { PulseEvent } from '../engine/audio'
@@ -9,7 +8,7 @@ import { getLesson, type Lesson, type LessonBar, type Limb } from '../learn'
 import { LIMBS, LIMB_NAME, VOICE_LABEL } from '../learn/speech'
 import { AUTHORED } from '../learn/authored'
 import { recallPractice, savePractice, type PracticeMemory } from '../learn/memory'
-import { usePlayer } from './player'
+import { usePlayer, useHeardPos } from './player'
 import { KitView } from './kitview'
 
 const FEET = new Set<Voice>(['low', 'pedal'])
@@ -176,23 +175,7 @@ function Learn() {
   const stepBars = useMemo(() => stepOn && cur ? new Map(cur.bars.map(b => [b.songBar, b.pattern])) : null, [stepOn, cur])
 
   const sec = song.sections[selected]
-  // Follow the ear: each frame, read the step that is sounding now from the audio clock (output latency included).
-  const { songPos } = P
-  const [heard, setHeard] = useState<{ bar: number; step: number } | null>(null)
-  useEffect(() => {
-    if (!P.playing) { setHeard(null); return }
-    // Look one frame ahead (what we draw now reaches the screen at the next refresh) and render in the same frame.
-    let raf = 0, last = 0, frame = 1 / 60, cur: { bar: number; step: number } | null = null
-    const tick = (ts: number) => {
-      if (last) frame = Math.min(0.05, frame * 0.9 + (ts - last) / 1000 * 0.1)
-      last = ts
-      const h = songPos(frame)
-      if (h?.bar !== cur?.bar || h?.step !== cur?.step) { cur = h && { bar: h.bar, step: h.step }; flushSync(() => setHeard(cur)) }
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [P.playing, songPos])
+  const heard = useHeardPos()
   const playStep = heard?.step ?? -1
   const nowBar = heard?.bar ?? P.songBar
   const inSec = !!sec && nowBar >= sec.start && nowBar < sec.start + sec.bars
