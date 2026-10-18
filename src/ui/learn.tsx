@@ -394,7 +394,7 @@ function Learn() {
         <Choice label="From" value={from} options={[50, 55, 60, 65, 70, 75, 80, 85, 90, 95]} show={n => `${n}%`} set={n => { setFrom(n); if (n >= to) setTo(Math.min(100, n + 5)) }} />
         <Choice label="To" value={to} options={[55, 60, 65, 70, 75, 80, 85, 90, 95, 100].filter(n => n > from)} show={n => `${n}%`} set={setTo} />
         <Choice label="Climb" value={by} options={[2, 5, 10]} show={n => `+${n}%`} set={setBy} />
-        <Choice label="Every" value={every} options={[1, 2, 4, 8]} show={n => `${n} loop${n > 1 ? 's' : ''}`} set={n => { setEvery(n as PracticeMemory['every']); setLoops(0); live.current.loops = 0 }} />
+        <Choice label="Loops" value={every} options={[1, 2, 4, 8]} show={n => `×${n}`} set={n => { setEvery(n as PracticeMemory['every']); setLoops(0); live.current.loops = 0 }} />
       </div>
     </section>
 

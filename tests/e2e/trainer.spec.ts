@@ -7,7 +7,7 @@ test('the speed trainer starts at From, climbs only after full loops, and stops 
   await d.getByLabel('From').selectOption('80')
   await d.getByLabel('To').selectOption('90')
   await d.getByLabel('Climb').selectOption('5')
-  await d.getByLabel('Every').selectOption('1')
+  await d.getByLabel('Loops').selectOption('1')
   await d.getByRole('button', { name: 'Speed trainer' }).click()
   const tb = d.getByRole('toolbar', { name: 'Practice' })
   await expect(tb).toContainText('80%')
