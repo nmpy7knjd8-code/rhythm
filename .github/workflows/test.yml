@@ -1,5 +1,5 @@
 name: Test
-on: { push: {}, pull_request: {} }
+on: { push: { branches: [main] }, pull_request: {} } # PR branches run once, via pull_request
 permissions: { contents: read }
 concurrency: { group: 'test-${{ github.ref }}', cancel-in-progress: true }
 jobs:

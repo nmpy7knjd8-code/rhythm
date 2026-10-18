@@ -60,4 +60,4 @@ Kills only the pid in `.verify/preview.pid`, never by name. Evidence in `.verify
 
 ## CI
 
-`.github/workflows/test.yml` runs lint, `test:learn`, build and the Playwright suite on every push and pull request; the Pages deploy also runs `test:learn` before it builds. The sync and playthrough checks need real audio timing and minutes of playback, so they run here, not in CI.
+`.github/workflows/test.yml` runs lint, `test:learn`, build and the Playwright suite on every pull request and every push to main; the Pages deploy also runs `test:learn` before it builds. The sync and playthrough checks need real audio timing and minutes of playback, so they run here, not in CI.
