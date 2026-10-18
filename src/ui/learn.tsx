@@ -143,8 +143,16 @@ export function LearnPanel() {
   const song = P.song!
   // getLesson needs the song's bars: load them before the panel (and its hooks) render
   const [ready, setReady] = useState(song.bars.length > 0)
-  useEffect(() => { if (song.bars.length) { setReady(true); return }; let on = true; void loadSongBars(song).then(() => { if (on) setReady(true) }); return () => { on = false } }, [song])
-  return ready && song.bars.length ? <Learn /> : <p className="text-[15px] text-mute">Loading the part…</p>
+  const [failed, setFailed] = useState(false), [attempt, setAttempt] = useState(0)
+  useEffect(() => {
+    if (song.bars.length) { setReady(true); return }
+    let on = true; setFailed(false)
+    loadSongBars(song).then(() => { if (on) setReady(true) }, () => { if (on) setFailed(true) })
+    return () => { on = false }
+  }, [song, attempt])
+  if (ready && song.bars.length) return <Learn />
+  if (failed) return <div className="flex items-center gap-3 text-[15px] text-mute">Couldn't load this song.<button onClick={() => setAttempt(n => n + 1)} className="h-11 px-4 rounded-full bg-white/[0.06] text-bone">Retry</button></div>
+  return <p className="text-[15px] text-mute">Loading the part…</p>
 }
 
 function Learn() {

@@ -57,7 +57,7 @@ function Styles() {
 function SongButtons({ song }: { song: Song }) {
   const P = usePlayer()
   return <div className="flex items-center gap-1.5 mt-4 whitespace-nowrap">
-    <button className="btn-primary !px-3.5" onClick={async () => { await P.loadSong(song); await P.toggle() }}><span className="inline-block w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-current" /> Play song</button>
+    <button className="btn-primary !px-3.5" onClick={async () => { if (await P.loadSong(song)) await P.toggle() }}><span className="inline-block w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-current" /> Play song</button>
     <button className="btn-ghost !px-3.5" onClick={async () => { P.load(song.pattern); if (!P.playing) await P.toggle() }}>Loop groove</button>
     <QueueButton song={song} />
     <span className="ml-auto pl-1 text-[13px] text-mute tabular-nums">{shownBpm(song, song.raw.bpm)} BPM</span>
@@ -264,13 +264,13 @@ export function Story() {
       <p className="mt-2 text-bone leading-relaxed">Original multi-section pieces that put these ideas to work over a few minutes each.</p>
       <ul className="mt-4">{JOURNEYS.map(j => <li key={j.raw.id} className="py-3 flex items-center gap-3">
         <div className="flex-1 min-w-0"><p className="font-medium truncate">{j.raw.song}</p><p className="text-[13px] text-mute">{j.sections.length} sections · {j.sections.reduce((n, x) => n + x.bars, 0)} bars</p></div>
-        <button aria-label={`Play ${j.raw.song}`} onClick={async () => { await loadSong(j); await toggle() }} className="w-10 h-10 rounded-full bg-white/[0.08] grid place-items-center">▶</button>
+        <button aria-label={`Play ${j.raw.song}`} onClick={async () => { if (await loadSong(j)) await toggle() }} className="w-10 h-10 rounded-full bg-white/[0.08] grid place-items-center">▶</button>
       </li>)}</ul></section>}
     {STUDIES.length > 0 && <section className="mb-10"><h2 className="text-xl font-medium">Style studies</h2>
       <p className="mt-2 text-bone leading-relaxed">Generic grooves in the style of an era or player, and reference pulses. Not transcriptions of specific recordings.</p>
       <ul className="mt-4">{STUDIES.map(j => <li key={j.raw.id} className="py-3 flex items-center gap-3">
         <div className="flex-1 min-w-0"><p className="font-medium truncate">{j.raw.song}</p><p className="text-[13px] text-mute">{j.sections.length} sections · {j.sections.reduce((n, x) => n + x.bars, 0)} bars</p></div>
-        <button aria-label={`Play ${j.raw.song}`} onClick={async () => { await loadSong(j); await toggle() }} className="w-10 h-10 rounded-full bg-white/[0.08] grid place-items-center">▶</button>
+        <button aria-label={`Play ${j.raw.song}`} onClick={async () => { if (await loadSong(j)) await toggle() }} className="w-10 h-10 rounded-full bg-white/[0.08] grid place-items-center">▶</button>
       </li>)}</ul></section>}
   </>
 }
@@ -327,7 +327,7 @@ function InPulse({ name }: { name: string }) {
   if (!list.length) return null
   return <section className="mb-12"><Tag c="In Pulse" />
     <ul className="mt-3">{list.map(j => <li key={j.raw.id} className="py-3 flex items-center gap-3">
-      <button aria-label={`Play ${j.raw.song}`} onClick={async () => { await loadSong(j); if (!playing) await toggle() }} className="w-9 h-9 shrink-0 rounded-full bg-white/[0.08] grid place-items-center text-sm">▶</button>
+      <button aria-label={`Play ${j.raw.song}`} onClick={async () => { if (await loadSong(j) && !playing) await toggle() }} className="w-9 h-9 shrink-0 rounded-full bg-white/[0.08] grid place-items-center text-sm">▶</button>
       <span className="min-w-0"><span className="block truncate">{j.raw.song}</span><span className="block text-[13px] truncate">{j.raw.artist}<span className="text-mute"> · {shownBpm(j, j.raw.bpm)} BPM</span></span></span></li>)}</ul></section>
 }
 
@@ -338,7 +338,7 @@ function TheorySongs({ refs }: { refs: { id: string; note: string }[] }) {
   if (!list.length) return null
   return <div className="mt-6"><span className="block text-[13px] text-mute">Hear it in Pulse</span>
     <ul className="mt-1">{list.map(({ r, s }) => <li key={r.id} className="py-2.5 flex items-center gap-3">
-      <button aria-label={`Play ${s!.raw.song}`} onClick={async () => { await loadSong(s!); if (!playing) await toggle() }} className="w-8 h-8 shrink-0 rounded-full bg-white/[0.08] grid place-items-center text-xs">▶</button>
+      <button aria-label={`Play ${s!.raw.song}`} onClick={async () => { if (await loadSong(s!) && !playing) await toggle() }} className="w-8 h-8 shrink-0 rounded-full bg-white/[0.08] grid place-items-center text-xs">▶</button>
       <span className="min-w-0 text-[15px] leading-snug text-bone">{s!.raw.song} · {r.note}</span></li>)}</ul></div>
 }
 

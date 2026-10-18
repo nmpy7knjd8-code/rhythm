@@ -37,9 +37,11 @@ interface Ctx {
   song: Song | null; songBar: number; loopSection: number | null
   /** bar-range loop: loopMode on = bar taps pick [start, end] (inclusive, 0-based song bars) */
   loopMode: boolean; setLoopMode: (on: boolean) => void; barLoop: [number, number] | null; loopPick: number | null; pickBar: (n: number) => void; clearBarLoop: () => void
-  loadSong: (s: Song, section?: number) => Promise<void>; queue: Song[]; enqueue: (s: Song) => void; unqueue: (i: number) => void; next: () => Promise<void>; shuffle: (pool: Song[]) => Promise<void>; playRange: (s: Song, start: number, end: number) => Promise<void>; jumpBar: (bar: number, onBeat?: boolean) => void; jumpSection: (i: number) => void; setLoopSection: (i: number | null) => void
+  loadSong: (s: Song, section?: number) => Promise<boolean>; queue: Song[]; enqueue: (s: Song) => void; unqueue: (i: number) => void; next: () => Promise<void>; shuffle: (pool: Song[]) => Promise<void>; playRange: (s: Song, start: number, end: number) => Promise<boolean>; jumpBar: (bar: number, onBeat?: boolean) => void; jumpSection: (i: number) => void; setLoopSection: (i: number | null) => void
   /** Bumps when a song is loaded, so Learn it can start clean. */
   loadId: number
+  /** The last song that failed to load (network or file error), with a way to try again; null once something loads. */
+  loadError: { song: Song; retry: () => Promise<void> } | null
   learn: {
     voices: (v: Voice[] | null) => void
     bars: (m: Map<number, Pattern> | null) => void
@@ -82,6 +84,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [loopSection, setLoopS] = useState<number | null>(null)
   const [loopMode, setLoopModeS] = useState(false), [barLoop, setBarLoop] = useState<[number, number] | null>(null), [loopPick, setLoopPick] = useState<number | null>(null)
   const [loadId, setLoadId] = useState(0)
+  const [loadError, setLoadError] = useState<Ctx['loadError']>(null)
   const clearBars = () => { setBarLoop(null); setLoopPick(null) }
 
   const e = useCallback(() => {
@@ -118,6 +121,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     void preloadKit(kit, (d, t) => setKitProgress(d / t))
   }, [])
 
+  /** Fetch a song's bars; on failure keep what is playing and remember the song and how to retry. */
+  const fetched = useCallback(async (sg: Song, retry: () => Promise<void>) => {
+    try { await loadSongBars(sg); setLoadError(null); return true } catch (err) { console.warn(err); setLoadError({ song: sg, retry }); return false }
+  }, [])
+
   const value = useMemo<Ctx>(() => ({
     layers, playing, bpm, swing, feel, setFeel: (f: number) => { setFeelS(f); e().setFeel(f) }, kitId, arrangementPos, arrangement, tuning, setTuning, fillId, fillEvery, inFill, kitProgress,
     setFill: (id, every) => { setFillId(id); if (every !== undefined) setFillEvery(every) },
@@ -137,28 +145,30 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     next: async () => {
       const q = live.current?.queue ?? []; if (!q.length) return
       const [sg, ...rest] = q; setQueue(rest)
-      await live.current!.loadSong(sg); await live.current!.toggle()
+      if (await live.current!.loadSong(sg)) await live.current!.toggle()
     },
     // play a random song now and queue 4 more (no repeats)
     shuffle: async pool => {
       const a = [...pool]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
       const [first, ...rest] = a.slice(0, 5); if (!first) return
-      setQueue(rest); await live.current!.loadSong(first); if (!live.current!.playing) await live.current!.toggle()
+      setQueue(rest); if (await live.current!.loadSong(first) && !live.current!.playing) await live.current!.toggle()
     },
     loadSong: async (sg, sec) => {
-      await loadSongBars(sg)
+      if (!await fetched(sg, () => live.current!.loadSong(sg, sec).then(ok => { if (ok) return live.current!.toggle() }))) return false
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setArrPos(null); setLayers([]); clearBars(); resetPractice(sg.raw.id)
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
+      return true
     },
     /** Play bars [start, end) of a song (0-based), looping that range. */
     playRange: async (sg, a, b) => {
-      await loadSongBars(sg)
+      if (!await fetched(sg, () => live.current!.playRange(sg, a, b).then(() => {}))) return false
       const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setArrPos(null); setLayers([]); resetPractice(sg.raw.id)
       const n = sg.bars.length; const st = Math.max(0, Math.min(a, n - 1)), end = Math.max(st + 1, Math.min(b, n))
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm); en.setSongLoop([st, end])
       preload(kitId); await en.start(); setPlaying(true)
+      return true
     },
     jumpBar: (b, onBeat) => { void e().wake(); e().jumpSong(b, onBeat); if (!e().playing) setSongBar(b) },
     jumpSection: i => { if (!song) return; const st = song.sections[i].start; void e().wake(); e().jumpSong(st, true); if (!e().playing) setSongBar(st)
@@ -194,8 +204,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setKit: id => { setKitId(id); setKitProgress(0); preload(id) },
     subscribe: l => e().subscribe(l),
     songPos: ahead => e().songPos(ahead),
-    loadId, learn,
-  }), [layers, playing, bpm, swing, feel, kitId, arrangementPos, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue, loopMode, barLoop, loopPick, loadId, learn, resetPractice])
+    loadId, learn, loadError,
+  }), [layers, playing, bpm, swing, feel, kitId, arrangementPos, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue, loopMode, barLoop, loopPick, loadId, learn, resetPractice, fetched, loadError])
   live.current = value
   // Lock screen / Control Center: song title and artist, play/pause and next (the queue)
   useEffect(() => {
@@ -363,7 +373,7 @@ function Browser({ onPicked }: { onPicked?: () => void }) {
     </div>
     <ul className="mt-3">{items.slice(0, 200).map(i => <li key={i.id} className="flex items-center gap-2 py-2">
       <div className="flex-1 min-w-0"><div className="text-[15px] truncate">{i.name}</div><div className="text-[13px] text-mute truncate">{i.cat} · {i.meter}{i.bpm ? ` · ${i.bpm} BPM` : ''}</div></div>
-      <button aria-label={`Play ${i.name}`} className="w-10 h-10 grid place-items-center rounded-full bg-white/[0.06] active:scale-90" onClick={async () => { if (i.song) { await P.loadSong(i.song) } else P.load(i.pattern!); if (!P.playing || i.song) await P.toggle(); onPicked?.() }}><PlayGlyph /></button>
+      <button aria-label={`Play ${i.name}`} className="w-10 h-10 grid place-items-center rounded-full bg-white/[0.06] active:scale-90" onClick={async () => { if (i.song) { if (!await P.loadSong(i.song)) return } else P.load(i.pattern!); if (!P.playing || i.song) await P.toggle(); onPicked?.() }}><PlayGlyph /></button>
       {i.pattern && <button aria-label={`Add ${i.name} as a layer`} className="w-10 h-10 grid place-items-center rounded-full bg-white/[0.06] text-lg active:scale-90" onClick={() => P.load(i.pattern!, true)}>+</button>}
     </li>)}</ul>
     {items.length === 0 && <p className="py-6 text-[15px] text-mute">Nothing matches.</p>}
@@ -478,10 +488,11 @@ export function PlayerBar() {
       <div className="flex items-center gap-3 h-14 px-2 rounded-2xl bg-white/[0.05] border border-white/[0.06]">
         {transport}
         <button className="flex-1 min-w-0 text-left" onClick={() => show('now')}>
-          <div className="text-[15px] font-medium truncate">{title}</div>
-          <div className="text-[13px] text-mute truncate">{kitLoading ? `Loading samples ${Math.round(P.kitProgress * 100)}%` : sub}</div>
+          <div className="text-[15px] font-medium truncate">{P.loadError ? P.loadError.song.raw.song : title}</div>
+          <div className="text-[13px] text-mute truncate">{P.loadError ? 'Couldn\'t load this song' : kitLoading ? `Loading samples ${Math.round(P.kitProgress * 100)}%` : sub}</div>
         </button>
-        <button onClick={() => show('sound')} className="text-[13px] tabular-nums text-mute px-1 h-10" aria-label="Current tempo">{sg ? shownBpm(sg, live ?? P.bpm) : Math.round(P.bpm)}</button>
+        {P.loadError ? <button onClick={() => void P.loadError?.retry()} className="h-10 px-3 rounded-full text-[13px] text-amber bg-amber/[0.08]">Retry</button>
+          : <button onClick={() => show('sound')} className="text-[13px] tabular-nums text-mute px-1 h-10" aria-label="Current tempo">{sg ? shownBpm(sg, live ?? P.bpm) : Math.round(P.bpm)}</button>}
         <button aria-label="Browse rhythms" onClick={() => show(sg ? 'now' : 'browse')} className="w-10 h-10 shrink-0 grid place-items-center rounded-full bg-white/[0.08] text-xl active:scale-90">{sg ? '⌃' : '+'}</button>
       </div>
     </div></div>
@@ -570,7 +581,7 @@ export function SongForm({ song }: { song?: Song }) {
     {live && <div ref={gridRef} className="sticky -top-4 z-10 -mx-4 -mt-4 px-4 pt-4 pb-2 bg-[#141416]"><NowGrid song={sg} /></div>}
     <ol ref={listRef} className="mt-1">{sg.sections.map((s, i) => {
       const on = i === cur; const pct = on ? ((bar - s.start + 1) / s.bars) * 100 : 0
-      const go = async () => { if (!live) { await P.loadSong(sg, i); await P.toggle() } else P.jumpSection(i) }
+      const go = async () => { if (!live) { if (await P.loadSong(sg, i)) await P.toggle() } else P.jumpSection(i) }
       // the whole row is a tap target; the section name is the real button (keyboard, screen readers), so no control nests inside another
       return <li key={i} onClick={go} className="flex items-center gap-2 py-2 cursor-pointer active:bg-white/[0.03] rounded-lg">
         {V && <span title={V.repeats.has(V.secGroup[i]) ? 'Same bars as another section' : undefined} className="w-1.5 self-stretch my-1 rounded-full shrink-0" style={{ background: VAR_COLORS[V.secGroup[i] % VAR_COLORS.length], opacity: V.repeats.has(V.secGroup[i]) ? 0.9 : 0.35 }} />}
