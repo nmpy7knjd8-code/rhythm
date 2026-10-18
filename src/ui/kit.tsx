@@ -1,31 +1,20 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import * as Tone from 'tone'
-import type { Pattern } from '../engine/types'
+import type { Pattern, Voice } from '../engine/types'
 import { hitsAt, subHitsAt, ticksPerStep } from '../engine/pattern'
 import { kit, ROUTES, type Route } from '../midi/kit'
-import { Scorer, type HitResult, type Tally, type Verdict } from '../midi/score'
+import { Scorer, type HitResult, type Tally } from '../midi/score'
+import { clearMarks, marks, putMark, store, type Mark } from '../midi/marks'
 import { heardAt } from '../midi/clock'
 import { calibrate } from '../midi/calibrate'
 import { DRUM_NAME, PADS, UNSCORED, drumOf } from '../midi/map'
 
 export const useKit = () => useSyncExternalStore(kit.watch, kit.get)
 
-/** Small stores so only the notation marks and the readout re-render on a hit, never the whole Learn tab. */
-function store<T>(init: T) {
-  let v = init; const ws = new Set<() => void>()
-  return {
-    get: () => v, set: (n: T) => { v = n; ws.forEach(f => f()) },
-    watch: (f: () => void) => { ws.add(f); return () => { ws.delete(f) } },
-  }
-}
-export type Mark = Verdict | 'miss'
-const marks = store(new Map<number, Map<string, Mark>>())
-const putMark = (bar: number, key: string, m: Mark) => { const all = new Map(marks.get()); all.set(bar, new Map(all.get(bar)).set(key, m)); marks.set(all) }
-const clearMarks = (bar?: number) => { if (bar === undefined) marks.set(new Map()); else if (marks.get().has(bar)) { const all = new Map(marks.get()); all.delete(bar); marks.set(all) } }
 /** Verdicts for one bar's notes, keyed `step:voice`. */
 export const useMarks = (bar: number) => useSyncExternalStore(marks.watch, marks.get).get(bar)
 
-export const readout = store<{ last: HitResult | null; lap: Tally | null; wait: string | null }>({ last: null, lap: null, wait: null })
+export const readout = store<{ last: HitResult | null; lap: Tally | null }>({ last: null, lap: null })
 export const scorer = new Scorer()
 
 export const MARK: Record<Mark, { label: string; arrow: string; color: string }> = {
@@ -37,6 +26,8 @@ export const MARK: Record<Mark, { label: string; arrow: string; color: string }>
 
 export interface ScoreSource {
   active: boolean
+  /** the voices the drummer is meant to play now; the rest are never expected */
+  voices: Set<Voice>
   clock: () => { timeline: { t: number; bar: number; step: number; listen?: boolean }[]; ctx: AudioContext }
   /** what the drummer should play in this song bar (the step being practised, else the full bar) */
   pattern: (bar: number) => Pattern | undefined
@@ -58,21 +49,21 @@ export function useKitScore(src: ScoreSource) {
         const p = e.listen ? undefined : live.current.pattern(e.bar); if (!p) continue
         const stepSec = 5 / Tone.getTransport().bpm.getValueAtTime(e.t) * ticksPerStep(p)
         const add = (voice: Parameters<Scorer['hit']>[0], frac: number) => {
-          if (UNSCORED.has(voice)) return
+          if (UNSCORED.has(voice) || !live.current.voices.has(voice)) return
           const t = e.t + frac * stepSec
           scorer.add({ id: `${t}:${voice}`, voice, t, at: heardAt(ctx, t), bar: e.bar, step: e.step, frac })
         }
         for (const h of hitsAt(p, e.step)) add(h.voice, 0)
         for (const h of subHitsAt(p, e.step)) add(h.voice, h.frac)
       }
-      for (const r of scorer.sweep(performance.now() - kit.offset())) putMark(r.note.bar, `${r.note.step}:${r.note.voice}`, 'miss')
+      for (const r of scorer.sweep(performance.now() - kit.offset())) putMark(r.note, 'miss')
     }
     poll()
     const id = setInterval(poll, 20)
     const off = kit.onHit(h => {
       poll()
-      const r = scorer.hit(h.voice, h.at - kit.offset())
-      if (r.kind === 'hit') putMark(r.note.bar, `${r.note.step}:${r.note.voice}`, r.verdict)
+      const r = scorer.hit(h.voice, h.at - kit.offset(), new Set([...live.current.voices].map(drumOf)))
+      if (r.kind === 'hit') putMark(r.note, r.verdict)
       if (r.kind !== 'extra') readout.set({ ...readout.get(), last: r })
     })
     return () => { clearInterval(id); off() }
@@ -81,11 +72,11 @@ export function useKitScore(src: ScoreSource) {
 
 /** One fixed-height line under the bar title: the last hit (Early / On time / Late, or the wrong drum) and the last loop's score. */
 export function KitReadout({ best }: { best?: { score: number; pct: number } }) {
-  const { last, lap, wait } = useSyncExternalStore(readout.watch, readout.get)
+  const { last, lap } = useSyncExternalStore(readout.watch, readout.get)
   const m = last?.kind === 'hit' ? MARK[last.verdict] : null
   return <div className="mt-1 h-7 flex items-center justify-between gap-2 text-[15px] tabular-nums" aria-live="polite" data-kit-readout>
-    <span className={`min-w-0 truncate font-medium ${wait ? 'text-bone' : m ? m.color : last ? 'text-rose-400' : 'text-mute'}`}>
-      {wait ?? (m && last?.kind === 'hit' ? `${last.verdict === 'early' ? '← ' : ''}${m.label}${last.verdict === 'late' ? ' →' : ''}${last.verdict === 'on' ? '' : ` ${Math.round(Math.abs(last.err))} ms`}`
+    <span className={`min-w-0 truncate font-medium ${m ? m.color : last ? 'text-rose-400' : 'text-mute'}`}>
+      {(m && last?.kind === 'hit' ? `${last.verdict === 'early' ? '← ' : ''}${m.label}${last.verdict === 'late' ? ' →' : ''}${last.verdict === 'on' ? '' : ` ${Math.round(Math.abs(last.err))} ms`}`
         : last?.kind === 'wrong' ? `Wrong drum: ${DRUM_NAME[drumOf(last.voice)]}, not ${DRUM_NAME[drumOf(last.want)]}` : 'Play along on your kit')}
     </span>
     <span className="shrink-0 text-[13px] text-mute">{lap && <>Last loop <span className="text-bone">{Math.round(lap.score * 100)}%</span></>}{best && <>{lap ? ' · ' : ''}Best {Math.round(best.score * 100)}% at {best.pct}%</>}</span>

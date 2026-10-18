@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { DEFAULT_MAP, noteOn, sameDrum } from '../src/midi/map.ts'
+import { DEFAULT_MAP, noteOn, sameDrum, scoredVoices } from '../src/midi/map.ts'
 import { Scorer, tally, verdictOf, ON_MS, WINDOW_MS } from '../src/midi/score.ts'
 import { calibrate } from '../src/midi/calibrate.ts'
 
@@ -74,4 +74,36 @@ test('calibration: median offset of hits against clicks, first clicks ignored, s
   assert.ok(Math.abs(c.offset - 180) <= 2, `offset ${c.offset}`)
   assert.ok(c.spread <= 10)
   assert.equal(calibrate(clicks, hits.slice(0, 9)), null) // too few after the lead-in
+})
+
+test('scored voices follow the Learn it filter: solo, else the muted voices you fill in, else all; within hands or feet', () => {
+  assert.equal(scoredVoices('all', [], []).size, 16)
+  assert.deepEqual([...scoredVoices('all', ['back'], [])], ['back'])
+  assert.deepEqual([...scoredVoices('all', ['back'], ['low'])], ['low'])
+  assert.deepEqual([...scoredVoices('feet', [], [])].sort(), ['low', 'pedal'])
+  assert.ok(!scoredVoices('hands', [], []).has('low') && scoredVoices('hands', [], []).has('tick'))
+  assert.equal(scoredVoices('feet', [], ['back']).size, 0)
+})
+
+test('a roll stroke in the same step never overwrites the main note’s mark', async () => {
+  const { marks, putMark, clearMarks } = await import('../src/midi/marks.ts')
+  const n = (frac: number) => ({ id: String(frac), voice: 'back' as const, at: 0, t: 0, bar: 3, step: 4, frac })
+  clearMarks()
+  putMark(n(0), 'on'); putMark(n(0.5), 'miss')
+  assert.equal(marks.get().get(3)!.get('4:back')!.m, 'on')
+  clearMarks(3)
+  putMark(n(0.5), 'late'); assert.equal(marks.get().get(3)!.get('4:back')!.m, 'late') // an off-grid-only cell still shows its mark
+  putMark(n(0), 'early'); assert.equal(marks.get().get(3)!.get('4:back')!.m, 'early') // the main note takes over
+})
+
+test('a pad outside the drilled drums is ignored, never a wrong drum', () => {
+  const s = new Scorer()
+  s.add(note('a', 'back', 1000))
+  assert.equal(s.hit('tick', 1010, new Set(['snare'])).kind, 'extra') // drilling a muted snare: the hat is yours to play freely
+  s.add(note('b', 'low', 1400))
+  const drums = new Set(['snare', 'kick'])
+  assert.equal(s.hit('tick', 1010, drums).kind, 'extra')
+  const r = s.hit('low', 1000, drums) // kick far outside its own note but right on the snare's
+  assert.ok(r.kind === 'wrong' && r.want === 'back')
+  assert.equal(s.hit('tomHi', 1005).kind, 'wrong') // full mix: every drum is drilled
 })

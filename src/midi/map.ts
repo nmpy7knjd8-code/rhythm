@@ -1,4 +1,5 @@
 import type { Voice } from '../engine/types'
+import { VOICES } from '../engine/types'
 
 /** MIDI note -> Pulse voice. General MIDI drums plus the Alesis Nitro Pro's own numbers (Nitro Pro user guide §5.2:
  *  hi-hat half-open 23, hi-hat splash 21, Tom 3 rim 58, Tom 4 rim 39); every other Nitro Pro default is the GM number. */
@@ -39,4 +40,13 @@ export const PADS: { name: string; voice: Voice }[] = [
 /** A note-on with velocity > 0 on any channel: [note, velocity 1-127], else null (note-offs, aftertouch, controllers). */
 export function noteOn(data: ArrayLike<number>): [number, number] | null {
   return data.length >= 3 && (data[0] & 0xf0) === 0x90 && data[2] > 0 ? [data[1], data[2]] : null
+}
+
+const FEET = new Set<Voice>(['low', 'pedal'])
+/** What a connected kit is scored on: the soloed voices, else the muted ones (you play them in), else everything; within Hands or Feet only. */
+export function scoredVoices(limb: 'all' | 'hands' | 'feet', muted: Voice[], solo: Voice[]): Set<Voice> {
+  let list = limb === 'feet' ? [...FEET] : limb === 'hands' ? VOICES.filter(v => !FEET.has(v)) : [...VOICES]
+  if (solo.length) list = list.filter(v => solo.includes(v))
+  else if (muted.length) list = list.filter(v => muted.includes(v))
+  return new Set(list)
 }
