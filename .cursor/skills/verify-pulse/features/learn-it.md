@@ -1,6 +1,6 @@
 # Learn it
 
-The Learn it tab teaches the section that is playing: section pills, the bar strip, bar notation with the count, steps that build the part up layer by layer, a practice tempo ladder, speed trainer, count-in/click/voice, and limb mute/solo. Sections where the drums sit out show "No drums here" and a button to the next drum section.
+The Learn it tab teaches the section that is playing: section pills, the bar strip, a sticky practice bar (Play, Slower/Faster in 5% steps, Steps, Loop), bar notation with the count (the count-in number overlays it), steps that build the part up layer by layer, a practice tempo ladder, speed trainer, count-in/click/voice, and limb mute/solo. Sections where the drums sit out show "No drums here" and a button to the next drum section.
 
 ## Sub-features
 
@@ -9,6 +9,9 @@ The Learn it tab teaches the section that is playing: section pills, the bar str
 - `learn-steps` Steps opens "Step 1 of N"; Next/Previous walk unique titles ending on "The full part".
 - `learn-sync` the amber step lights when the note is heard.
 - `learn-names` section pills show clean names (no `[A]`, no `- 8 bars`).
+- `learn-bar` the practice bar sits above the notation, sticks while scrolling, and its controls work.
+- `learn-layout` every control is 44 px or more, the count-in moves nothing, "About this section" (summary + kit) starts collapsed.
+- `learn-visual` screenshot baselines for 6 songs x idle / steps / playing.
 
 ## How to get to it (user POV)
 
@@ -23,6 +26,8 @@ Preconditions:
 - **Lesson quality.** Run `verify.sh unit`. `# fail 0`; a failure lists `song #section "name": problem` lines.
 - **Silent section.** `tests/e2e/learn.spec.ts` "a section without drums...": Schism section 0 shows `No drums here`, no `Steps` button; tapping `Go to ...` selects that pill (`aria-pressed=true`) and the notation appears.
 - **Steps.** Same spec, "repeated beats...": Come Together `Chorus`, tap `Steps`, walk `Next` until disabled; titles are unique and end with `The full part`.
+- **Practice bar and layout.** `tests/e2e/layout.spec.ts`: toolbar `Practice` above the notation and pinned to the scroller top after scrolling 900 px; `Slower` makes `95%` and moves the `Practice tempo` slider; `Loop` toggles `aria-pressed`; no button under 44x44; notation and step card keep their y while the count-in number shows.
+- **Screenshots.** `npx playwright test visual` (local only). Fails on any unmasked pixel change over 0.2%.
 - **Sync.** Run `verify.sh learn-sync`. Every row `ok`, final `sync ok`.
 
 ## Gotchas
