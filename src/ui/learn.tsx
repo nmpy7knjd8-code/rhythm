@@ -7,7 +7,7 @@ import { loadSongBars } from '../data/songs'
 import { getLesson, type Lesson, type LessonBar, type Limb } from '../learn'
 import { LIMBS, LIMB_NAME, VOICE_LABEL } from '../learn/speech'
 import { AUTHORED } from '../learn/authored'
-import { recallPractice, savePractice, type PracticeMemory } from '../learn/memory'
+import { ago, bests, recallPractice, recordLoop, reviewPick, savePractice, sectionKey, type PracticeMemory } from '../learn/memory'
 import { usePlayer, useHeardPos } from './player'
 import { KitView } from './kitview'
 
@@ -195,8 +195,13 @@ function Learn() {
   const pct = Math.round((P.bpm / (song.raw.bpm || 1)) * 100)
   const loopR: [number, number] | null = P.barLoop ? [P.barLoop[0], P.barLoop[1] + 1] : P.loopSection !== null && song.sections[P.loopSection] ? [song.sections[P.loopSection].start, song.sections[P.loopSection].start + song.sections[P.loopSection].bars] : null
 
-  const live = useRef({ playing: P.playing, range: loopR, pct, base: song.raw.bpm, every, trainer, loops })
-  live.current = { playing: P.playing, range: loopR, pct, base: song.raw.bpm, every, trainer, loops }
+  // a lap counts toward the best tempo when it is the whole section, the full part (not a step), at one tempo throughout
+  const secKey = sec ? sectionKey(selected, sec.name) : ''
+  const counts = !silent && !P.barLoop && P.loopSection === selected && (!stepOn || stepI === lesson.steps.length - 1)
+  const [records, setRecords] = useState(() => bests(song.raw.id))
+  const live = useRef({ playing: P.playing, range: loopR, pct, base: song.raw.bpm, every, trainer, loops, counts, secKey })
+  live.current = { playing: P.playing, range: loopR, pct, base: song.raw.bpm, every, trainer, loops, counts, secKey }
+  const lap = useRef<{ key: string; pct: number } | null>(null)
   const setBpm = useRef(P.setBpm); setBpm.current = P.setBpm
   const onPulse = useRef<(e: PulseEvent) => void>(() => {})
   const onBar = useRef<(bar: number) => void>(() => {})
@@ -213,25 +218,30 @@ function Learn() {
     if (key !== loopKey.current) { loopKey.current = key; lastBar.current = null }
     const prev = lastBar.current
     lastBar.current = bar
-    if (!L.trainer || !L.playing || !L.range || prev === null) return
+    if (!L.playing || !L.range) return
     const [a, b] = L.range
+    if (prev === null) { lap.current = bar === a ? { key, pct: L.pct } : null; return } // a lap only counts from the loop's first bar
     const wrapped = b - a === 1 ? prev === a && bar === a : prev === b - 1 && bar === a
     if (!wrapped) return
+    if (L.counts && lap.current?.key === key && lap.current.pct === L.pct) { recordLoop(song.raw.id, L.secKey, L.pct); setRecords(bests(song.raw.id)) }
+    lap.current = { key, pct: L.pct }
+    if (!L.trainer) return
     const n = L.loops + 1
     L.loops = n; setLoops(n)
     if (n % L.every !== 0 || L.pct >= 100) return
     const next = Math.min(100, L.pct + 5)
-    L.pct = next
+    L.pct = next; lap.current = { key, pct: next }
     setBpm.current(L.base * next / 100)
   }
+  useEffect(() => { if (!P.playing) { lastBar.current = null; lap.current = null } }, [P.playing])
 
   const { learn } = P
   useEffect(() => {
     // Only subscribe while something is listening. An idle tab adds no callbacks to the scheduler.
     learn.onPulse(countIn ? e => onPulse.current(e) : null)
-    learn.onBar(trainer ? bar => onBar.current(bar) : null)
+    learn.onBar(!silent ? bar => onBar.current(bar) : null)
     return () => { learn.onPulse(null); learn.onBar(null) }
-  }, [learn, countIn, trainer])
+  }, [learn, countIn, silent])
   useEffect(() => () => { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel() }, [])
   useEffect(() => {
     learn.voices(allow)
@@ -267,6 +277,10 @@ function Learn() {
 
   if (!sec) return <p className="text-[15px] text-mute">Loading the part…</p>
 
+  // progress: this section's best tempo, and one earlier-practised section worth a revisit
+  const mine = records[secKey]
+  const keys = song.sections.map((x, i) => sectionKey(i, x.name)), dueKey = reviewPick(records, keys, secKey)
+  const due = dueKey ? { index: keys.indexOf(dueKey), best: records[dueKey] } : null
   const looping = !!P.barLoop || P.loopSection !== null
   const toggleSteps = () => { const next = !stepOn; setStepOn(next); if (next && voice && cur) say(cur.speak) }
   const nudge = (d: number) => setPct(Math.min(100, Math.max(50, Math.round(pct / 5) * 5 + d)))
@@ -279,6 +293,11 @@ function Learn() {
     <div ref={secRow} className="relative flex gap-1.5 overflow-x-auto no-sheet-drag -mx-4 px-4 pb-0.5" aria-label="Sections">
       {song.sections.map((s, i) => <button key={i} data-active={i === selected || undefined} aria-pressed={i === selected} onClick={() => lockSection(i)} className={`shrink-0 max-w-[148px] truncate ${pill(i === selected)}`}>{s.name}</button>)}
     </div>
+
+    {(mine || due) && <div className="-my-1 flex items-center gap-2 text-[13px] text-mute">
+      {mine && <span className="shrink-0 tabular-nums">Best here <span className="text-bone">{mine.pct}%</span>, {ago(mine.last)}</span>}
+      {due && <button onClick={() => lockSection(due.index)} className="h-11 min-w-0 truncate text-left text-amber">Review {song.sections[due.index].name}: {due.best.pct}%, {ago(due.best.last)}</button>}
+    </div>}
 
     <div>
       <div ref={barRow} className="relative flex gap-1 overflow-x-auto no-sheet-drag -mx-4 px-4" aria-label={`${sec.name} bars`}>
