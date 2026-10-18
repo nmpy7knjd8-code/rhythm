@@ -42,8 +42,9 @@ export class Scorer {
     this.pending.push(held)
   }
 
-  /** A hit at `at` (performance.now ms, already corrected by the calibrated offset). */
-  hit(voice: Voice, at: number): HitResult {
+  /** A hit at `at` (performance.now ms, already corrected by the calibrated offset). `drums`: the drums being drilled; a pad
+   *  outside them (the hat while you drill a muted snare) is never a wrong drum, just ignored. */
+  hit(voice: Voice, at: number, drums?: Set<string>): HitResult {
     let best: Held | null = null, near: Held | null = null
     for (const n of this.pending) {
       const d = Math.abs(at - n.at)
@@ -56,7 +57,7 @@ export class Scorer {
       this.keep({ note: best, verdict, err })
       return { kind: 'hit', note: best, verdict, err }
     }
-    return near ? { kind: 'wrong', voice, want: near.voice } : { kind: 'extra', voice }
+    return near && (!drums || drums.has(drumOf(voice))) ? { kind: 'wrong', voice, want: near.voice } : { kind: 'extra', voice }
   }
 
   /** Notes whose window has closed by `now` are missed. */

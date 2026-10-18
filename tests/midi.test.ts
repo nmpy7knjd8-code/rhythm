@@ -95,3 +95,15 @@ test('a roll stroke in the same step never overwrites the main note’s mark', a
   putMark(n(0.5), 'late'); assert.equal(marks.get().get(3)!.get('4:back')!.m, 'late') // an off-grid-only cell still shows its mark
   putMark(n(0), 'early'); assert.equal(marks.get().get(3)!.get('4:back')!.m, 'early') // the main note takes over
 })
+
+test('a pad outside the drilled drums is ignored, never a wrong drum', () => {
+  const s = new Scorer()
+  s.add(note('a', 'back', 1000))
+  assert.equal(s.hit('tick', 1010, new Set(['snare'])).kind, 'extra') // drilling a muted snare: the hat is yours to play freely
+  s.add(note('b', 'low', 1400))
+  const drums = new Set(['snare', 'kick'])
+  assert.equal(s.hit('tick', 1010, drums).kind, 'extra')
+  const r = s.hit('low', 1000, drums) // kick far outside its own note but right on the snare's
+  assert.ok(r.kind === 'wrong' && r.want === 'back')
+  assert.equal(s.hit('tomHi', 1005).kind, 'wrong') // full mix: every drum is drilled
+})

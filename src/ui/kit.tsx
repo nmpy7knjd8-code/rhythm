@@ -62,7 +62,7 @@ export function useKitScore(src: ScoreSource) {
     const id = setInterval(poll, 20)
     const off = kit.onHit(h => {
       poll()
-      const r = scorer.hit(h.voice, h.at - kit.offset())
+      const r = scorer.hit(h.voice, h.at - kit.offset(), new Set([...live.current.voices].map(drumOf)))
       if (r.kind === 'hit') putMark(r.note, r.verdict)
       if (r.kind !== 'extra') readout.set({ ...readout.get(), last: r })
     })

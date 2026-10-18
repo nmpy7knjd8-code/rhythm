@@ -129,6 +129,9 @@ test('only the voices you are meant to play are scored: muted voices you fill in
   await transport(page, 'Play').click()
   await page.waitForTimeout(2500)
   expect(await voices()).toEqual(['back']) // the drums Pulse still plays are never missed
+  await hitNext(page, 0, { voice: 'tick' }) // the hat (still played by Pulse) near a snare note: ignored
+  await page.waitForTimeout(200)
+  await expect(readout(page)).not.toContainText('Wrong drum')
   await transport(page, 'Stop').click()
   await d.getByRole('button', { name: 'Reset', exact: true }).click() // mutes off
   await d.getByRole('button', { name: 'Feet only' }).click()
