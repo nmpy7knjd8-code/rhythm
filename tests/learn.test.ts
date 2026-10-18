@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import type { Pattern, Track, Voice } from '../src/engine/types.ts'
 import { getLesson, type Lesson, type LessonSong } from '../src/learn/index.ts'
+import { cleanSectionName } from '../src/data/sectionName.ts'
 
 const ALIASES: Record<string, Voice> = {
   kick: 'low', snare: 'back', closedHat: 'tick', hihat: 'tick', openHat: 'open', pedalHat: 'pedal',
@@ -37,7 +38,7 @@ function load(id: string): LessonSong {
   const sections = file.sections.map(section => {
     const start = bars.length
     section.bars.forEach((raw, index) => bars.push(toPattern(id, raw, section, index, bars.length)))
-    return { name: section.name, start, bars: section.bars.length }
+    return { name: cleanSectionName(section.name), start, bars: section.bars.length }
   })
   return {
     raw: { id, song: meta.song, artist: meta.artist, drummer: meta.drummer, bpm: meta.bpm, timeSig: meta.timeSig, bpmDisplay: meta.bpmDisplay },
@@ -300,12 +301,93 @@ test('barRange limits the lesson to those absolute bars', () => {
   assert.throws(() => getLesson(song, 99), /outside/)
 })
 
-test('every section of every song builds a lesson without throwing', () => {
-  const songs = JSON.parse(readFileSync('src/data/songs.json', 'utf8')) as { id: string; category?: string }[]
-  let n = 0
+/** Every way a derived lesson can be wrong that a reader would notice. Returns one line per problem. */
+function lessonProblems(song: LessonSong, index: number): string[] {
+  const out: string[] = []
+  const section = song.sections[index]
+  const tag = `${song.raw.id} #${index} "${section.name}"`
+  const bad = (what: string) => out.push(`${tag}: ${what}`)
+  if (/^\[|\]$|-\s*\d+\s+bars?$/i.test(section.name)) bad('tab marker left in the section name')
+  let lesson: Lesson
+  try { lesson = getLesson(song, index) } catch (e) { return [`${tag}: throws ${(e as Error).message}`] }
+  const sources = song.bars.slice(section.start, section.start + section.bars)
+  const full = lesson.bars.map(bar => events(bar.pattern))
+  const total = lesson.bars.reduce((sum, bar) => sum + bar.notes.length, 0)
+  if (lesson.bars.length !== section.bars) bad(`${lesson.bars.length} lesson bars for ${section.bars} section bars`)
+  sources.forEach((source, i) => { if (!sameEvents(events(source), full[i] ?? [])) bad(`bar ${i + 1} dropped or invented a note`) })
+
+  // steps: none when there are no drums; otherwise a growing chain of 1–6 subsets ending on the full part
+  const steps = lesson.steps
+  if (total === 0) { if (steps.length) bad(`no drums, but ${steps.length} steps`) }
+  else {
+    if (steps.length < 1 || steps.length > 6) bad(`${steps.length} steps`)
+    if (steps.length < 4 && total >= 10) bad(`only ${steps.length} steps for ${total} notes`)
+    const titles = steps.map(step => step.title)
+    if (new Set(titles).size !== titles.length) bad(`repeated step titles: ${titles.join(' / ')}`)
+    const chain = steps.map(step => step.bars.map(bar => events(bar.pattern)))
+    steps.forEach((step, i) => {
+      if (!step.title.trim() || !step.adds.trim()) bad(`step ${i + 1} has no title or description`)
+      const n = sentences(step.speak)
+      if (n < 1 || n > 2) bad(`step ${i + 1} speaks ${n} sentences`)
+      if (step.bars.length !== lesson.bars.length) bad(`step ${i + 1} covers ${step.bars.length} bars`)
+      chain[i].forEach((here, bar) => {
+        if (!isSubset(here, full[bar])) bad(`step ${i + 1} bar ${bar + 1} is not inside the full part`)
+        if (i > 0 && !isSubset(chain[i - 1][bar], here)) bad(`step ${i + 1} bar ${bar + 1} drops notes from step ${i}`)
+      })
+      if (i > 0 && step.noteCount <= steps[i - 1].noteCount) bad(`step ${i + 1} adds no notes`)
+    })
+    const last = steps[steps.length - 1]
+    if (last.id !== 'full' || last.title !== 'The full part') bad(`last step is "${last.title}"`)
+    chain[chain.length - 1].forEach((here, bar) => { if (!sameEvents(here, full[bar])) bad(`last step bar ${bar + 1} is not the full part`) })
+  }
+
+  // tempo ladder: 60% → 80% → the tab's tempo
+  const t = lesson.tempos
+  if (t.startBpm !== Math.round(t.songBpm * 0.6) || t.middleBpm !== Math.round(t.songBpm * 0.8)) bad(`ladder ${t.startBpm}/${t.middleBpm} for ${t.songBpm} BPM`)
+  if (!(t.startBpm < t.middleBpm && t.middleBpm < t.fullBpm) || t.startBpm < 20 || t.fullBpm > 400) bad(`ladder ${t.startBpm}/${t.middleBpm}/${t.fullBpm}`)
+
+  // meter: the count fills each bar, and the feel sentence agrees with the counts on screen
+  for (const bar of lesson.bars) {
+    const [num] = bar.count.timeSig.split('/').map(Number)
+    const where = `bar ${bar.songBar + 1} ${bar.count.timeSig}`
+    if (bar.count.grouping.reduce((sum, part) => sum + part, 0) !== num) bad(`${where} grouping ${bar.count.groupingLabel}`)
+    if (bar.count.beats.reduce((sum, beat) => sum + beat.steps, 0) !== bar.pattern.steps) bad(`${where} count does not fill the bar`)
+    if (bar.count.beats.length !== (bar.count.kind === 'compound' ? num / 3 : num)) bad(`${where} has ${bar.count.beats.length} beats`)
+    if (bar.count.kind === 'additive' && num > 1 && !bar.count.grouping.every(part => part === 2 || part === 3)) bad(`${where} grouping ${bar.count.groupingLabel}`)
+  }
+  const feel = lesson.overview.feel
+  const triplet = lesson.bars.filter(bar => bar.count.kind !== 'compound' && bar.count.beats.some(beat => beat.steps === 3)).length
+  const some = /^(\d+) of (\d+) bars split each beat in three/.exec(feel)
+  if (/odd bars/.test(feel)) bad(`vague feel: "${feel}"`)
+  if (some && (+some[1] !== triplet || +some[2] !== lesson.bars.length)) bad(`feel says ${some[1]} of ${some[2]}, counts say ${triplet} of ${lesson.bars.length}`)
+  if (/^Each beat is split in three/.test(feel) && triplet !== lesson.bars.length) bad(`feel says every bar, counts say ${triplet} of ${lesson.bars.length}`)
+  if (feel === 'The grid is straight.' && triplet) bad(`feel says straight, ${triplet} bars count trip let`)
+
+  if (lesson.drummer && prose(lesson).includes(lesson.drummer)) bad(`prose names ${lesson.drummer}`)
+  return out
+}
+
+test('every lesson of every song passes the quality checks', () => {
+  const songs = JSON.parse(readFileSync('src/data/songs.json', 'utf8')) as { id: string }[]
+  const problems: string[] = []
+  let lessons = 0, silent = 0
   for (const meta of songs) {
     const song = load(meta.id)
-    song.sections.forEach((_, i) => { const lesson = getLesson(song, i); assert.ok(lesson.steps.length > 0, `${meta.id} ${i}`); n++ })
+    song.sections.forEach((_, i) => { lessons++; problems.push(...lessonProblems(song, i)); if (!getLesson(song, i).steps.length) silent++ })
   }
-  assert.ok(n > 500, String(n))
+  const listed = songs.reduce((sum, meta) => sum + JSON.parse(readFileSync(`public/songs/${meta.id}.json`, 'utf8')).sections.length, 0)
+  assert.equal(lessons, listed)
+  assert.ok(lessons >= 1441, String(lessons))
+  assert.deepEqual(problems, [], `${problems.length} problems in ${lessons} lessons`)
+  assert.ok(silent > 0 && silent < lessons / 10, `${silent} sections without drums`)
+})
+
+test('section names drop tab bookkeeping', () => {
+  assert.equal(cleanSectionName('[A] Section I'), 'Section I')
+  assert.equal(cleanSectionName("[P'] Post-Chorus"), 'Post-Chorus')
+  assert.equal(cleanSectionName('[A] Verse 1 - 16 bars'), 'Verse 1')
+  assert.equal(cleanSectionName('[Outro]'), 'Outro')
+  assert.equal(cleanSectionName('[B]'), 'Section B')
+  assert.equal(cleanSectionName('Intro - Morse for "YYZ"'), 'Intro - Morse for "YYZ"')
+  assert.equal(cleanSectionName('[G] Sect. VII - "Danforth and Pape" [Guitar Solo 2]'), 'Sect. VII - "Danforth and Pape" (Guitar Solo 2)')
 })

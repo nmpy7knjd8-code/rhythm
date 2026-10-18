@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import { RhythmEngine, preloadKit, setSampleBase, sampleAlign, type PulseEvent } from '../engine/audio'
 import type { Arrangement, ArrangementPos, Fill, Layer, Pattern, SectionIndex, Voice } from '../engine/types'
@@ -13,6 +13,7 @@ import * as Tone from 'tone'
 import { applyTuning, applyShift, type Tuning } from '../engine/pitch'
 import { forgetPractice } from '../learn/memory'
 import { LearnPanel } from './learn'
+import { cleanSectionName } from '../data/sectionName'
 
 setSampleBase(`${import.meta.env.BASE_URL}samples/acoustic/`)
 export const ALL_FILLS: Fill[] = [...FILLS, ...SONGS.flatMap(s => s.fills.map(f => ({ ...f, category: 'Song fills' })))]
@@ -419,9 +420,10 @@ function Sheet({ open, onClose, children, title, subtitle, head, lead, contentPu
     return () => { el.removeEventListener('touchstart', ts); el.removeEventListener('touchmove', tm); el.removeEventListener('touchend', te); el.removeEventListener('touchcancel', te) }
   })
   const dragging = dy > 0
+  const titleId = useId()
   return <>
     <div onClick={onClose} className={`fixed inset-0 z-40 bg-black/55 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} style={open && dy ? { opacity: Math.max(0.2, 1 - dy / 400) } : undefined} />
-    <div role="dialog" aria-modal="true" aria-hidden={!open} className={`fixed inset-x-0 bottom-0 z-50 ${dragging ? '' : 'transition-transform duration-300 ease-out'} ${open ? '' : 'translate-y-full'}`} style={open && dy ? { transform: `translateY(${dy}px)` } : undefined}>
+    <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-hidden={!open} className={`fixed inset-x-0 bottom-0 z-50 ${dragging ? '' : 'transition-transform duration-300 ease-out'} ${open ? '' : 'translate-y-full'}`} style={open && dy ? { transform: `translateY(${dy}px)` } : undefined}>
       <div className="max-w-xl mx-auto flex flex-col max-h-[calc(100dvh-0.5rem)] rounded-t-[24px] bg-[#141416] border-t border-white/[0.08] shadow-2xl shadow-black pb-[env(safe-area-inset-bottom)]">
         <div className="shrink-0 touch-none select-none cursor-grab rounded-t-[24px] border-b border-white/[0.06]"
           onTouchStart={e => start(e.touches[0].clientY, false)} onTouchMove={e => move(e.touches[0].clientY)} onTouchEnd={end} onTouchCancel={end}
@@ -429,7 +431,7 @@ function Sheet({ open, onClose, children, title, subtitle, head, lead, contentPu
           <div className="pt-2 pb-0.5 flex justify-center"><span className="w-10 h-1.5 rounded-full bg-white/30" /></div>
           <div className="relative flex items-center h-12 pl-3 pr-1 gap-3">
             {lead && <div className="flex items-center gap-3 shrink-0">{lead}</div>}
-            <div className="min-w-0 flex-1 pr-2"><div className="text-[15px] font-medium truncate">{title || 'Player'}</div>{subtitle && <div className="text-[13px] text-bone truncate">{subtitle}</div>}</div>
+            <div className="min-w-0 flex-1 pr-2"><div id={titleId} className="text-[15px] font-medium truncate">{title || 'Player'}</div>{subtitle && <div className="text-[13px] text-bone truncate">{subtitle}</div>}</div>
             <button aria-label="Close player" onClick={onClose} className="ml-auto h-12 pl-4 pr-3 flex items-center gap-1.5 rounded-full text-[15px] text-bone/85 active:scale-95 shrink-0">
               Close <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
             </button>
@@ -483,7 +485,7 @@ export function PlayerBar() {
     <Sheet open={open} onClose={() => setOpen(false)} lead={transport} title={sg ? sg.raw.song : title} subtitle={sg ? `${sg.raw.artist} · ${sg.raw.drummer}` : undefined}
       contentPull={tab !== 'sound' && tab !== 'learn'}
       head={<div className="w-full flex flex-col items-center"><Segmented value={tab} onChange={setTab} options={[{ v: 'now', l: 'Now playing' }, { v: 'kit', l: 'Kit view' }, ...(sg ? [] : [{ v: 'browse' as const, l: 'Browse' }]), { v: 'sound', l: 'Sound' }, ...(sg ? [{ v: 'learn' as const, l: 'Learn it' }] : [])]} />{sg && tab === 'now' && <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
-        {P.playing && sg.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at}
+        {P.playing && sg.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at && cleanSectionName(sg.raw.goodPart.at)}
           className="h-8 px-3.5 rounded-full text-[13px] text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}
         <button aria-pressed={P.loopMode} onClick={() => P.setLoopMode(!P.loopMode)} className={`h-8 px-3.5 rounded-full text-[13px] active:scale-95 ${P.loopMode ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/75'}`}>Loop</button>
         {P.loopMode && (P.barLoop ? <button aria-label="Clear loop" onClick={P.clearBarLoop} className="h-8 pl-3 pr-2.5 rounded-full text-[13px] bg-white/[0.06] text-amber flex items-center gap-1.5">Looping bars {P.barLoop[0] + 1}{P.barLoop[1] > P.barLoop[0] ? `–${P.barLoop[1] + 1}` : ''}<span className="text-bone/60 text-[15px] leading-none">×</span></button>
@@ -566,31 +568,43 @@ export function SongForm({ song }: { song?: Song }) {
     <ol ref={listRef} className="mt-1">{sg.sections.map((s, i) => {
       const on = i === cur; const pct = on ? ((bar - s.start + 1) / s.bars) * 100 : 0
       const go = async () => { if (!live) { await P.loadSong(sg, i); await P.toggle() } else P.jumpSection(i) }
-      return <li key={i} role="button" tabIndex={0} aria-label={`Jump to ${s.name}`} onClick={go} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void go() } }} className="flex items-center gap-2 py-2 cursor-pointer active:bg-white/[0.03] rounded-lg">
+      // the whole row is a tap target; the section name is the real button (keyboard, screen readers), so no control nests inside another
+      return <li key={i} onClick={go} className="flex items-center gap-2 py-2 cursor-pointer active:bg-white/[0.03] rounded-lg">
         {V && <span title={V.repeats.has(V.secGroup[i]) ? 'Same bars as another section' : undefined} className="w-1.5 self-stretch my-1 rounded-full shrink-0" style={{ background: VAR_COLORS[V.secGroup[i] % VAR_COLORS.length], opacity: V.repeats.has(V.secGroup[i]) ? 0.9 : 0.35 }} />}
         <div className="flex-1 min-w-0">
-          <div className={`w-full text-left text-[15px] ${on ? 'text-amber' : 'text-bone'}`}>
+          <button aria-label={`Jump to ${s.name}`} onClick={ev => { ev.stopPropagation(); void go() }} className={`block w-full text-left text-[15px] ${on ? 'text-amber' : 'text-bone'}`}>
             <span className="truncate block">{s.name}{V && V.repeats.has(V.secGroup[i]) && V.secGroup.indexOf(V.secGroup[i]) !== i && <span className="ml-1.5 text-[13px] text-mute">= {sg.sections[V.secGroup.indexOf(V.secGroup[i])].name}</span>}</span>
-          </div>
+          </button>
           {P.loopMode && live && <div className="flex flex-wrap gap-1 mt-1.5" aria-label={`${s.name} bars`}>
             {Array.from({ length: s.bars }, (_, j) => { const n = s.start + j, inR = !!P.barLoop && n >= P.barLoop[0] && n <= P.barLoop[1]
               return <button key={j} aria-label={`Loop bar ${n + 1}`} onClick={ev => { ev.stopPropagation(); P.pickBar(n) }}
                 className={`w-8 h-8 rounded-md text-[13px] tabular-nums ${inR ? 'bg-amber text-ink font-medium' : P.loopPick === n ? 'ring-1 ring-amber text-amber bg-amber/10' : 'bg-white/[0.06] text-bone/60'} ${n === bar && P.playing ? 'outline outline-1 outline-bone/70' : ''}`}>{n + 1}</button> })}
           </div>}
-          {!(P.loopMode && live) && V && (on || s.bars <= 64) && <div className={`flex gap-[2px] mt-1 ${on ? 'h-6' : 'h-1.5 pointer-events-none'}`} aria-label={`${s.name} bar variations`}>
-            {V.bars.slice(s.start, s.start + s.bars).map((b, j) => { const n = s.start + j; const now = live && n === bar
-              return <button key={j} aria-label={`Bar ${j + 1}, pattern ${String.fromCharCode(65 + b.k)}`} onClick={ev => { if (!on || !live) return; ev.stopPropagation(); P.jumpBar(n) }}
-                className={`relative flex-1 min-w-[3px] rounded-[2px] ${now ? 'ring-1 ring-amber' : ''}`} style={{ background: VAR_COLORS[b.k % VAR_COLORS.length], opacity: on ? (live && n <= bar ? 1 : 0.55) : 0.4 }}>
-                {b.accent && <span className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-[3px] h-[3px] rounded-full bg-amber" />}
-                {on && s.bars <= 16 && <span className="absolute inset-0 grid place-items-center text-[9px] leading-none text-ink/70 font-medium">{String.fromCharCode(65 + Math.min(b.k, 25))}</span>}
-              </button> })}
-          </div>}
+          {!(P.loopMode && live) && V && (on || s.bars <= 64) && <VarStrip bars={V.bars.slice(s.start, s.start + s.bars)} name={s.name} on={on} live={live} now={bar - s.start} jump={j => P.jumpBar(s.start + j)} />}
           {!V && on && <span className="block mt-1 h-0.5 rounded bg-white/10 overflow-hidden"><span className="block h-full bg-amber transition-[width] duration-150" style={{ width: `${pct}%` }} /></span>}
         </div>
         <span className="text-[13px] tabular-nums text-mute">{s.bars}</span>
         {live && <button aria-label={`Loop ${s.name}`} aria-pressed={P.loopSection === i} onClick={ev => { ev.stopPropagation(); P.setLoopSection(P.loopSection === i ? null : i) }} className={`w-8 h-8 grid place-items-center rounded-full text-xs ${P.loopSection === i ? 'bg-amber text-ink' : 'text-mute'}`}>↻</button>}
       </li>
     })}</ol>
+  </div>
+}
+
+/** A section's bars as colour blocks, one colour per distinct pattern. The playing section's strip is a single control
+ *  (tap a bar, or arrow keys, to jump there); the others are just a picture of the form. */
+function VarStrip({ bars, name, on, live, now, jump }: { bars: { k: number; accent: boolean }[]; name: string; on: boolean; live: boolean; now: number; jump: (bar: number) => void }) {
+  const tap = on && live
+  const go = (j: number) => jump(Math.max(0, Math.min(bars.length - 1, j)))
+  const control = tap ? {
+    role: 'slider', tabIndex: 0, 'aria-label': `Bar in ${name}`, 'aria-valuemin': 1, 'aria-valuemax': bars.length, 'aria-valuenow': Math.max(1, now + 1),
+    onClick: (ev: React.MouseEvent<HTMLDivElement>) => { ev.stopPropagation(); const r = ev.currentTarget.getBoundingClientRect(); go(Math.floor((ev.clientX - r.left) / r.width * bars.length)) },
+    onKeyDown: (ev: React.KeyboardEvent) => { const d = ev.key === 'ArrowRight' || ev.key === 'ArrowUp' ? 1 : ev.key === 'ArrowLeft' || ev.key === 'ArrowDown' ? -1 : 0; if (d) { ev.preventDefault(); ev.stopPropagation(); go(now + d) } },
+  } : { 'aria-hidden': true }
+  return <div className={`flex gap-[2px] mt-1 ${on ? 'h-6' : 'h-1.5 pointer-events-none'}`} {...control}>
+    {bars.map((b, j) => <span key={j} className={`relative flex-1 min-w-[3px] rounded-[2px] ${live && j === now ? 'ring-1 ring-amber' : ''}`} style={{ background: VAR_COLORS[b.k % VAR_COLORS.length], opacity: on ? (live && j <= now ? 1 : 0.55) : 0.4 }}>
+      {b.accent && <span className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-[3px] h-[3px] rounded-full bg-amber" />}
+      {on && bars.length <= 16 && <span className="absolute inset-0 grid place-items-center text-[9px] leading-none text-ink/70 font-medium">{String.fromCharCode(65 + Math.min(b.k, 25))}</span>}
+    </span>)}
   </div>
 }
 
