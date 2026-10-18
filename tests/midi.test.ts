@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { DEFAULT_MAP, noteOn, sameDrum, scoredVoices } from '../src/midi/map.ts'
-import { Scorer, tally, verdictOf, ON_MS, WINDOW_MS } from '../src/midi/score.ts'
+import { DEFAULT_MAP, groupAt, noteOn, sameDrum, scoredVoices } from '../src/midi/map.ts'
+import { Scorer, lapCounts, tally, verdictOf, ON_MS, WINDOW_MS } from '../src/midi/score.ts'
 import { calibrate } from '../src/midi/calibrate.ts'
 
 test('Nitro Pro default notes (user guide §5.2) map to the right drums', () => {
@@ -106,4 +106,21 @@ test('a pad outside the drilled drums is ignored, never a wrong drum', () => {
   const r = s.hit('low', 1000, drums) // kick far outside its own note but right on the snare's
   assert.ok(r.kind === 'wrong' && r.want === 'back')
   assert.equal(s.hit('tomHi', 1005).kind, 'wrong') // full mix: every drum is drilled
+})
+
+test('wait mode: the drums a step needs follow the drill filter', () => {
+  const p = { id: 't', name: 't', steps: 4, stepsPerBeat: 4, tracks: { crash1: 'x...', tick: '.x..', low: 'x.x.', back: '..x.' } }
+  const all = scoredVoices('all', [], [])
+  assert.deepEqual(groupAt(p, 0, all).sort(), ['crash1', 'low'])
+  assert.deepEqual(groupAt(p, 0, scoredVoices('feet', [], [])), ['low'])
+  assert.deepEqual(groupAt(p, 0, scoredVoices('hands', [], [])), ['crash1'])
+  assert.deepEqual(groupAt(p, 2, scoredVoices('all', ['back'], [])), ['back']) // muted: you play only the snare
+  assert.deepEqual(groupAt(p, 1, scoredVoices('feet', [], [])), []) // nothing for the feet here: wait mode moves on
+})
+
+test('speed trainer with a kit: the 85% rule applies only to loops with notes to score', () => {
+  assert.equal(lapCounts({ total: 10, score: 0.9 }), true)
+  assert.equal(lapCounts({ total: 10, score: 0.8 }), false)
+  assert.equal(lapCounts({ total: 0, score: 0 }), true) // the drilled drums have no notes in this loop: climb as normal
+  assert.equal(lapCounts(null), true)
 })

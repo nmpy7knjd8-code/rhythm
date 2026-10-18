@@ -1,4 +1,5 @@
-import type { Voice } from '../engine/types'
+import type { Pattern, Voice } from '../engine/types'
+import { hitsAt, subHitsAt } from '../engine/pattern'
 import { VOICES } from '../engine/types'
 
 /** MIDI note -> Pulse voice. General MIDI drums plus the Alesis Nitro Pro's own numbers (Nitro Pro user guide §5.2:
@@ -49,4 +50,12 @@ export function scoredVoices(limb: 'all' | 'hands' | 'feet', muted: Voice[], sol
   if (solo.length) list = list.filter(v => solo.includes(v))
   else if (muted.length) list = list.filter(v => muted.includes(v))
   return new Set(list)
+}
+
+/** Drums to hit together at this step (one voice per drum). */
+export function groupAt(p: Pattern | undefined, step: number, voices: Set<Voice>): Voice[] {
+  if (!p) return []
+  const by = new Map<string, Voice>()
+  for (const h of [...hitsAt(p, step), ...subHitsAt(p, step)]) if (!UNSCORED.has(h.voice) && voices.has(h.voice) && !by.has(drumOf(h.voice))) by.set(drumOf(h.voice), h.voice)
+  return [...by.values()]
 }
