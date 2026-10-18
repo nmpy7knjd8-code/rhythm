@@ -10,6 +10,7 @@ import { AUTHORED } from '../learn/authored'
 import { ago, bests, recallPractice, recordLoop, reviewPick, savePractice, sectionKey, type PracticeMemory } from '../learn/memory'
 import { usePlayer, useHeardPos } from './player'
 import { KitView } from './kitview'
+import { scoredVoices } from '../midi/map'
 import { ticksPerStep } from '../engine/pattern'
 import { kit } from '../midi/kit'
 import { tally } from '../midi/score'
@@ -114,7 +115,7 @@ function Notation({ bar, step, sounds }: { bar: LessonBar; step: number; sounds:
               const c = cells[i], now = i === step, mine = c ? !sounds(c.voice) : false
               return <div key={i} data-s={i} className={`relative flex-1 h-9 flex items-center justify-center ${beatStart.has(i) && i > a ? 'border-l border-white/10' : ''} ${now ? 'bg-amber/20' : ''}`}>
                 {c && <span className={`grid place-items-center rounded-full font-semibold leading-none transition-transform duration-75 ${c.ghost || c.off ? 'w-3.5 h-3.5 text-[8px]' : 'w-[18px] h-[18px] text-[10px]'} ${now && !mine ? 'bg-amber text-ink scale-110' : mine ? 'bg-transparent text-bone/70 ring-1 ring-bone/40' : 'bg-bone/85 text-ink'}`}>{VOICE_MARK[c.voice]}</span>}
-                {c && marks?.get(`${i}:${c.voice}`) && (m => <span data-mark={m} className={`absolute bottom-0 right-0 text-[10px] leading-none font-semibold ${MARK[m].color}`}>{m === 'early' ? '←' : m === 'late' ? '→' : m === 'on' ? '•' : '×'}</span>)(marks.get(`${i}:${c.voice}`)!)}
+                {c && marks?.get(`${i}:${c.voice}`) && (({ m }) => <span data-mark={m} className={`absolute bottom-0 right-0 text-[10px] leading-none font-semibold ${MARK[m].color}`}>{m === 'early' ? '←' : m === 'late' ? '→' : m === 'on' ? '•' : '×'}</span>)(marks.get(`${i}:${c.voice}`)!)}
                 {c && c.strokes > 1 && <span aria-label={`${c.strokes} strokes`} className={`absolute top-0 left-1/2 ml-1.5 text-[9px] leading-none font-semibold tracking-[-0.15em] ${now ? 'text-amber' : 'text-bone/70'}`}>{'/'.repeat(c.strokes > 4 ? 3 : c.strokes > 2 ? 2 : 1)}</span>}
               </div>
             })}
@@ -209,6 +210,7 @@ function Learn() {
   const stepI = Math.min(step, Math.max(0, lesson.steps.length - 1))
   const cur = lesson.steps[stepI]
   const allow = useMemo(() => allowedVoices(limb, muted, solo), [limb, muted, solo])
+  const scored = useMemo(() => scoredVoices(limb, muted, solo), [limb, muted, solo])
   // stacked layers: on a step, each lesson bar plays that step's pattern (the full bar with the later layers removed)
   const stepBars = useMemo(() => stepOn && cur ? new Map(cur.bars.map(b => [b.songBar, b.pattern])) : null, [stepOn, cur])
 
@@ -290,11 +292,11 @@ function Learn() {
     return () => { learn.onPulse(null); learn.onBar(null) }
   }, [learn, countIn, silent])
   useEffect(() => () => { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel() }, [])
-  useKitScore({ active: connected && P.playing && !silent, clock: learn.clock, pattern: bar => {
+  useKitScore({ active: connected && P.playing && !silent, clock: learn.clock, voices: scored, pattern: bar => {
     const p = song.bars[bar], o = stepBars?.get(bar)
     return o && p && o.steps === p.steps && ticksPerStep(o) === ticksPerStep(p) ? o : p
   } })
-  useEffect(() => readout.set({ last: null, lap: null, wait: null }), [song.raw.id, selected])
+  useEffect(() => readout.set({ last: null, lap: null }), [song.raw.id, selected])
   useEffect(() => { learn.callResponse(callResp); setYours(false); return () => learn.callResponse(false) }, [learn, callResp])
   useEffect(() => {
     learn.voices(allow)

@@ -119,3 +119,21 @@ test('each note is due when the audio clock says it is heard (output latency inc
   for (const g of gaps) expect(Math.abs(g)).toBeLessThan(15)
   await transport(page, 'Stop').click()
 })
+
+test('only the voices you are meant to play are scored: muted voices you fill in, solo, or Hands/Feet only', async ({ page }) => {
+  await mockKit(page)
+  const d = await openSong(page, 'backinblack')
+  await pickSection(page, 1)
+  const voices = () => page.evaluate(() => { const s = (window as unknown as { __pulseScorer: { pending: { voice: string }[]; results: { note: { voice: string } }[] } }).__pulseScorer; return [...new Set([...s.pending.map(p => p.voice), ...s.results.map(r => r.note.voice)])].sort() })
+  await d.getByRole('button', { name: 'Mute Snare' }).click()
+  await transport(page, 'Play').click()
+  await page.waitForTimeout(2500)
+  expect(await voices()).toEqual(['back']) // the drums Pulse still plays are never missed
+  await transport(page, 'Stop').click()
+  await d.getByRole('button', { name: 'Reset', exact: true }).click() // mutes off
+  await d.getByRole('button', { name: 'Feet only' }).click()
+  await transport(page, 'Play').click()
+  await page.waitForTimeout(2500)
+  expect(await voices()).toEqual(['low'])
+  await transport(page, 'Stop').click()
+})
