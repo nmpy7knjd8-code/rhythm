@@ -347,7 +347,7 @@ export class RhythmEngine {
       const hs = hitsAt(notes, step), fs = this.feelShift(p, step, tps, stepSec)
       let heard = Infinity
       for (const h of hs) { const at = t + fs + this.driftAt(h.voice, bt); heard = Math.min(heard, at); this.play(SONG_ID, h.voice, at, h.velocity, h.graces, stepSec, notes.variant?.[h.voice]?.[step]) }
-      this.timeline.push({ t: hs.length ? heard : t + fs, bar: this.songBar, step }); if (this.timeline.length > 512) this.timeline.splice(0, 256)
+      this.timeline.push({ t: hs.length ? heard : t + fs, bar: this.songBar, step, listen: this.crOn && !this.crYours }); if (this.timeline.length > 512) this.timeline.splice(0, 256)
       this.playSubs(SONG_ID, notes, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt)); this.hz = null
     }
     if (++this.songTick >= len) {
@@ -381,7 +381,7 @@ export class RhythmEngine {
   /** Insert `fill` in the last bar of every `every` bars (0 = off). */
   setFill(fill: Fill | null, every: number) { this.fill = fill; this.fillEvery = every }
   /** Song steps by the audio time they sound (feel and drift included), for a display that follows the ear. */
-  timeline: { t: number; bar: number; step: number }[] = []
+  timeline: { t: number; bar: number; step: number; listen?: boolean }[] = []
   /** Audio-context time of what is coming out of the speakers right now. */
   heardNow() { const c = this.rawCtx(); return c.currentTime - (c.outputLatency || 0) - (c.baseLatency || 0) }
   /** The song step being heard now (or `ahead` seconds from now), or null before the first one sounds. */

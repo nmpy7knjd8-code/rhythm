@@ -10,6 +10,10 @@ import { AUTHORED } from '../learn/authored'
 import { ago, bests, recallPractice, recordLoop, reviewPick, savePractice, sectionKey, type PracticeMemory } from '../learn/memory'
 import { usePlayer, useHeardPos } from './player'
 import { KitView } from './kitview'
+import { ticksPerStep } from '../engine/pattern'
+import { kit } from '../midi/kit'
+import { tally } from '../midi/score'
+import { KitReadout, KitSettings, MARK, readout, scorer, useKit, useKitScore, useMarks } from './kit'
 
 const FEET = new Set<Voice>(['low', 'pedal'])
 const VOICE_NAME = (v: Voice) => VOICE_LABEL[v][0].toUpperCase() + VOICE_LABEL[v].slice(1)
@@ -99,6 +103,7 @@ function Notation({ bar, step, sounds }: { bar: LessonBar; step: number; sounds:
     return ns[0] ? { voice: ns[0].voice, ghost: ns[0].tier === 'ghost', off: !!ns[0].frac, strokes: bar.notes.filter(n => n.step === i && n.voice === ns[0].voice).length } : null
   }) }))
   const span = (a: number, b: number) => Array.from({ length: b - a }, (_, j) => a + j)
+  const marks = useMarks(bar.songBar)
   return <div className="mt-2" role="img" aria-label="Bar notation with the count under each beat">
     {lines.map(([a, b]) => <div key={a} className={a > 0 ? 'mt-3' : ''}>
       {rows.map(({ limb, cells }) => {
@@ -110,6 +115,7 @@ function Notation({ bar, step, sounds }: { bar: LessonBar; step: number; sounds:
               const c = cells[i], now = i === step, mine = c ? !sounds(c.voice) : false
               return <div key={i} data-s={i} className={`relative flex-1 h-9 flex items-center justify-center ${beatStart.has(i) && i > a ? 'border-l border-white/10' : ''} ${now ? 'bg-amber/20' : ''}`}>
                 {c && <span className={`grid place-items-center rounded-full font-semibold leading-none transition-transform duration-75 ${c.ghost || c.off ? 'w-3.5 h-3.5 text-[8px]' : 'w-[18px] h-[18px] text-[10px]'} ${now && !mine ? 'bg-amber text-ink scale-110' : mine ? 'bg-transparent text-bone/70 ring-1 ring-bone/40' : 'bg-bone/85 text-ink'}`}>{VOICE_MARK[c.voice]}</span>}
+                {c && marks?.get(`${i}:${c.voice}`) && (m => <span data-mark={m} className={`absolute bottom-0 right-0 text-[10px] leading-none font-semibold ${MARK[m].color}`}>{m === 'early' ? '←' : m === 'late' ? '→' : m === 'on' ? '•' : '×'}</span>)(marks.get(`${i}:${c.voice}`)!)}
                 {c && c.strokes > 1 && <span aria-label={`${c.strokes} strokes`} className={`absolute top-0 left-1/2 ml-1.5 text-[9px] leading-none font-semibold tracking-[-0.15em] ${now ? 'text-amber' : 'text-bone/70'}`}>{'/'.repeat(c.strokes > 4 ? 3 : c.strokes > 2 ? 2 : 1)}</span>}
               </div>
             })}
@@ -170,6 +176,9 @@ function Learn() {
   const [pin, setPin] = useState<number | null>(saved?.pin ?? null)
   const [countFlash, setCountFlash] = useState<number | null>(null)
   const [kitOpen, setKitOpen] = useState(false)
+  const k = useKit(), connected = k.status === 'connected'
+  const [kitPanel, setKitPanel] = useState(false)
+  useEffect(() => { void kit.auto() }, [])
 
   const selected = P.barLoop ? sectionOf(song, P.barLoop[0]) : P.loopSection !== null ? P.loopSection : sectionOf(song, P.songBar)
   const secRow = useCenterActive(`${song.raw.id}:${selected}`)
@@ -213,8 +222,13 @@ function Learn() {
   const secKey = sec ? sectionKey(selected, sec.name) : ''
   const counts = !silent && !callResp && !P.barLoop && P.loopSection === selected && (!stepOn || stepI === lesson.steps.length - 1)
   const [records, setRecords] = useState(() => bests(song.raw.id))
-  const live = useRef({ playing: P.playing, range: loopR, pct, base: song.raw.bpm, to, by, every, trainer, loops, counts, secKey, callResp })
-  live.current = { playing: P.playing, range: loopR, pct, base: song.raw.bpm, to, by, every, trainer, loops, counts, secKey, callResp }
+  const [kitBest, setKitBest] = useState(() => kit.best(song.raw.id, secKey))
+  useEffect(() => setKitBest(kit.best(song.raw.id, secKey)), [song.raw.id, secKey])
+  const live = useRef({ playing: P.playing, range: loopR, pct, base: song.raw.bpm, to, by, every, trainer, loops, counts, secKey, callResp, kit: connected })
+  live.current = { playing: P.playing, range: loopR, pct, base: song.raw.bpm, to, by, every, trainer, loops, counts, secKey, callResp, kit: connected }
+  const lapT = useRef<number | null>(null)
+  /** Audio time the latest pass through song bar `a` started (from the engine's heard-step timeline). */
+  const barStartT = (a: number) => { const tl = P.learn.clock().timeline; for (let i = tl.length - 1; i >= 0; i--) if (tl[i].bar === a && tl[i].step === 0) return tl[i].t; return null }
   const lap = useRef<{ key: string; pct: number } | null>(null)
   const setBpm = useRef(P.setBpm); setBpm.current = P.setBpm
   const onPulse = useRef<(e: PulseEvent) => void>(() => {})
@@ -238,14 +252,19 @@ function Learn() {
     // in 'I play, you play' a loop ends only where a heard bar begins, so each heard bar and the played bar after it share one tempo
     // (a one-bar or odd-length loop then takes two laps: once heard, once played)
     const boundary = bar === a && !(L.callResp && mine)
-    if (prev === null) { lap.current = boundary ? { key, pct: L.pct } : null; return } // a lap only counts from the loop's first bar
+    if (prev === null) { lap.current = boundary ? { key, pct: L.pct } : null; lapT.current = boundary ? barStartT(a) : null; return } // a lap only counts from the loop's first bar
     const wrapped = b - a === 1 ? prev === a && bar === a : prev === b - 1 && bar === a
     if (!wrapped || !boundary) return
+    // a connected kit scores the lap that just ended: notes already judged between the two downbeats
+    const t0 = barStartT(a), from = lapT.current; lapT.current = t0
+    const score = L.kit && from !== null && t0 !== null ? tally(scorer.between(from, t0)) : null
+    if (score?.total) readout.set({ ...readout.get(), lap: score })
     // a full lap: from the loop's first bar round to it again, at one tempo throughout
     const full = lap.current?.key === key && lap.current.pct === L.pct
     lap.current = { key, pct: L.pct }
     if (!full) return
     if (L.counts) { recordLoop(song.raw.id, L.secKey, L.pct); setRecords(bests(song.raw.id)) }
+    if (L.counts && score?.total) { kit.recordBest(song.raw.id, L.secKey, score.score, L.pct); setKitBest(kit.best(song.raw.id, L.secKey)) }
     if (!L.trainer) return
     const n = L.loops + 1
     L.loops = n; setLoops(n)
@@ -254,7 +273,7 @@ function Learn() {
     L.pct = next; lap.current = { key, pct: next }
     setBpm.current(L.base * next / 100)
   }
-  useEffect(() => { if (!P.playing) { lastBar.current = null; lap.current = null } }, [P.playing])
+  useEffect(() => { if (!P.playing) { lastBar.current = null; lap.current = null; lapT.current = null } }, [P.playing])
 
   const { learn } = P
   useEffect(() => {
@@ -264,6 +283,11 @@ function Learn() {
     return () => { learn.onPulse(null); learn.onBar(null) }
   }, [learn, countIn, silent])
   useEffect(() => () => { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel() }, [])
+  useKitScore({ active: connected && P.playing && !silent, clock: learn.clock, pattern: bar => {
+    const p = song.bars[bar], o = stepBars?.get(bar)
+    return o && p && o.steps === p.steps && ticksPerStep(o) === ticksPerStep(p) ? o : p
+  } })
+  useEffect(() => readout.set({ last: null, lap: null, wait: null }), [song.raw.id, selected])
   useEffect(() => { learn.callResponse(callResp); setYours(false); return () => learn.callResponse(false) }, [learn, callResp])
   useEffect(() => {
     learn.voices(allow)
@@ -363,6 +387,7 @@ function Learn() {
         <button aria-label="Previous bar" disabled={!sec || view <= sec.start} onClick={() => setPin(Math.max(sec.start, view - 1))} className="w-11 h-11 rounded-full bg-white/[0.06] text-lg disabled:opacity-30">‹</button>
         <button aria-label="Next bar" disabled={!sec || view >= sec.start + sec.bars - 1} onClick={() => setPin(Math.min(sec.start + sec.bars - 1, view + 1))} className="w-11 h-11 rounded-full bg-white/[0.06] text-lg disabled:opacity-30">›</button>
       </div>
+      {connected && <KitReadout best={kitBest} />}
       {callResp && <div className={`mt-1 h-7 text-[15px] font-medium ${P.playing && yours ? 'text-amber' : 'text-bone/70'}`} aria-live="polite">{P.playing ? (yours ? 'Your turn: play this bar' : 'Listen') : 'I play, you play: press Play'}</div>}
       <div className="relative">
         {shown ? <Notation bar={shown} step={P.playing && heard && view === heard.bar ? playStep : -1} sounds={sounds} /> : <p className="mt-3 text-[15px] text-mute">This bar hasn’t loaded.</p>}
@@ -405,7 +430,9 @@ function Learn() {
       <button aria-pressed={click} onClick={() => setClick(v => !v)} className={pill(click)}>Click</button>
       <button aria-pressed={voice} onClick={() => setVoice(!voice)} className={pill(voice)}>Voice</button>
       <button aria-pressed={callResp} onClick={() => setCallResp(v => !v)} className={pill(callResp)}>I play, you play</button>
+      {k.supported && <button aria-pressed={kitPanel} onClick={() => { setKitPanel(v => !v); if (k.status === 'off') void kit.connect() }} className={pill(kitPanel)}>{connected ? 'Kit' : 'Connect kit'}</button>}
     </div>
+    {kitPanel && <KitSettings before={async () => { if (P.playing) await P.toggle() }} />}
     {callResp && <p className="-mt-2 text-[13px] text-bone leading-snug">A bar of the part, then a bar of click alone for you to play it back.</p>}
 
     {!!allow && allow.length === 0 && <p className="text-[15px] text-amber leading-snug">{limb === 'all' ? 'Every voice is muted. Reset the limbs below to hear the part again.' : `Nothing in this step is played by the ${limb}. Switch back to All.`}</p>}

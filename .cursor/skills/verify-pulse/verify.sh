@@ -12,7 +12,8 @@
 # Evidence: .verify/<run>/ (logs per check; Playwright report in playwright-report/). Cleanup keeps it.
 set -uo pipefail
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
-PORT=4173 URL="http://localhost:4173/rhythm/" STATE=.verify
+export PW_PORT=${PW_PORT:-4173}  # a second worktree can verify side by side, e.g. PW_PORT=4180 verify.sh all
+PORT=$PW_PORT URL="http://localhost:$PW_PORT/rhythm/" STATE=.verify
 export RUN=${RUN:-$(date +%Y%m%d-%H%M%S)}; OUT=$STATE/$RUN
 mkdir -p "$OUT"
 log() { echo "[verify] $*"; }
