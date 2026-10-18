@@ -31,7 +31,7 @@ Every check drives the real build in headless Chromium at 390x844 (touch, autopl
 
 | Command | What it proves | Pass rule |
 |---|---|---|
-| `verify.sh unit` | `tests/learn.test.ts`: every lesson of every song (1,441+) - no steps on sections without drums, unique step titles, steps are growing subsets that end on the full part with no note dropped, 60/80/100% tempo ladder, counts fill each bar, the feel sentence matches the counts, no tab markers in section names, no drummer names in prose | `# fail 0` |
+| `verify.sh unit` | `npm run lint` (errors fail), then `tests/learn.test.ts`: every lesson of every song (1,441+) - no steps on sections without drums, unique step titles, steps are growing subsets that end on the full part with no note dropped, 60/80/100% tempo ladder, counts fill each bar, the feel sentence matches the counts, no tab markers in section names, no drummer names in prose | `# fail 0` |
 | `verify.sh e2e` | `tests/e2e/*.spec.ts` (Playwright): Learn it journeys (no-drums section jumps on, numbered step titles, clean names), Now playing strip jump, axe WCAG 2.2 A/AA + best-practice scan of Learn idle / steps open / playing / silent section and Now playing | all passed; any serious or critical axe finding fails |
 | `verify.sh learn-sync` | `tests/learn-sync.mjs`: the Learn it amber cell moves when the note is heard (audio-context clock, output + base latency, one frame) | `sync ok` |
 | `verify.sh nowplaying-sync` | `tests/nowplaying-sync.mjs`: Now playing step grid and bar ring vs heard audio across dense, odd-meter and tempo-change songs, seek, loop, tempo change | `sync ok` |

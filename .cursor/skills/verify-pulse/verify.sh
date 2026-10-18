@@ -2,7 +2,7 @@
 # Pulse verification helper. Run from anywhere; it works in the repo root.
 #   verify.sh launch            build, then serve dist on :4173 (pid in .verify/preview.pid)
 #   verify.sh doctor            is the instance on :4173 ours, healthy, and serving the current build?
-#   verify.sh unit              lesson tests over every section of every song (no browser)
+#   verify.sh unit              eslint, then lesson tests over every section of every song (no browser)
 #   verify.sh e2e               Playwright: Learn it / Now playing journeys + axe scan (fails on serious/critical)
 #   verify.sh learn-sync        Learn it amber highlight vs heard audio (median within 15 ms, no drift)
 #   verify.sh nowplaying-sync   Now playing step grid + bar ring vs heard audio (median within 10 ms, no drift)
@@ -58,7 +58,7 @@ case "${1:-}" in
   launch) launch ;;
   doctor) doctor ;;
   stop) stop ;;
-  unit) step unit npm run -s test:learn ;;
+  unit) step lint npm run -s lint && step unit npm run -s test:learn ;;
   e2e) deps; step e2e npx playwright test ;;
   learn-sync) step learn-sync node tests/learn-sync.mjs "$URL" ;;
   nowplaying-sync) step nowplaying-sync node tests/nowplaying-sync.mjs "$URL" ;;

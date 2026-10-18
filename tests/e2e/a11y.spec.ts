@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { openSong, pickSection, sheet } from './app'
+import { openSong, pickSection } from './app'
 
 // WCAG 2.2 A/AA plus axe best practices. Serious and critical findings fail; the rest are attached to the report.
 async function scan(page: Page, name: string) {
