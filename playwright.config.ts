@@ -6,6 +6,9 @@ export default defineConfig({
   timeout: 60_000,
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
+  // screenshot baselines are rendered with this box's fonts; CI (other fonts) runs everything else
+  grepInvert: process.env.CI ? /@visual/ : undefined,
+  snapshotPathTemplate: '{testDir}/__screenshots__/{arg}{ext}',
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     ...devices['iPhone 13'],

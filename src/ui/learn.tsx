@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Voice } from '../engine/types'
 import { VOICES } from '../engine/types'
 import type { PulseEvent } from '../engine/audio'
@@ -41,8 +41,8 @@ function say(text: string) {
   } catch { /* this browser has no speech engine */ }
 }
 
-const pill = (on: boolean) => `h-9 px-3 rounded-full text-[13px] whitespace-nowrap active:scale-95 ${on ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/80'}`
-const sq = (on: boolean, kind: 'mute' | 'solo') => `w-9 h-9 rounded-full text-[13px] font-medium active:scale-95 ${on ? (kind === 'solo' ? 'bg-amber text-ink' : 'bg-bone text-ink') : 'bg-white/[0.06] text-bone/70'}`
+const pill = (on: boolean) => `h-11 px-4 rounded-full text-[13px] whitespace-nowrap active:scale-95 ${on ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/80'}`
+const sq = (on: boolean, kind: 'mute' | 'solo') => `w-11 h-11 rounded-full text-[13px] font-medium active:scale-95 ${on ? (kind === 'solo' ? 'bg-amber text-ink' : 'bg-bone text-ink') : 'bg-white/[0.06] text-bone/70'}`
 
 interface Cell { voice: Voice; ghost: boolean; off: boolean; strokes: number }
 
@@ -155,6 +155,7 @@ function Learn() {
   const [loops, setLoops] = useState(saved?.loops ?? 0)
   const [pin, setPin] = useState<number | null>(saved?.pin ?? null)
   const [countFlash, setCountFlash] = useState<number | null>(null)
+  const [kitOpen, setKitOpen] = useState(false)
 
   const selected = P.barLoop ? sectionOf(song, P.barLoop[0]) : P.loopSection !== null ? P.loopSection : sectionOf(song, P.songBar)
   const secRow = useCenterActive(`${song.raw.id}:${selected}`)
@@ -266,6 +267,14 @@ function Learn() {
 
   if (!sec) return <p className="text-[15px] text-mute">Loading the part…</p>
 
+  const looping = !!P.barLoop || P.loopSection !== null
+  const toggleSteps = () => { const next = !stepOn; setStepOn(next); if (next && voice && cur) say(cur.speak) }
+  const nudge = (d: number) => setPct(Math.min(100, Math.max(50, Math.round(pct / 5) * 5 + d)))
+  const details = (label: string, body: ReactNode, onToggle?: (open: boolean) => void) => <details className="group" onToggle={onToggle && (e => onToggle((e.currentTarget as HTMLDetailsElement).open))}>
+    <summary className="h-11 flex items-center justify-between text-[15px] cursor-pointer list-none [&::-webkit-details-marker]:hidden">{label} <span className="text-mute text-lg leading-none group-open:rotate-90 transition-transform">›</span></summary>
+    {body}
+  </details>
+
   return <div className="space-y-4">
     <div ref={secRow} className="relative flex gap-1.5 overflow-x-auto no-sheet-drag -mx-4 px-4 pb-0.5" aria-label="Sections">
       {song.sections.map((s, i) => <button key={i} data-active={i === selected || undefined} aria-pressed={i === selected} onClick={() => lockSection(i)} className={`shrink-0 max-w-[148px] truncate ${pill(i === selected)}`}>{s.name}</button>)}
@@ -276,11 +285,11 @@ function Learn() {
         {Array.from({ length: sec.bars }, (_, j) => {
           const n = sec.start + j
           const inR = !!P.barLoop && n >= P.barLoop[0] && n <= P.barLoop[1]
-          return <button key={n} data-active={(P.playing && n === P.songBar) || undefined} aria-label={`Learn bar ${n + 1}`} onClick={() => { setPin(null); P.pickBar(n) }} className={`shrink-0 w-9 h-9 rounded-md text-[13px] tabular-nums ${inR ? 'bg-amber text-ink font-medium' : P.loopPick === n ? 'ring-1 ring-amber text-amber bg-amber/10' : 'bg-white/[0.06] text-bone/75'} ${n === P.songBar && P.playing ? 'outline outline-1 outline-bone/70' : ''}`}>{j + 1}</button>
+          return <button key={n} data-active={(P.playing && n === P.songBar) || undefined} aria-label={`Learn bar ${n + 1}`} onClick={() => { setPin(null); P.pickBar(n) }} className={`shrink-0 w-11 h-11 rounded-lg text-[13px] tabular-nums ${inR ? 'bg-amber text-ink font-medium' : P.loopPick === n ? 'ring-1 ring-amber text-amber bg-amber/10' : 'bg-white/[0.06] text-bone/75'} ${n === P.songBar && P.playing ? 'outline outline-1 outline-bone/70' : ''}`}>{j + 1}</button>
         })}
       </div>
       {(P.barLoop || P.loopPick !== null) && <p className="mt-1.5 text-[13px] text-bone/60 leading-snug">
-        {P.barLoop ? <>Looping bars {P.barLoop[0] - sec.start + 1}–{P.barLoop[1] - sec.start + 1}. <button className="text-amber underline underline-offset-2" onClick={P.clearBarLoop}>Clear</button></> : P.loopPick !== null ? `Bar ${P.loopPick - sec.start + 1} selected. Tap the end bar.` : null}
+        {P.barLoop ? <>Looping bars {P.barLoop[0] - sec.start + 1}–{P.barLoop[1] - sec.start + 1}. <button className="h-11 -my-3 px-1 text-amber underline underline-offset-2" onClick={P.clearBarLoop}>Clear</button></> : P.loopPick !== null ? `Bar ${P.loopPick - sec.start + 1} selected. Tap the end bar.` : null}
       </p>}
     </div>
 
@@ -289,54 +298,58 @@ function Learn() {
       <p className="mt-1 text-[15px] leading-snug text-bone">The drums sit out {sec.name}.</p>
       {nextDrums >= 0 && <button onClick={() => lockSection(nextDrums)} className="mt-3 h-11 w-full rounded-xl bg-amber text-ink text-[15px] font-medium truncate px-3">Go to {song.sections[nextDrums].name}</button>}
     </div> : <>
-    <p className="text-[15px] leading-snug text-bone">{lesson.overview.summary}</p>
-
-    <div>
-      <div className="mx-auto w-[200px]"><KitView bars={song.bars.slice(sec.start, sec.start + sec.bars)} /></div>
-      <p className="text-center text-[13px] text-bone -mt-1">The kit lights what you hear.</p>
+    {/* the practice bar: what you reach for while playing, kept in reach above the notation as the page scrolls */}
+    <div className="sticky -top-4 z-10 -mx-4 px-4 py-2 bg-[#141416] flex items-center gap-1.5" role="toolbar" aria-label="Practice">
+      <button aria-label={P.playing ? 'Stop' : 'Play'} onClick={P.toggle} className="w-11 h-11 shrink-0 rounded-full bg-amber text-ink grid place-items-center active:scale-90 transition-transform">
+        {P.playing ? <span className="w-3 h-3 rounded-[2px] bg-ink" /> : <span className="ml-0.5 w-0 h-0 border-y-[7px] border-y-transparent border-l-[11px] border-l-ink" />}
+      </button>
+      <div className="flex items-center rounded-full bg-white/[0.06]">
+        <button aria-label="Slower" disabled={pct <= 50} onClick={() => nudge(-5)} className="w-11 h-11 text-xl leading-none disabled:opacity-30">−</button>
+        <span className="w-12 text-center text-[15px] tabular-nums">{pct}%</span>
+        <button aria-label="Faster" disabled={pct >= 100} onClick={() => nudge(5)} className="w-11 h-11 text-xl leading-none disabled:opacity-30">+</button>
+      </div>
+      <button aria-pressed={stepOn} onClick={toggleSteps} className={`h-11 px-4 rounded-full text-[15px] active:scale-95 ${stepOn ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/80'}`}>Steps</button>
+      <button aria-pressed={looping} onClick={() => P.setLoopSection(looping ? null : selected)} className={`h-11 px-4 rounded-full text-[15px] active:scale-95 ${looping ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/80'}`}>Loop</button>
     </div>
 
     <div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <div className="min-w-0 flex-1">
           <div className="text-[15px] font-medium truncate">{sec.name} · bar {localBar}</div>
           <div className="text-[13px] text-mute">{shown ? `${shown.count.timeSig} · ${shown.count.counting}` : lesson.overview.meter}</div>
         </div>
-        <button aria-label="Previous bar" disabled={!sec || view <= sec.start} onClick={() => setPin(Math.max(sec.start, view - 1))} className="w-9 h-9 rounded-full bg-white/[0.06] text-lg disabled:opacity-30">‹</button>
-        <button aria-label="Next bar" disabled={!sec || view >= sec.start + sec.bars - 1} onClick={() => setPin(Math.min(sec.start + sec.bars - 1, view + 1))} className="w-9 h-9 rounded-full bg-white/[0.06] text-lg disabled:opacity-30">›</button>
-        {pin !== null && <button onClick={() => setPin(null)} className="h-9 px-3 rounded-full text-[13px] text-amber">Follow</button>}
+        {pin !== null && <button onClick={() => setPin(null)} className="h-11 px-3 rounded-full text-[13px] text-amber">Follow</button>}
+        <button aria-label="Previous bar" disabled={!sec || view <= sec.start} onClick={() => setPin(Math.max(sec.start, view - 1))} className="w-11 h-11 rounded-full bg-white/[0.06] text-lg disabled:opacity-30">‹</button>
+        <button aria-label="Next bar" disabled={!sec || view >= sec.start + sec.bars - 1} onClick={() => setPin(Math.min(sec.start + sec.bars - 1, view + 1))} className="w-11 h-11 rounded-full bg-white/[0.06] text-lg disabled:opacity-30">›</button>
       </div>
-      {countFlash !== null && <div className="h-11 grid place-items-center text-[34px] leading-none font-medium text-amber tabular-nums" aria-live="polite">{countFlash}</div>}
-      {shown ? <Notation bar={shown} step={P.playing && heard && view === heard.bar ? playStep : -1} sounds={sounds} /> : <p className="mt-3 text-[15px] text-mute">This bar hasn’t loaded.</p>}
-      <p className="mt-1.5 text-[13px] text-bone leading-snug">Amber is the note to play now. An outlined note is muted, so you play it. {shown ? `Count: ${shown.count.counting}` : ''}</p>
+      <div className="relative">
+        {shown ? <Notation bar={shown} step={P.playing && heard && view === heard.bar ? playStep : -1} sounds={sounds} /> : <p className="mt-3 text-[15px] text-mute">This bar hasn’t loaded.</p>}
+        {/* the count-in sits over the notation, so nothing below moves when it starts or ends */}
+        {countFlash !== null && <div className="absolute inset-0 grid place-items-center bg-[#141416]/80 text-[56px] leading-none font-medium text-amber tabular-nums pointer-events-none" aria-live="polite">{countFlash}</div>}
+      </div>
+      <p className="mt-1.5 text-[13px] text-bone leading-snug">Amber is the note to play now. An outlined note is muted, so you play it.</p>
     </div>
 
-    <section>
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-[13px] text-mute">Build it up</span>
-        <button aria-pressed={stepOn} onClick={() => { const next = !stepOn; setStepOn(next); if (next && voice && cur) say(cur.speak) }} className={pill(stepOn)}>Steps</button>
+    {stepOn && cur && <div className="card p-3">
+      <div className="text-[13px] text-mute tabular-nums">Step {stepI + 1} of {lesson.steps.length}</div>
+      <div className="mt-0.5 text-[16px] font-medium">{cur.title}</div>
+      <p className="mt-1 text-[15px] leading-snug text-bone">{cur.speak}</p>
+      <div className="mt-3 flex gap-2">
+        <button className="h-11 flex-1 rounded-xl bg-white/[0.06] text-[15px] disabled:opacity-30" disabled={stepI === 0} onClick={() => chooseStep(stepI - 1)}>Previous</button>
+        <button className="h-11 flex-1 rounded-xl bg-white/[0.06] text-[15px] disabled:opacity-30" disabled={stepI >= lesson.steps.length - 1} onClick={() => chooseStep(stepI + 1)}>Next</button>
       </div>
-      {stepOn && cur && <div className="card p-3">
-        <div className="text-[13px] text-mute tabular-nums">Step {stepI + 1} of {lesson.steps.length}</div>
-        <div className="mt-0.5 text-[16px] font-medium">{cur.title}</div>
-        <p className="mt-1 text-[15px] leading-snug text-bone">{cur.speak}</p>
-        <div className="mt-3 flex gap-2">
-          <button className="h-11 flex-1 rounded-xl bg-white/[0.06] text-[15px] disabled:opacity-30" disabled={stepI === 0} onClick={() => chooseStep(stepI - 1)}>Previous</button>
-          <button className="h-11 flex-1 rounded-xl bg-white/[0.06] text-[15px] disabled:opacity-30" disabled={stepI >= lesson.steps.length - 1} onClick={() => chooseStep(stepI + 1)}>Next</button>
-        </div>
-      </div>}
-    </section>
+    </div>}
 
     <section>
       <div className="mb-1 text-[13px] text-mute">Practice tempo <span className="text-bone tabular-nums">{Math.min(999, Math.max(0, pct))}% · {Math.round(lesson.tempos.songBpm * pct / 100)} BPM</span></div>
       <input type="range" min={50} max={100} step={5} value={Math.min(100, Math.max(50, Math.round(pct / 5) * 5))} onChange={e => setPct(+e.target.value)} className="slider slider-lg no-sheet-drag w-full" style={{ height: 44 }} aria-label="Practice tempo" />
       <div className="mt-1 flex gap-1">{([['Start', lesson.tempos.startBpm], ['Middle', lesson.tempos.middleBpm], ['Full', lesson.tempos.fullBpm]] as const).map(([l, bpm]) => { const n = Math.round(bpm / (lesson.tempos.songBpm || bpm) * 100)
-        return <button key={l} onClick={() => setPct(n)} className={`h-9 flex-1 rounded-full text-[13px] active:scale-95 ${pct === n ? 'bg-bone text-ink' : 'bg-white/[0.06] text-bone/70'}`}>{l} {Math.round(bpm)}</button> })}</div>
+        return <button key={l} onClick={() => setPct(n)} className={`h-11 flex-1 rounded-full text-[13px] active:scale-95 ${pct === n ? 'bg-bone text-ink' : 'bg-white/[0.06] text-bone/70'}`}>{l} {Math.round(bpm)}</button> })}</div>
       <p className="mt-1.5 text-[13px] text-bone leading-snug">{lesson.tempos.note}</p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button aria-pressed={trainer} onClick={startTrainer} className={pill(trainer)}>Speed trainer</button>
         <span className="text-[13px] text-mute">+5% every</span>
-        {([2, 4, 8] as const).map(n => <button key={n} aria-pressed={every === n} onClick={() => { setEvery(n); setLoops(0) }} className={`w-9 h-9 rounded-full text-[13px] active:scale-95 ${every === n ? 'bg-bone text-ink' : 'bg-white/[0.06] text-bone/70'}`}>{n}</button>)}
+        {([2, 4, 8] as const).map(n => <button key={n} aria-pressed={every === n} onClick={() => { setEvery(n); setLoops(0) }} className={`w-11 h-11 rounded-full text-[13px] active:scale-95 ${every === n ? 'bg-bone text-ink' : 'bg-white/[0.06] text-bone/70'}`}>{n}</button>)}
       </div>
       <p className="mt-1.5 text-[15px] text-bone leading-snug">{trainer ? (pct >= 100 ? 'At full tempo.' : `${loops % every} of ${every} loops · next ${Math.min(100, pct + 5)}%`) : 'After each group of loops, the tempo climbs 5% until the recording.'}</p>
     </section>
@@ -349,19 +362,19 @@ function Learn() {
 
     {!!allow && allow.length === 0 && <p className="text-[15px] text-amber leading-snug">{limb === 'all' ? 'Every voice is muted. Reset the limbs below to hear the part again.' : `Nothing in this step is played by the ${limb}. Switch back to All.`}</p>}
     <div className="grid grid-cols-3 gap-1 p-0.5 rounded-full bg-white/[0.05]" role="group" aria-label="Hands and feet">
-      {([['all', 'All', 'All'], ['hands', 'Hands', 'Hands only'], ['feet', 'Feet', 'Feet only']] as const).map(([k, label, name]) => <button key={k} aria-label={name} aria-pressed={limb === k} onClick={() => setLimb(k)} className={`h-9 min-w-0 rounded-full text-[13px] active:scale-95 ${limb === k ? 'bg-bone text-ink' : 'text-bone/70'}`}>{label}</button>)}
+      {([['all', 'All', 'All'], ['hands', 'Hands', 'Hands only'], ['feet', 'Feet', 'Feet only']] as const).map(([k, label, name]) => <button key={k} aria-label={name} aria-pressed={limb === k} onClick={() => setLimb(k)} className={`h-11 min-w-0 rounded-full text-[13px] active:scale-95 ${limb === k ? 'bg-bone text-ink' : 'text-bone/70'}`}>{label}</button>)}
     </div>
 
     <section className="space-y-2">
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-center justify-between">
         <span className="text-[13px] text-mute">What each limb does</span>
-        {(limb !== 'all' || muted.length > 0 || solo.length > 0) && <button className="h-9 px-2 text-[13px] text-mute" onClick={() => { setLimb('all'); setMuted([]); setSolo([]) }}>Reset</button>}
+        {(limb !== 'all' || muted.length > 0 || solo.length > 0) && <button className="h-11 px-2 text-[13px] text-mute" onClick={() => { setLimb('all'); setMuted([]); setSolo([]) }}>Reset</button>}
       </div>
       <p className="text-[15px] text-bone leading-snug">Right-handed kit: hats and ride in the right hand, snare in the left. Mute a voice to play it yourself. Solo it to hear it alone.</p>
       {lesson.limbs.filter(l => l.hits > 0).map(l => <article key={l.limb} className={`card p-3 transition-colors duration-75 ${hotLimb(l.limb) ? 'bg-amber/20' : ''}`}>
         <div className={`text-[15px] font-medium ${hotLimb(l.limb) ? 'text-amber' : ''}`}>{LIMB_NAME[l.limb]}</div>
         <p className="mt-1 text-[15px] leading-snug text-bone">{l.summary}</p>
-        <div className="mt-2 flex flex-col gap-1.5">{l.voices.map(v => <div key={v} className="flex items-center gap-2 h-9">
+        <div className="mt-2 flex flex-col gap-1">{l.voices.map(v => <div key={v} className="flex items-center gap-2 h-11">
           <span className={`flex-1 min-w-0 truncate text-[15px] ${sounds(v) ? '' : 'line-through text-mute'}`}>{VOICE_NAME(v)}</span>
           <button aria-label={`Mute ${VOICE_NAME(v)}`} aria-pressed={muted.includes(v)} onClick={() => toggleMute(v)} className={sq(muted.includes(v), 'mute')}>M</button>
           <button aria-label={`Solo ${VOICE_NAME(v)}`} aria-pressed={solo.includes(v)} onClick={() => toggleSolo(v)} className={sq(solo.includes(v), 'solo')}>S</button>
@@ -369,14 +382,16 @@ function Learn() {
       </article>)}
     </section>
 
-    <details className="group">
-      <summary className="h-11 flex items-center justify-between text-[15px] cursor-pointer list-none [&::-webkit-details-marker]:hidden">Common mistakes <span className="text-mute text-lg leading-none group-open:rotate-90 transition-transform">›</span></summary>
-      <ul className="space-y-3 pb-2">{lesson.tips.filter(t => t.kind === 'mistake').map(t => <li key={t.id} className="text-[15px] leading-snug text-bone">{t.text}</li>)}</ul>
-    </details>
-    <details className="group">
-      <summary className="h-11 flex items-center justify-between text-[15px] cursor-pointer list-none [&::-webkit-details-marker]:hidden">How to practice <span className="text-mute text-lg leading-none group-open:rotate-90 transition-transform">›</span></summary>
-      <ul className="space-y-2 pb-2 list-disc pl-4">{[...lesson.tips.filter(t => t.kind === 'technique').map(t => t.text), ...lesson.techniqueNotes].map(t => <li key={t} className="text-[15px] leading-snug text-bone">{t}</li>)}</ul>
-    </details>
+    <div>
+      {details('About this section', <div className="pb-2">
+        <p className="text-[15px] leading-snug text-bone">{lesson.overview.summary}</p>
+        {/* the kit only mounts (and animates) while this is open */}
+        {kitOpen && <div className="mt-2"><div className="mx-auto w-[200px]"><KitView bars={song.bars.slice(sec.start, sec.start + sec.bars)} /></div>
+          <p className="text-center text-[13px] text-bone -mt-1">The kit lights what you hear.</p></div>}
+      </div>, setKitOpen)}
+      {details('Common mistakes', <ul className="space-y-3 pb-2">{lesson.tips.filter(t => t.kind === 'mistake').map(t => <li key={t.id} className="text-[15px] leading-snug text-bone">{t.text}</li>)}</ul>)}
+      {details('How to practice', <ul className="space-y-2 pb-2 list-disc pl-4">{[...lesson.tips.filter(t => t.kind === 'technique').map(t => t.text), ...lesson.techniqueNotes].map(t => <li key={t} className="text-[15px] leading-snug text-bone">{t}</li>)}</ul>)}
+    </div>
     {!AUTHORED[`${song.raw.id}:${selected}`] && <p className="text-[13px] text-bone leading-snug">Practice plan from this section’s notes. A written lesson replaces it.</p>}
     </>}
   </div>
