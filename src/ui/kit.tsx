@@ -7,7 +7,7 @@ import { Scorer, type HitResult, type Tally } from '../midi/score'
 import { clearMarks, marks, putMark, store, type Mark } from '../midi/marks'
 import { heardAt } from '../midi/clock'
 import { calibrate } from '../midi/calibrate'
-import { DRUM_NAME, PADS, UNSCORED, drumOf } from '../midi/map'
+import { DRUM_NAME, PADS, UNSCORED, drumOf, groupAt } from '../midi/map'
 
 export const useKit = () => useSyncExternalStore(kit.watch, kit.get)
 
@@ -71,16 +71,9 @@ export function useKitScore(src: ScoreSource) {
 }
 
 type Pos = { bar: number; step: number }
-/** Drums to hit together at this step (one voice per drum). */
-function groupAt(p: Pattern | undefined, step: number, voices: Set<Voice>): Voice[] {
-  if (!p) return []
-  const by = new Map<string, Voice>()
-  for (const h of [...hitsAt(p, step), ...subHitsAt(p, step)]) if (!UNSCORED.has(h.voice) && voices.has(h.voice) && !by.has(drumOf(h.voice))) by.set(drumOf(h.voice), h.voice)
-  return [...by.values()]
-}
 
 /** Wait mode: no playback; the cursor sits on the next note until every drum of it is hit, then moves on (wrapping in `range`). */
-export function useWaitMode(on: boolean, pattern: (bar: number) => Pattern | undefined, voices: Set<Voice>, range: [number, number], start: number): Pos | null {
+export function useWaitMode(on: boolean, pattern: (bar: number) => Pattern | undefined, voices: Set<Voice>, range: [number, number], start: number, filter = ''): Pos | null {
   const [cur, setCur] = useState<(Pos & { left: Voice[] }) | null>(null)
   const live = useRef({ pattern, voices, range, cur }); live.current = { pattern, voices, range, cur }
   const find = (from: Pos, skip: boolean) => {
@@ -108,6 +101,14 @@ export function useWaitMode(on: boolean, pattern: (bar: number) => Pattern | und
     })
     return () => { off(); readout.set({ ...readout.get(), wait: null }) }
   }, [on, range[0], range[1]]) // eslint-disable-line react-hooks/exhaustive-deps -- (re)starts where you are when turned on or the bars change
+  // the drill filter changed (Hands/Feet, mute, solo, step): ask again for what the current note now needs, from where you are
+  const seen = useRef(filter)
+  useEffect(() => {
+    if (seen.current === filter) return
+    seen.current = filter
+    const c = live.current.cur; if (!on || !c) return
+    const next = find(c, false); live.current.cur = next; setCur(next); show(next)
+  }, [filter]) // eslint-disable-line react-hooks/exhaustive-deps -- only the filter
   return cur && { bar: cur.bar, step: cur.step }
 }
 

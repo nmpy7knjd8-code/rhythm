@@ -7,6 +7,8 @@ export const ON_MS = 30
 export const WINDOW_MS = 100
 /** With a kit connected, the speed trainer only counts a loop scoring at least this. */
 export const PASS = 0.85
+/** Does a kit-scored loop let the speed trainer climb? Only a loop played at PASS or better, unless it had no notes to score. */
+export const lapCounts = (score: { total: number; score: number } | null) => !score?.total || score.score >= PASS
 
 export type Verdict = 'on' | 'early' | 'late'
 /** A note to play. `at` is when it is heard (performance.now ms), `t` its audio-context time (s). */

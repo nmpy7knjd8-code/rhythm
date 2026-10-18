@@ -13,7 +13,7 @@ import { KitView } from './kitview'
 import { scoredVoices } from '../midi/map'
 import { ticksPerStep } from '../engine/pattern'
 import { kit } from '../midi/kit'
-import { PASS, tally } from '../midi/score'
+import { lapCounts, PASS, tally } from '../midi/score'
 import { KitReadout, KitSettings, MARK, readout, scorer, useKit, useKitScore, useMarks, useWaitMode } from './kit'
 
 const FEET = new Set<Voice>(['low', 'pedal'])
@@ -224,7 +224,7 @@ function Learn() {
   const scorePattern = (bar: number) => { const p = song.bars[bar], o = stepBars?.get(bar); return o && p && o.steps === p.steps && ticksPerStep(o) === ticksPerStep(p) ? o : p }
   const [wait, setWait] = useState(false)
   const waitRange: [number, number] = P.barLoop ? [P.barLoop[0], P.barLoop[1] + 1] : sec ? [sec.start, sec.start + sec.bars] : [0, 1]
-  const waitPos = useWaitMode(wait && connected && !silent, scorePattern, scored, waitRange, followed)
+  const waitPos = useWaitMode(wait && connected && !silent, scorePattern, scored, waitRange, followed, `${[...scored].sort()}|${stepOn ? stepI : '-'}`)
   const view = waitPos ? waitPos.bar : followed
   const shown: LessonBar | undefined = (stepOn && cur ? cur.bars : full.bars).find(b => b.songBar === view) ?? full.bars.find(b => b.songBar === view)
 
@@ -281,7 +281,7 @@ function Learn() {
     if (L.counts) { recordLoop(song.raw.id, L.secKey, L.pct); setRecords(bests(song.raw.id)) }
     if (L.counts && score?.total) { kit.recordBest(song.raw.id, L.secKey, score.score, L.pct); setKitBest(kit.best(song.raw.id, L.secKey)) }
     if (!L.trainer) return
-    if (L.kit && !(score?.total && score.score >= PASS)) return // with a kit, only a loop played well counts
+    if (L.kit && !lapCounts(score)) return // with a kit, a loop with notes to score counts only when played well
     const n = L.loops + 1
     L.loops = n; setLoops(n)
     if (n % L.every !== 0 || L.pct >= L.to) return
@@ -303,7 +303,7 @@ function Learn() {
   const wasPlaying = useRef(P.playing)
   useEffect(() => { if (P.playing && !wasPlaying.current) setWait(false); wasPlaying.current = P.playing }, [P.playing]) // pressing Play leaves wait mode
   // the kit as a remote: Tom 1 + Tom 2 + kick together start playback (only while stopped, so a fill never stops it)
-  const start = useRef(() => {}); start.current = () => { if (!P.playing) void P.toggle() }
+  const start = useRef(() => {}); start.current = () => { if (!P.playing && !wait) void P.toggle() } // never while waiting: a tom+kick fill must not end Wait mode
   useEffect(() => connected ? kit.onRemote(() => start.current()) : undefined, [connected])
   useEffect(() => readout.set({ last: null, lap: null, wait: null }), [song.raw.id, selected])
   useEffect(() => { learn.callResponse(callResp); setYours(false); return () => learn.callResponse(false) }, [learn, callResp])
