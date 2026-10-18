@@ -10,7 +10,7 @@ const store = new Map<string, string>()
 const { ago, bests, forgetPractice, recallPractice, recordLoop, reviewPick, savePractice, sectionKey } = await import('../src/learn/memory.ts')
 
 const DAY = 86_400_000
-const base = { countIn: true, click: false, voice: true, limb: 'hands' as const, muted: ['low' as const], solo: [], stepOn: true, step: 2, trainer: true, every: 8 as const, loops: 3, pin: 12 }
+const base = { countIn: true, click: false, voice: true, limb: 'hands' as const, muted: ['low' as const], solo: [], stepOn: true, step: 2, trainer: true, from: 60, to: 95, by: 5, every: 8 as const, loops: 3, pin: 12 }
 
 test('habits carry to every song, song choices stay with the song, the sitting ends when the song is loaded again', () => {
   store.clear()
