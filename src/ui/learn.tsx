@@ -343,8 +343,8 @@ function Learn() {
       </div>
       <div className="relative">
         {shown ? <Notation bar={shown} step={P.playing && heard && view === heard.bar ? playStep : -1} sounds={sounds} /> : <p className="mt-3 text-[15px] text-mute">This bar hasn’t loaded.</p>}
-        {/* the count-in sits over the notation, so nothing below moves when it starts or ends */}
-        {countFlash !== null && <div className="absolute inset-0 grid place-items-center bg-[#141416]/80 text-[56px] leading-none font-medium text-amber tabular-nums pointer-events-none" aria-live="polite">{countFlash}</div>}
+        {/* the count-in is a small badge over the notation's corner: nothing moves, and the first bar stays readable */}
+        {countFlash !== null && <div className="absolute -top-1 right-0 w-11 h-11 rounded-full grid place-items-center bg-amber text-ink text-[22px] leading-none font-semibold tabular-nums shadow-lg shadow-black/50 pointer-events-none" aria-live="polite">{countFlash}</div>}
       </div>
       <p className="mt-1.5 text-[13px] text-bone leading-snug">Amber is the note to play now. An outlined note is muted, so you play it.</p>
     </div>
