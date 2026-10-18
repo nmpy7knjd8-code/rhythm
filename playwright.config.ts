@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
+const port = process.env.PW_PORT ?? '4173' // a second checkout can test side by side on another port
+
 // Browser checks against the production build (`npm run build` first): `npm run test:e2e`.
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -14,12 +16,12 @@ export default defineConfig({
     ...devices['iPhone 13'],
     browserName: 'chromium',
     viewport: { width: 390, height: 844 },
-    baseURL: 'http://localhost:4173/rhythm/',
+    baseURL: `http://localhost:${port}/rhythm/`,
     launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] },
   },
   webServer: {
-    command: 'npx vite preview --port 4173 --strictPort',
-    url: 'http://localhost:4173/rhythm/',
+    command: `npx vite preview --port ${port} --strictPort`,
+    url: `http://localhost:${port}/rhythm/`,
     reuseExistingServer: !process.env.CI,
   },
 })

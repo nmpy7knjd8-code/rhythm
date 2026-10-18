@@ -66,5 +66,7 @@ test('the count-in does not move the page', async ({ page }) => {
   await bar(page).getByRole('button', { name: 'Play' }).click()
   const flash = d.locator('[aria-live=polite]').filter({ hasText: /^\d$/ })
   await expect(flash).toBeVisible()
+  const badge = (await flash.boundingBox())!
+  expect(badge.width * badge.height).toBeLessThan(50 * 50) // a corner badge, not a cover over the first bar
   expect([(await notation(page).boundingBox())!.y, (await card.boundingBox())!.y]).toEqual(before)
 })
