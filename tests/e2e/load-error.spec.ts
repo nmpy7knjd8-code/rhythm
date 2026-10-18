@@ -24,3 +24,21 @@ test("a song that won't load says so and Retry loads it", async ({ page }) => {
   await expect(page.getByText('Back in Black').first()).toBeVisible()
   expect(errors).toEqual([]) // no unhandled rejections
 })
+
+test('playing a groove after a failed song load clears the message', async ({ page }) => {
+  await page.route('**/songs/*.json*', r => r.fulfill({ status: 503, body: 'down' }))
+  await page.goto('./', { waitUntil: 'networkidle' })
+  await page.getByLabel('Browse rhythms').click()
+  const d = sheet(page)
+  await d.getByPlaceholder(/^Search/).fill('Back in Black')
+  await d.getByRole('button', { name: 'Play Back in Black' }).click()
+  await expect(d.getByRole('alert')).toBeVisible()
+  // a groove from the same browser (not a song): it plays and the old error goes
+  await d.getByPlaceholder(/^Search/).fill('Rock backbeat')
+  await d.getByRole('button', { name: 'Play Rock backbeat', exact: true }).click()
+  await expect(d.getByRole('alert')).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(page.getByText("Couldn't load this song")).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Stop', exact: true }).first()).toBeVisible()
+})
+

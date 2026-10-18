@@ -178,6 +178,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (loopSection !== null && loopSection !== i) { setLoopS(i); e().setSongLoop([st, st + song.sections[i].bars]) } },
     setLoopSection: i => { setLoopS(i); clearBars(); e().setSongLoop(i === null || !song ? null : [song.sections[i].start, song.sections[i].start + song.sections[i].bars]) },
     load: (p, add) => {
+      setLoadError(null) // something else is playing now: an earlier song's load error no longer applies
       resetPractice(); e().setSong(null); e().sound = null; e().drift = 0; setSong(null)
       e().setArrangement(null); setArr(null); setArrPos(null)
       const l: Layer = { id: `l${n++}`, pattern: p, volume: 0.85, mute: false, solo: false }
@@ -189,6 +190,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const en = e()
       const target = from ?? sectionIndex(0, a.sections.length)!
       if (arrangement?.id === a.id && en.playing) { void en.wake(); en.seekArrangement(target); return }
+      setLoadError(null)
       resetPractice(); en.setSong(null); en.sound = null; en.drift = 0; setSong(null)
       setArr(a); setBpmS(a.bpm); en.setBpm(a.bpm); setLayers([]); setArrPos(null)
       en.stop(); en.setArrangement(a, ids => ids.map(id => PATTERNS[id]))
