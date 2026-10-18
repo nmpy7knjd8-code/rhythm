@@ -3,6 +3,8 @@
 html, body { background: #0a0a0b; color: #f4f1ea; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 body { font-family: Inter, ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif; font-feature-settings: "ss01", "cv11"; }
 ::selection { background: #ffb00055; }
+/* one keyboard focus ring everywhere (amber); mouse and touch don't show it */
+:focus-visible { outline: 2px solid #ffb000; outline-offset: 2px; }
 @layer components {
   .btn-primary { @apply inline-flex items-center gap-2 h-10 px-4 rounded-full bg-amber text-ink text-[15px] font-medium transition-transform duration-150 active:scale-95; }
   .btn-ghost { @apply inline-flex items-center h-10 px-4 rounded-full bg-white/[0.06] text-[15px] text-bone/80 transition-colors duration-150 hover:bg-white/[0.1] active:scale-95; }
@@ -30,7 +32,7 @@ body { font-family: Inter, ui-sans-serif, -apple-system, "SF Pro Text", "Segoe U
 @media (prefers-reduced-motion: reduce) { .rise, .pulse-ring { animation: none } * { transition: none !important } }
 
 @layer components {
-  .sel { @apply h-10 px-3 rounded-xl bg-white/[0.06] text-[15px] text-bone outline-none appearance-none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 28px; }
+  .sel { @apply h-10 px-3 rounded-xl bg-white/[0.06] text-[15px] text-bone appearance-none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 28px; }
   .sel option, .sel optgroup { background: #141416; color: #eee; }
 }
 /* iOS Safari zooms into fields under 16px: keep every input at 16px on touch screens; placeholders may stay visually smaller */
