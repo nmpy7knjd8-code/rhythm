@@ -27,12 +27,11 @@ export function buildSteps(bars: AnalyzedBar[], tempos: TempoPlan): LessonStep[]
       perBar: bars.map(bar => bar.notes.filter(note => set.has(note.layer))),
     })
   }
-  if (!drafts.length) {
-    drafts.push({ id: 'full', perBar: bars.map(() => []) })
-  }
+  // no drums in this section: nothing to build up, so no steps (the tab says so and offers the next drum section)
+  if (!drafts.length) return []
   expand(bars, drafts)
   const total = bars.reduce((sum, bar) => sum + bar.notes.length, 0)
-  return drafts.map((draft, index) => {
+  const steps = drafts.map((draft, index) => {
     const last = index === drafts.length - 1
     const selected = draft.perBar.flat()
     const keepGrace = last || selected.length === total || selected.some(note => note.layer === 'color' || note.layer === 'fills')
@@ -48,6 +47,21 @@ export function buildSteps(bars: AnalyzedBar[], tempos: TempoPlan): LessonStep[]
       bars: shown.map((notes, barIndex) => barView(bars[barIndex], notes, stepId)),
     }
   })
+  numberRepeats(steps)
+  return steps
+}
+
+/** Two steps can add notes on the same beat (a busy beat split in halves): "Beat 2, part 1", "Beat 2, part 2". */
+function numberRepeats(steps: LessonStep[]) {
+  const seen = new Map<string, number>()
+  for (const step of steps) seen.set(step.title, (seen.get(step.title) ?? 0) + 1)
+  const at = new Map<string, number>()
+  for (const step of steps) {
+    if ((seen.get(step.title) ?? 0) < 2) continue
+    const n = (at.get(step.title) ?? 0) + 1
+    at.set(step.title, n)
+    step.title = `${step.title}, part ${n}`
+  }
 }
 
 export function fullBars(bars: AnalyzedBar[]): LessonBar[] {

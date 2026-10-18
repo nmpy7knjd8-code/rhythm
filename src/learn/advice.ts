@@ -307,7 +307,9 @@ function densitySentence(density: LessonOverview['density'], hitsPerBeat: number
 function feelOf(bars: AnalyzedBar[]): string {
   const marked = bars.some(bar => bar.source.feel === '8th' || bar.source.feel === '16th')
   const compound = bars.filter(bar => bar.count.kind === 'compound').length
-  const tripletGrid = bars.some(bar => bar.count.kind !== 'compound' && bar.count.beats.some(beat => beat.steps === 3))
+  // a simple-meter bar counted "1 trip let": the count line shows every beat split in three
+  const simple = bars.filter(bar => bar.count.kind !== 'compound')
+  const triplet = simple.filter(bar => bar.count.beats.some(beat => beat.steps === 3)).length
   const straight = bars.some(bar => bar.count.kind !== 'compound' && bar.count.beats.every(beat => beat.steps !== 3))
   const shuffle = shuffleRatio(bars) >= 0.45
   if (marked && shuffle) return 'The tab marks a shuffle, and the cymbal skips the middle of the triplet.'
@@ -315,7 +317,8 @@ function feelOf(bars: AnalyzedBar[]): string {
   if (shuffle) return 'The cymbal pattern has a shuffle shape: the middle of the triplet is usually empty.'
   if (compound && straight) return 'Some bars divide the beat in three, and some are straight.'
   if (compound) return 'Each beat divides in three.'
-  if (tripletGrid) return 'Each beat in the odd bars is split in three.'
+  if (triplet && triplet === bars.length) return 'Each beat is split in three: count 1 trip let.'
+  if (triplet) return `${triplet} of ${bars.length} bars split each beat in three (1 trip let). The rest are straight.`
   return 'The grid is straight.'
 }
 

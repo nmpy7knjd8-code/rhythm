@@ -18,7 +18,7 @@ const s1 = await watch(7000); const wraps1 = s1.filter((v, i) => i && v === 11 &
 await p.screenshot({ path: shot })
 // cross-section range: find a section boundary and loop across it
 const st = await p.evaluate(() => window.__pulseEngine.song.bars.length)
-const secs = await d.locator('li[aria-label^="Jump to"]').count()
+const secs = await d.locator('button[aria-label^="Jump to"]').count()
 await d.locator('button[aria-label="Loop bar 20"]').click(); await d.locator('button[aria-label="Loop bar 17"]').click()
 const chip2 = await d.locator('button[aria-label="Clear loop"]').innerText()
 const s2 = await watch(9000); const in2 = s2.slice(1).every(v => v >= 16 && v <= 19), wraps2 = s2.filter((v, i) => i && v === 16 && s2[i - 1] === 19).length

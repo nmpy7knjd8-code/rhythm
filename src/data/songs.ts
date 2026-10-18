@@ -2,6 +2,7 @@ declare const __BUILD_ID__: string
 import raw from './songs.json'
 import type { Fill, Pattern, Track, Voice } from '../engine/types'
 import { registerPatterns } from './rhythms'
+import { cleanSectionName } from './sectionName'
 
 /** Shape of research/song-patterns.json entries. Velocities 0–1 per step. */
 export interface SongEntryRaw {
@@ -90,7 +91,7 @@ export const SONGS: Song[] = (raw as unknown as SongEntryRaw[]).map(s => {
     crashAfter: true, description: `From the ${s.song} research entry (approximate transcription).`,
   }))
   const sections: SongSection[] = []; let start = 0
-  for (const f of (s as Song['raw']).form ?? []) { sections.push({ name: f.section, start, bars: f.bars, timeSig: f.timeSig?.join(' · ') }); start += f.bars }
+  for (const f of (s as Song['raw']).form ?? []) { sections.push({ name: cleanSectionName(f.section), start, bars: f.bars, timeSig: f.timeSig?.join(' · ') }); start += f.bars }
   const bars: Pattern[] = []
   return { raw: s, pattern, fills, bars, sections }
 })

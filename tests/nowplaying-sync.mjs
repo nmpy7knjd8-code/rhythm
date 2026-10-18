@@ -32,7 +32,7 @@ for (const [id, mode] of cases.filter(([id, m]) => !only || only.includes(id + '
     const mo = new MutationObserver(() => {
       const cell = dlg.querySelector('.sticky span.bg-amber\\/25'); const s = cell ? [...cell.parentElement.children].indexOf(cell) : null
       if (s !== null && s !== last) seen.push({ s, at: c.currentTime }); last = s
-      const ring = dlg.querySelector('button.ring-amber[aria-label^="Bar "]'), strip = ring?.parentElement, li = ring?.closest('li')
+      const ring = dlg.querySelector('[role=slider] > span.ring-amber'), strip = ring?.parentElement, li = ring?.closest('li')
       const n = ring ? li.parentElement && [...li.parentElement.children].indexOf(li) * 10000 + [...strip.children].indexOf(ring) : null
       if (n !== null && n !== lastRing) rings.push({ n, at: c.currentTime }); lastRing = n
     })

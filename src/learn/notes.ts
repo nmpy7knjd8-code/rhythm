@@ -108,7 +108,8 @@ export function project(source: Pattern, notes: Note[], stepId: string): Pattern
   if (source.swingable) pattern.swingable = source.swingable
   if (source.barTicks) pattern.barTicks = source.barTicks
   const sub = projectSub(notes)
-  const grace = projectGrace(notes)
+  // the full part plays every written grace, including ones that sit before another drum's stroke (no main note of their own)
+  const grace = stepId === 'full' ? source.grace : projectGrace(notes)
   const variant = projectVariant(source, notes)
   if (sub) pattern.sub = sub
   if (grace) pattern.grace = grace

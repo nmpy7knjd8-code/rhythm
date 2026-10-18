@@ -168,6 +168,13 @@ function Learn() {
   }, [P.barLoop, secR])
   const full: Lesson = useMemo(() => lessonFor(song, selected), [song, selected])
   const lesson: Lesson = useMemo(() => range ? lessonFor(song, selected, range) : full, [song, selected, range, full])
+  // a section the drummer sits out: no lesson, just a way on to the next section with drums (after this one, else from the top)
+  const silent = full.steps.length === 0
+  const nextDrums = useMemo(() => {
+    if (!silent) return -1
+    const order = song.sections.map((_, k) => (selected + 1 + k) % song.sections.length)
+    return order.find(k => k !== selected && lessonFor(song, k).steps.length > 0) ?? -1
+  }, [silent, song, selected])
   const stepI = Math.min(step, Math.max(0, lesson.steps.length - 1))
   const cur = lesson.steps[stepI]
   const allow = useMemo(() => allowedVoices(limb, muted, solo), [limb, muted, solo])
@@ -277,6 +284,11 @@ function Learn() {
       </p>}
     </div>
 
+    {silent ? <div className="card p-3">
+      <div className="text-[16px] font-medium">No drums here</div>
+      <p className="mt-1 text-[15px] leading-snug text-bone">The drums sit out {sec.name}.</p>
+      {nextDrums >= 0 && <button onClick={() => lockSection(nextDrums)} className="mt-3 h-11 w-full rounded-xl bg-amber text-ink text-[15px] font-medium truncate px-3">Go to {song.sections[nextDrums].name}</button>}
+    </div> : <>
     <p className="text-[15px] leading-snug text-bone">{lesson.overview.summary}</p>
 
     <div>
@@ -366,5 +378,6 @@ function Learn() {
       <ul className="space-y-2 pb-2 list-disc pl-4">{[...lesson.tips.filter(t => t.kind === 'technique').map(t => t.text), ...lesson.techniqueNotes].map(t => <li key={t} className="text-[15px] leading-snug text-bone">{t}</li>)}</ul>
     </details>
     {!AUTHORED[`${song.raw.id}:${selected}`] && <p className="text-[13px] text-bone leading-snug">Practice plan from this section’s notes. A written lesson replaces it.</p>}
+    </>}
   </div>
 }

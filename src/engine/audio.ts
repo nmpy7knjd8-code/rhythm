@@ -341,7 +341,7 @@ export class RhythmEngine {
       let heard = Infinity
       for (const h of hs) { const at = t + fs + this.driftAt(h.voice, bt); heard = Math.min(heard, at); this.play(SONG_ID, h.voice, at, h.velocity, h.graces, stepSec, notes.variant?.[h.voice]?.[step]) }
       this.timeline.push({ t: hs.length ? heard : t + fs, bar: this.songBar, step }); if (this.timeline.length > 512) this.timeline.splice(0, 256)
-      this.playSubs(SONG_ID, notes, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt), fl); this.hz = null
+      this.playSubs(SONG_ID, notes, step, t, stepSec, this.songBar, beatTicksOf(p), tps, f => this.feelShift(p, step + f, tps, stepSec) + this.driftAt('low', bt)); this.hz = null
     }
     if (++this.songTick >= len) {
       this.songTick = 0
@@ -469,7 +469,7 @@ export class RhythmEngine {
   /** Off-grid (sub-step) hits, grouped per drum. Only a real same-drum run (2+ off-grid strokes in the step, or one next to an
    *  on-step stroke of the same drum) gets roll shaping: softer inner strokes, hand alternation, crescendo and the small inner-stroke
    *  timing drift. A lone off-grid note (a syncopated 32nd kick, a triplet note) plays exactly, at its written velocity. */
-  private playSubs(ch: string, p: Pattern, step: number, t: number, stepSec: number, bar: number, beat: number, tps: number, shift: (frac: number) => number, _fl: number) {
+  private playSubs(ch: string, p: Pattern, step: number, t: number, stepSec: number, bar: number, beat: number, tps: number, shift: (frac: number) => number) {
     const subs = subHitsAt(p, step); if (!subs.length) return
     const onStep = new Set(hitsAt(p, step).map(h => h.voice)), by = new Map<Voice, typeof subs>()
     for (const h of subs) { const l = by.get(h.voice) ?? []; l.push(h); by.set(h.voice, l) }
@@ -638,7 +638,7 @@ export class RhythmEngine {
         const tp = ticksPerStep(s.pattern), bt = beatTicksOf(s.pattern)
         this.hz = { bar: this.bar, pos: step * tp, beat: bt, sub: -1, stroke: stepSec }
         for (const h of hitsAt(s.pattern, step)) this.play(s.id, h.voice, t, h.velocity, h.graces, stepSec)
-        this.playSubs(s.id, s.pattern, step, t, stepSec, this.bar, bt, tp, () => 0, 1)
+        this.playSubs(s.id, s.pattern, step, t, stepSec, this.bar, bt, tp, () => 0)
         this.hz = null
       }
       if (!fillBar) for (const l of this.layers) if (steps[l.id] === undefined) { const s = stepForTick(l.pattern, this.tick); if (s !== null) steps[l.id] = s }
