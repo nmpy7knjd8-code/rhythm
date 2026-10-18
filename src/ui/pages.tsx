@@ -98,7 +98,7 @@ function RequestSong() {
   return <form onSubmit={submit} className="mb-10 mx-auto max-w-sm">
     <input type="text" name="_honey" tabIndex={-1} autoComplete="off" aria-hidden="true" value={hp} onChange={e => setHp(e.target.value)} className="hidden" />
     <div className="flex gap-2">
-      <input className="req-input flex-1 min-w-0 h-10 px-3 rounded-xl bg-white/[0.05] border border-white/[0.06] text-[16px] placeholder:text-mute outline-none focus:border-amber/60" placeholder={REQ_PH} aria-label="Request a song" value={text} onChange={e => { setText(e.target.value); setState('idle') }} />
+      <input className="req-input flex-1 min-w-0 h-10 px-3 rounded-xl bg-white/[0.05] border border-white/[0.06] text-[16px] placeholder:text-mute focus:border-amber/60" placeholder={REQ_PH} aria-label="Request a song" value={text} onChange={e => { setText(e.target.value); setState('idle') }} />
       <button disabled={!text.trim() || state === 'sending'} className="h-10 px-3 rounded-xl bg-amber text-ink text-[15px] font-medium disabled:opacity-30">{state === 'sending' ? '…' : 'Send'}</button>
     </div>
     {state === 'sent' && <p className="mt-1.5 text-[13px] text-amber">Thanks, request sent.</p>}
@@ -147,7 +147,7 @@ function Songs() {
     </div>
     <nav id="artists" aria-label="Artists" className={`scroll-mt-24 mx-auto max-w-md flex flex-wrap justify-center gap-1 overflow-hidden ${allArtists ? '' : 'max-h-[108px]'}`}>
       {artists.map(a => <button key={a} onClick={() => { setPicked(a); scrollToArtist(slug(a)) }}
-        className={`h-6 px-2.5 rounded-full text-[13px] leading-none transition-colors ${picked === a ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/70 hover:text-amber'}`}>{a}</button>)}
+        className={`h-8 px-2.5 rounded-full text-[13px] leading-none transition-colors ${picked === a ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/70 hover:text-amber'}`}>{a}</button>)}
     </nav>
     <div className="mt-1 mb-4 text-center"><button onClick={() => setAllArtists(v => !v)} className="text-[13px] text-mute hover:text-amber">{allArtists ? 'Fewer' : 'More artists'}</button></div>
     <RequestSong />

@@ -322,7 +322,7 @@ function LayerCard({ layer }: { layer: Layer }) {
         <button aria-label="Remove layer" onClick={() => P.remove(layer.id)} className="chip-sq bg-transparent text-mute">✕</button>
       </div>
       <StepGrid pattern={layer.pattern} current={cur} />
-      <input type="range" min={0} max={1} step={0.01} value={layer.volume} onChange={e => P.update(layer.id, { volume: +e.target.value })} className="slider mt-3" aria-label="Layer volume" />
+      <input type="range" min={0} max={1} step={0.01} value={layer.volume} onChange={e => P.update(layer.id, { volume: +e.target.value })} className="slider no-sheet-drag touch-pan-x mt-3" aria-label="Layer volume" />
     </div>
   )
 }
@@ -366,7 +366,7 @@ function Browser({ onPicked }: { onPicked?: () => void }) {
   const ql = q.trim().toLowerCase()
   const items = all.filter(i => (!cat || i.cat === cat) && (!meter || i.meter === meter) && (!ql || `${i.name} ${i.cat} ${i.song?.raw.artist ?? ''} ${i.song?.raw.drummer ?? ''}`.toLowerCase().includes(ql)))
   return <div>
-    <input value={q} onChange={e => setQ(e.target.value)} placeholder={`Search ${all.length} rhythms and songs`} className="w-full h-11 px-4 rounded-xl bg-white/[0.06] text-[15px] placeholder:text-mute outline-none focus:bg-white/[0.09]" />
+    <input value={q} onChange={e => setQ(e.target.value)} placeholder={`Search ${all.length} rhythms and songs`} className="w-full h-11 px-4 rounded-xl bg-white/[0.06] text-[15px] placeholder:text-mute focus:bg-white/[0.09]" />
     <div className="mt-2 flex gap-2">
       <select value={cat} onChange={e => setCat(e.target.value)} className="sel flex-1"><option value="">All categories</option>{cats.map(c => <option key={c}>{c}</option>)}</select>
       <select value={meter} onChange={e => setMeter(e.target.value)} className="sel w-28"><option value="">Any meter</option>{meters.map(m => <option key={m}>{m}</option>)}</select>
@@ -402,7 +402,17 @@ function Sheet({ open, onClose, children, title, subtitle, head, lead, contentPu
   const [dy, setDy] = useState(0); const drag = useRef<{ y: number; t: number; lastY: number; lastT: number; active: boolean; fromContent: boolean } | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   useEffect(() => { if (!open) setDy(0); else if (scroller.current) scroller.current.scrollTop = 0 }, [open]) // every open starts at the top
-  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }; addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [onClose])
+  useEffect(() => { if (!open) return; const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }; addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [open, onClose])
+  // closed: out of the tab order and the accessibility tree (inert). Opening moves focus in; closing hands it back.
+  const dialog = useRef<HTMLDivElement>(null), closeBtn = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    const el = dialog.current; if (!el) return
+    el.inert = !open
+    if (!open) return
+    const back = document.activeElement as HTMLElement | null
+    closeBtn.current?.focus({ preventScroll: true })
+    return () => { if (back?.isConnected && !el.contains(back)) back.focus({ preventScroll: true }) }
+  }, [open])
   const start = (y: number, fromContent: boolean) => { drag.current = { y, t: performance.now(), lastY: y, lastT: performance.now(), active: !fromContent, fromContent } }
   const move = (y: number, e?: { cancelable: boolean; preventDefault: () => void }) => {
     const d = drag.current; if (!d) return
@@ -436,7 +446,7 @@ function Sheet({ open, onClose, children, title, subtitle, head, lead, contentPu
   const titleId = useId()
   return <>
     <div onClick={onClose} className={`fixed inset-0 z-40 bg-black/55 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} style={open && dy ? { opacity: Math.max(0.2, 1 - dy / 400) } : undefined} />
-    <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-hidden={!open} className={`fixed inset-x-0 bottom-0 z-50 ${dragging ? '' : 'transition-transform duration-300 ease-out'} ${open ? '' : 'translate-y-full'}`} style={open && dy ? { transform: `translateY(${dy}px)` } : undefined}>
+    <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-hidden={!open} className={`fixed inset-x-0 bottom-0 z-50 ${dragging ? '' : 'transition-transform duration-300 ease-out'} ${open ? '' : 'translate-y-full'}`} style={open && dy ? { transform: `translateY(${dy}px)` } : undefined}>
       <div className="max-w-xl mx-auto flex flex-col max-h-[calc(100dvh-0.5rem)] rounded-t-[24px] bg-[#141416] border-t border-white/[0.08] shadow-2xl shadow-black pb-[env(safe-area-inset-bottom)]">
         <div className="shrink-0 touch-none select-none cursor-grab rounded-t-[24px] border-b border-white/[0.06]"
           onTouchStart={e => start(e.touches[0].clientY, false)} onTouchMove={e => move(e.touches[0].clientY)} onTouchEnd={end} onTouchCancel={end}
@@ -445,7 +455,7 @@ function Sheet({ open, onClose, children, title, subtitle, head, lead, contentPu
           <div className="relative flex items-center h-12 pl-3 pr-1 gap-3">
             {lead && <div className="flex items-center gap-3 shrink-0">{lead}</div>}
             <div className="min-w-0 flex-1 pr-2"><div id={titleId} className="text-[15px] font-medium truncate">{title || 'Player'}</div>{subtitle && <div className="text-[13px] text-bone truncate">{subtitle}</div>}</div>
-            <button aria-label="Close player" onClick={onClose} className="ml-auto h-12 pl-4 pr-3 flex items-center gap-1.5 rounded-full text-[15px] text-bone/85 active:scale-95 shrink-0">
+            <button ref={closeBtn} aria-label="Close player" onClick={onClose} className="ml-auto h-12 pl-4 pr-3 flex items-center gap-1.5 rounded-full text-[15px] text-bone/85 active:scale-95 shrink-0">
               Close <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
             </button>
           </div>
