@@ -33,6 +33,9 @@ function stringTracks(b: Record<string, string>): Track {
   return t
 }
 interface SectionFile { humanize?: { lateMs: number; jitterMs: number }; name: string; bars: (Record<string, string> & { _sub?: Record<string, Record<string, [number | string, number][]>>; _var?: Record<string, Record<string, string>> })[]; ticksPerStep: number[]; timeSig: string[]; bpm: number[]; confidence?: string }
+/** The section a song bar falls in (0 when none). */
+export const sectionOf = (s: Song, bar: number) => Math.max(0, s.sections.findIndex(x => bar >= x.start && bar < x.start + x.bars))
+
 /** Fetch the full bar-by-bar part for a song (kept out of the main bundle). */
 export async function loadSongBars(song: Song): Promise<Song> {
   if (song.bars.length) return song

@@ -1,6 +1,11 @@
 import type { Voice } from '../engine/types'
 import type { Limb } from './types'
 
+/** Voice names: VOICE_LABEL in sentences and speech, VOICE_SHORT where a row label must fit (step grid). */
+export const VOICE_SHORT: Record<Voice, string> = {
+  crash1: 'Crash', crash2: 'Crash 2', china: 'China', ride: 'Ride', rideBell: 'Bell', open: 'Open HH', tick: 'Hi-hat', pedal: 'Pedal HH',
+  tomHi: 'Tom 1', tomMid: 'Tom 2', tomLo: 'Floor', back: 'Snare', accent: 'Rim', low: 'Kick', bell: 'Cowbell', shaker: 'Shaker',
+}
 export const VOICE_LABEL: Record<Voice, string> = {
   low: 'bass drum',
   back: 'snare',

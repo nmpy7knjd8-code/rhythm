@@ -3,7 +3,7 @@ import type { Voice } from '../engine/types'
 import { VOICES } from '../engine/types'
 import type { PulseEvent } from '../engine/audio'
 import type { Song } from '../data/songs'
-import { loadSongBars } from '../data/songs'
+import { loadSongBars, sectionOf } from '../data/songs'
 import { getLesson, type Lesson, type LessonBar, type Limb } from '../learn'
 import { LIMBS, LIMB_NAME, VOICE_LABEL } from '../learn/speech'
 import { AUTHORED } from '../learn/authored'
@@ -20,7 +20,6 @@ function lessonFor(song: Song, i: number, range?: [number, number]): Lesson {
   if (!range) return AUTHORED[`${song.raw.id}:${i}`] ?? getLesson(song, i)
   try { return getLesson(song, i, range) } catch { return getLesson(song, i) }
 }
-const sectionOf = (s: Song, bar: number) => Math.max(0, s.sections.findIndex(x => bar >= x.start && bar < x.start + x.bars))
 
 /** null = no practice filter, so the engine plays the full mix. */
 function allowedVoices(limb: PracticeMemory['limb'], muted: Voice[], solo: Voice[]): Voice[] | null {

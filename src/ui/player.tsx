@@ -8,11 +8,12 @@ import { velocityOf, ticksPerStep, VARIANTS, fracOf } from '../engine/pattern'
 import { KITS } from '../data/kits'
 import { PATTERNS, RHYTHMS } from '../data/rhythms'
 import { FILLS, FILL_EVERY } from '../data/fills'
-import { SONGS, loadSongBars, shownBpm, type Song } from '../data/songs'
+import { SONGS, loadSongBars, sectionOf, shownBpm, type Song } from '../data/songs'
 import * as Tone from 'tone'
 import { applyTuning, applyShift, type Tuning } from '../engine/pitch'
 import { forgetPractice } from '../learn/memory'
 import { LearnPanel } from './learn'
+import { VOICE_SHORT } from '../learn/speech'
 import { cleanSectionName } from '../data/sectionName'
 
 setSampleBase(`${import.meta.env.BASE_URL}samples/acoustic/`)
@@ -55,7 +56,6 @@ interface Ctx {
     count: (words: Map<number, string[]> | null) => void
   }
 }
-export const sectionOf = (s: Song, bar: number) => Math.max(0, s.sections.findIndex(x => bar >= x.start && bar < x.start + x.bars))
 const C = createContext<Ctx>(null!)
 export const usePlayer = () => useContext(C)
 let n = 0
@@ -240,10 +240,6 @@ export function LoadButtons({ pattern }: { pattern: Pattern }) {
 }
 const PlayGlyph = () => <span className="inline-block w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-current" />
 
-const VOICE_LABEL: Record<Voice, string> = {
-  crash1: 'Crash', crash2: 'Crash 2', china: 'China', ride: 'Ride', rideBell: 'Bell', open: 'Open HH', tick: 'Hi-hat', pedal: 'Pedal HH',
-  tomHi: 'Tom 1', tomMid: 'Tom 2', tomLo: 'Floor', back: 'Snare', accent: 'Rim', low: 'Kick', bell: 'Cowbell', shaker: 'Shaker',
-}
 
 /** Velocity-aware step grid. Rows = voices used, bars show velocity, playhead column glows. */
 export function StepGrid({ pattern, current }: { pattern: Pattern; current: number }) {
@@ -254,7 +250,7 @@ export function StepGrid({ pattern, current }: { pattern: Pattern; current: numb
       <div className="space-y-1" style={{ minWidth: dense ? pattern.steps * 11 : undefined }}>
         {rows.map(v => (
           <div key={v} className="flex items-center gap-2">
-            <span className="w-16 shrink-0 text-[13px] text-mute">{VOICE_LABEL[v]}</span>
+            <span className="w-16 shrink-0 text-[13px] text-mute">{VOICE_SHORT[v]}</span>
             <div className="flex-1 flex gap-[2px]">
               {Array.from({ length: pattern.steps }, (_, i) => {
                 const c = pattern.tracks[v]?.[i]; const vel = velocityOf(c)
@@ -432,16 +428,18 @@ function Sheet({ open, onClose, children, title, subtitle, head, lead, contentPu
     if (d.fromContent ? dist > 80 || (dist > 30 && v > 0.5) : dist > 32 || (dist > 10 && v > 0.2)) onClose()
     setDy(0)
   }
-  // non-passive touchmove on the content so a pull-down at scrollTop 0 can stop native overscroll
+  // non-passive touchmove on the content so a pull-down at scrollTop 0 can stop native overscroll.
+  // The handlers read the latest start/move/end through a ref, so the listeners are added once per contentPull.
+  const handlers = useRef({ start, move, end }); handlers.current = { start, move, end }
   useEffect(() => {
     const el = scroller.current; if (!el) return
     // never start a sheet drag from sliders or other controls; tabs with sliders opt out of pull-to-close entirely
-    const ts = (e: TouchEvent) => { if (!contentPull || (e.target as HTMLElement).closest('input,select,textarea,[role=slider],.no-sheet-drag')) { drag.current = null; return } start(e.touches[0].clientY, true) }
-    const tm = (e: TouchEvent) => move(e.touches[0].clientY, e)
-    const te = () => end()
+    const ts = (e: TouchEvent) => { if (!contentPull || (e.target as HTMLElement).closest('input,select,textarea,[role=slider],.no-sheet-drag')) { drag.current = null; return } handlers.current.start(e.touches[0].clientY, true) }
+    const tm = (e: TouchEvent) => handlers.current.move(e.touches[0].clientY, e)
+    const te = () => handlers.current.end()
     el.addEventListener('touchstart', ts, { passive: true }); el.addEventListener('touchmove', tm, { passive: false }); el.addEventListener('touchend', te); el.addEventListener('touchcancel', te)
     return () => { el.removeEventListener('touchstart', ts); el.removeEventListener('touchmove', tm); el.removeEventListener('touchend', te); el.removeEventListener('touchcancel', te) }
-  })
+  }, [contentPull])
   const dragging = dy > 0
   const titleId = useId()
   return <>

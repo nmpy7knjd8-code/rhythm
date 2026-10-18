@@ -298,7 +298,7 @@ export function Lens({ id, go }: { id?: string; go: (h: string) => void }) {
   if (!a) return <>
     <H1 t="Drummers" sub="How these drummers create feeling and tell a story with the kit." />
     <ul className="space-y-1">{ARTISTS.map(x => <li key={x.id}>
-      <button onClick={() => go(`lens/${x.id}`)} className="w-full -mx-3 px-3 py-3 text-left flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.03] active:bg-white/[0.06]" style={{ width: 'calc(100% + 1.5rem)' }}>
+      <button onClick={() => go(`lens/${x.id}`)} className="-mx-3 px-3 py-3 text-left flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.03] active:bg-white/[0.06]" style={{ width: 'calc(100% + 1.5rem)' }}>
         <span className="min-w-0 flex-1">
           <span className="block text-lg leading-snug">{x.name}</span>
           <span className="block mt-0.5 text-[13px] text-bone/45 leading-snug">{x.band.split(/\s*;\s*/).map(b => b[0].toUpperCase() + b.slice(1)).join(' · ')}</span>
@@ -345,7 +345,6 @@ function TheorySongs({ refs }: { refs: { id: string; note: string }[] }) {
 export function Theory() {
   const { load, toggle, playing } = usePlayer()
   const loadAll = async (ps: Pattern[]) => { ps.forEach((p, i) => load(p, i > 0)); if (!playing) await toggle() }
-  const NO_COMBO = new Set<string>() // different meters: stacking them makes no musical sense
   return <>
     <H1 t="Theory" sub="The ideas underneath rhythm, from meter to tension and release. Every concept has a pattern you can play." />
     <nav className="mb-14 flex flex-wrap gap-x-4 gap-y-2 text-[15px] text-bone/50">{THEORY.map(c => <a key={c.id} href={`#/theory`} onClick={e => { e.preventDefault(); document.getElementById(c.id)?.scrollIntoView({ behavior: 'smooth' }) }}>{c.title.split(':')[0]}</a>)}</nav>
@@ -356,7 +355,7 @@ export function Theory() {
       {c.points && <ul className="mt-4 space-y-2 text-[15px] leading-relaxed text-bone list-disc pl-5 marker:text-bone/30">{c.points.map(t => <li key={t}>{t}</li>)}</ul>}
       <p className="mt-4 text-[15px] text-bone">{c.listen}</p>
       {c.patterns.map(p => <div key={p.id} className="mt-5"><h3 className="text-[15px] font-medium">{p.name}</h3><LoadButtons pattern={p} /></div>)}
-      {c.patterns.length > 1 && c.combo !== false && !NO_COMBO.has(c.id) && <button className="mt-4 text-[15px] text-amber" onClick={() => loadAll(c.patterns)}>Play all {c.patterns.length} together →</button>}
+      {c.patterns.length > 1 && c.combo !== false && <button className="mt-4 text-[15px] text-amber" onClick={() => loadAll(c.patterns)}>Play all {c.patterns.length} together →</button>}
       {c.songs && <TheorySongs refs={c.songs} />}
     </section>)}
   </>
