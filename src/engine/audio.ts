@@ -231,6 +231,11 @@ export class RhythmEngine {
   metronome = false
   /** When on, the next start() plays one silent bar of clicks before the song. */
   countInOn = false
+  /** Learn it "I play, you play": every other bar is the click alone, for you to play back. Counts bars as heard, so loops of any length alternate. */
+  private crOn = false
+  private crCount = -1
+  private crYours = false
+  setCallResponse(on: boolean) { this.crOn = on; this.crCount = -1; this.crYours = false }
   /** Spoken count, per song bar: one syllable per grid step ('' = silent). null = counting off. */
   countWords: Map<number, string[]> | null = null
   private counter: CountVoice | null = null
@@ -251,12 +256,12 @@ export class RhythmEngine {
   private countInBeat = 12
   onPulse?: (e: PulseEvent) => void
   /** Every bar line, including a one-bar loop that repeats the same bar index. */
-  onLearnBar?: (bar: number) => void
+  onLearnBar?: (bar: number, yours: boolean) => void
   setSong(bars: Pattern[] | null) { this.song = bars ? { bars, loop: null } : null; this.songBar = 0; this.songTick = 0; this.pendingJump = null }
   /** Drop Learn it filters. Normal playback does not call this. */
   clearPractice() {
     this.practiceVoices = null; this.practiceBars = null; this.metronome = false; this.countInOn = false; this.countWords = null
-    this.countInTotal = 0; this.countInTick = 0; this.onPulse = undefined; this.onLearnBar = undefined
+    this.countInTotal = 0; this.countInTick = 0; this.onPulse = undefined; this.onLearnBar = undefined; this.setCallResponse(false)
   }
   setSongLoop(loop: [number, number] | null) { if (this.song) this.song.loop = loop }
   /** Jump to a bar: immediately if stopped, otherwise at the next bar line. */
@@ -296,6 +301,7 @@ export class RhythmEngine {
   }
   /** Recorded bar, or the simplified practice bar when the grids match. */
   private notesFor(p: Pattern): Pattern {
+    if (this.crYours) return { ...p, tracks: {}, sub: undefined, grace: undefined }
     const o = this.practiceBars?.get(this.songBar)
     if (!o || o.steps !== p.steps || ticksPerStep(o) !== ticksPerStep(p)) return p
     return o
@@ -311,7 +317,8 @@ export class RhythmEngine {
     if (!(len > 0) || !isFinite(len)) len = TICKS_PER_BAR // guard: a bar can never be empty or non-finite
     if (this.songTick >= len) this.songTick = len - 1
     if (this.songTick === 0) {
-      const b = this.songBar; Tone.getDraw().schedule(() => { this.onSongBar?.(b); this.onLearnBar?.(b) }, time)
+      if (this.crOn) this.crYours = ++this.crCount % 2 === 1
+      const b = this.songBar, yours = this.crYours; Tone.getDraw().schedule(() => { this.onSongBar?.(b); this.onLearnBar?.(b, yours) }, time)
       // tempo map: each bar may carry its own tempo; change it exactly on the bar line
       const want = (p.suggestedBpm ?? 0) * this.songTempoScale
       if (want > 0 && isFinite(want) && Math.abs(Tone.getTransport().bpm.getValueAtTime(time) - want) > 0.01) Tone.getTransport().bpm.setValueAtTime(want, time)
@@ -319,9 +326,9 @@ export class RhythmEngine {
     tickSec = 5 / Tone.getTransport().bpm.getValueAtTime(time + 1e-6) // after any tempo change at this instant
     if (p.tempoAt) for (const [f, bpm] of p.tempoAt) { const at = fracOf(f) * len; if (this.songTick === Math.ceil(at - 1e-9)) Tone.getTransport().bpm.setValueAtTime(bpm * this.songTempoScale, Math.max(time - (Math.ceil(at - 1e-9) - at) * tickSec, this.lastTime)) }
     const pulse = this.pulseTicks(p, tps, len)
-    if ((this.metronome || this.onPulse) && this.songTick % pulse === 0) {
+    if ((this.metronome || this.crYours || this.onPulse) && this.songTick % pulse === 0) {
       const beat = this.songTick / pulse, beats = len / pulse
-      if (this.metronome) this.click(time, beat === 0)
+      if (this.metronome || this.crYours) this.click(time, beat === 0)
       if (this.onPulse) { const ev: PulseEvent = { beat, beats, accent: beat === 0, countIn: false }; Tone.getDraw().schedule(() => this.onPulse?.(ev), time) }
     }
     if (this.songTick % tps === 0) {
@@ -604,6 +611,7 @@ export class RhythmEngine {
     this.songTick = 0
     this.lastTime = -1
     this.countInTotal = 0; this.countInTick = 0
+    this.crCount = -1; this.crYours = false
     if (this.countInOn && this.song?.bars.length) this.armCountIn()
     this.eventId = tr.scheduleRepeat(time => {
       // guards: never process the same instant twice (time must increase), and if the main thread stalled and Tone is

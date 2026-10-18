@@ -12,6 +12,8 @@ The Learn it tab teaches the section that is playing: section pills, the bar str
 - `learn-bar` the practice bar sits above the notation, sticks while scrolling, and its controls work.
 - `learn-layout` every control is 44 px or more, the count-in moves nothing, "About this section" (summary + kit) starts collapsed.
 - `learn-progress` settings persist in localStorage (`pulse.learn.v1`); a whole-section loop of the full part records the best tempo; 'Best here N%, when' and 'Review <section>: N%, N days ago' under the pills.
+- `learn-trainer` speed trainer: From / To / Climb / Loops selects; starts at From, climbs only after that many full loops (first bar round to first bar at one tempo), stops at To.
+- `learn-callresp` 'I play, you play': bars alternate between the part and the click alone ('Listen' / 'Your turn: play this bar').
 - `learn-visual` screenshot baselines for 6 songs x idle / steps / playing.
 
 ## How to get to it (user POV)
@@ -29,6 +31,7 @@ Preconditions:
 - **Steps.** Same spec, "repeated beats...": Come Together `Chorus`, tap `Steps`, walk `Next` until disabled; titles are unique and end with `The full part`.
 - **Practice bar and layout.** `tests/e2e/layout.spec.ts`: toolbar `Practice` above the notation and pinned to the scroller top after scrolling 900 px; `Slower` makes `95%` and moves the `Practice tempo` slider; `Loop` toggles `aria-pressed`; no button under 44x44; notation and step card keep their y while the count-in number shows.
 - **Progress.** `tests/e2e/progress.spec.ts`: Chop Suey section 0 (one bar) at 95% records `Best here 95%, today` and it survives a reload; a step does not count; Count-in persists for every song, a mute only for its song; a seeded two-day-old record shows `Review Verse 1: 85%, 2 days ago` and tapping it opens Verse 1. Store logic: `tests/memory.test.ts` (part of `verify.sh unit`).
+- **Trainer and call-and-response.** `tests/e2e/trainer.spec.ts`: Chop Suey section 0 with From 80, To 90, Climb +5, Loops ×1 stays 80% inside the first bar, then 85%, 90%, `At 90%.`, never past; Back in Black Verse 1 with `I play, you play` schedules drum strokes only in alternate bars and clicks in the others (observed by wrapping `__pulseEngine.play`/`click`), and shows `Your turn: play this bar`.
 - **Screenshots.** `npx playwright test visual` (local only). Fails on any unmasked pixel change over 0.2%.
 - **Sync.** Run `verify.sh learn-sync`. Every row `ok`, final `sync ok`.
 
