@@ -26,3 +26,4 @@ The maintained source for proving Pulse's user-facing behaviour. Read this index
 - [now-playing.md](now-playing.md): step grid, form strip, jumping and looping, sync with the audio.
 - [playback.md](playback.md): every song plays through correctly.
 - [accessibility.md](accessibility.md): axe scan of the main states.
+- [kit.md](kit.md): electronic kit over Web MIDI: scoring, calibration, pads.

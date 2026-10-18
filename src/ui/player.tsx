@@ -54,6 +54,8 @@ interface Ctx {
     callResponse: (on: boolean) => void
     /** spoken count: song bar → syllable per grid step, or null for off */
     count: (words: Map<number, string[]> | null) => void
+    /** read-only: the engine's heard-step timeline and the audio context, for scoring a connected kit */
+    clock: () => { timeline: RhythmEngine['timeline']; ctx: AudioContext }
   }
 }
 const C = createContext<Ctx>(null!)
@@ -113,7 +115,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const learnOnBar = useCallback((fn: ((bar: number, yours: boolean) => void) | null) => { e().onLearnBar = fn ?? undefined }, [e])
   const learnCallResponse = useCallback((on: boolean) => { e().setCallResponse(on) }, [e])
   const learnCount = useCallback((w: Map<number, string[]> | null) => { e().setCount(w) }, [e])
-  const learn = useMemo(() => ({ voices: learnVoices, bars: learnBars, metronome: learnMetronome, countIn: learnCountIn, onPulse: learnOnPulse, onBar: learnOnBar, count: learnCount, callResponse: learnCallResponse }), [learnCallResponse, learnVoices, learnBars, learnMetronome, learnCountIn, learnOnPulse, learnOnBar, learnCount])
+  const learnClock = useCallback(() => ({ timeline: e().timeline, ctx: e().rawCtx() }), [e])
+  const learn = useMemo(() => ({ voices: learnVoices, bars: learnBars, metronome: learnMetronome, countIn: learnCountIn, onPulse: learnOnPulse, onBar: learnOnBar, count: learnCount, callResponse: learnCallResponse, clock: learnClock }), [learnCallResponse, learnVoices, learnBars, learnMetronome, learnCountIn, learnOnPulse, learnOnBar, learnCount, learnClock])
 
   const preload = useCallback((id: string) => {
     const kit = KITS.find(k => k.id === id)!

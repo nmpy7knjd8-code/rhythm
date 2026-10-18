@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { openSong, pickSection, sheet } from './app'
+import { hitNext, mockKit } from './kit'
 
 // WCAG 2.2 A/AA plus axe best practices. Serious and critical findings fail; the rest are attached to the report.
 async function scan(page: Page, name: string) {
@@ -38,6 +39,18 @@ test('Learn it on a section without drums', async ({ page }) => {
   await pickSection(page, 0)
   await expect(d.getByText('No drums here')).toBeVisible()
   await scan(page, 'learn-silent')
+})
+
+test('Learn it with a kit: settings open, playing and judged', async ({ page }) => {
+  await mockKit(page)
+  const d = await openSong(page, 'backinblack')
+  await pickSection(page, 1)
+  await d.getByRole('button', { name: 'Kit', exact: true }).click()
+  await d.getByRole('button', { name: 'Play' }).first().click()
+  await hitNext(page, -50)
+  await expect(d.locator('[data-kit-readout]')).toContainText('Early')
+  await d.locator('.overflow-y-auto').first().evaluate(el => el.scrollTo(0, 0)) // tapping Kit scrolled a row under the sticky practice bar, which axe reads as overlap
+  await scan(page, 'learn-kit')
 })
 
 test('Now playing', async ({ page }) => {

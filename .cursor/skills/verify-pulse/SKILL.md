@@ -15,7 +15,7 @@ Helper: `.cursor/skills/verify-pulse/verify.sh` (executable, works from any cwd)
 .cursor/skills/verify-pulse/verify.sh launch
 ```
 
-Runs `npm ci` if needed, installs Playwright's Chromium, `npm run build` (song validation, override checks, tsc, vite build), then starts `vite preview --port 4173 --strictPort` in the background with its pid in `.verify/preview.pid`, and runs doctor. Ready = doctor prints all `ok`. It refuses to start if something it didn't start already owns :4173. Teardown is `verify.sh stop`.
+Runs `npm ci` if needed, installs Playwright's Chromium, `npm run build` (song validation, override checks, tsc, vite build), then starts `vite preview --port 4173 --strictPort` in the background with its pid in `.verify/preview.pid`, and runs doctor. Ready = doctor prints all `ok`. It refuses to start if something it didn't start already owns :4173. Teardown is `verify.sh stop`. Another worktree can run side by side on another port: `PW_PORT=4180 verify.sh all`.
 
 ## Doctor
 
@@ -31,7 +31,7 @@ Every check drives the real build in headless Chromium at 390x844 (touch, autopl
 
 | Command | What it proves | Pass rule |
 |---|---|---|
-| `verify.sh unit` | `npm run lint` (errors fail), then `tests/memory.test.ts` (saved progress store) and `tests/learn.test.ts`: every lesson of every song (1,441+) - no steps on sections without drums, unique step titles, steps are growing subsets that end on the full part with no note dropped, 60/80/100% tempo ladder, counts fill each bar, the feel sentence matches the counts, no tab markers in section names, no drummer names in prose | `# fail 0` |
+| `verify.sh unit` | `npm run lint` (errors fail), then `tests/midi.test.ts` (kit scorer, calibration, pad map), `tests/memory.test.ts` (saved progress store) and `tests/learn.test.ts`: every lesson of every song (1,441+) - no steps on sections without drums, unique step titles, steps are growing subsets that end on the full part with no note dropped, 60/80/100% tempo ladder, counts fill each bar, the feel sentence matches the counts, no tab markers in section names, no drummer names in prose | `# fail 0` |
 | `verify.sh e2e` | `tests/e2e/*.spec.ts` (Playwright): Learn it journeys (no-drums section jumps on, numbered step titles, clean names), the practice bar (sticky, controls work, 44 px targets, count-in moves nothing, summary/kit collapsed), screenshot baselines (`visual.spec.ts`: 6 songs x idle/steps/playing, moving parts masked; local only), Now playing strip jump, axe WCAG 2.2 A/AA + best-practice scan of Learn idle / steps open / playing / silent section and Now playing | all passed; any serious or critical axe finding fails |
 | `verify.sh learn-sync` | `tests/learn-sync.mjs`: the Learn it amber cell moves when the note is heard (audio-context clock, output + base latency, one frame) | `sync ok` |
 | `verify.sh nowplaying-sync` | `tests/nowplaying-sync.mjs`: Now playing step grid and bar ring vs heard audio across dense, odd-meter and tempo-change songs, seek, loop, tempo change | `sync ok` |
