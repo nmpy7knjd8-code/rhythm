@@ -513,6 +513,8 @@ export function PlayerBar() {
         {P.loopMode && (P.barLoop ? <button aria-label="Clear loop" onClick={P.clearBarLoop} className="h-8 pl-3 pr-2.5 rounded-full text-[13px] bg-white/[0.06] text-amber flex items-center gap-1.5">Looping bars {P.barLoop[0] + 1}{P.barLoop[1] > P.barLoop[0] ? `–${P.barLoop[1] + 1}` : ''}<span className="text-bone/60 text-[15px] leading-none">×</span></button>
           : P.loopPick !== null && <span className="text-[13px] text-mute">Bar {P.loopPick + 1} · tap the end bar</span>)}
       </div>}<UpNext key={String(open)} /></div>}>
+      {P.loadError && <div role="alert" className="mb-4 flex items-center gap-3 text-[15px] text-bone"><span className="flex-1 min-w-0">Couldn't load {P.loadError.song.raw.song}.</span>
+        <button onClick={() => void P.loadError?.retry()} className="h-11 px-4 rounded-full bg-white/[0.06] text-bone">Retry</button></div>}
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
         {sg?.raw.tuning && <p className="text-[13px] text-bone">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
