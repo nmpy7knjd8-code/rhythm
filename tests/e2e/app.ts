@@ -21,3 +21,6 @@ export async function openSong(page: Page, id: string, tab: 'Learn it' | 'Now pl
 export async function pickSection(page: Page, index: number) {
   await sheet(page).getByLabel('Sections').getByRole('button').nth(index).click()
 }
+
+/** The sheet header's Play/Stop: it sits above the scrolling content, so it is always in reach. */
+export const transport = (page: Page, name: 'Play' | 'Stop') => sheet(page).getByRole('button', { name, exact: true })

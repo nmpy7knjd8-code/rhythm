@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { openSong, pickSection } from './app'
+import { openSong, pickSection, transport } from './app'
 
 test('the speed trainer starts at From, climbs only after full loops, and stops at To', async ({ page }) => {
   const d = await openSong(page, 'chopsuey') // section 0: a one-bar loop
@@ -11,7 +11,7 @@ test('the speed trainer starts at From, climbs only after full loops, and stops 
   await d.getByRole('button', { name: 'Speed trainer' }).click()
   const tb = d.getByRole('toolbar', { name: 'Practice' })
   await expect(tb).toContainText('80%')
-  await tb.getByRole('button', { name: 'Play' }).click()
+  await transport(page, 'Play').click()
   await page.waitForTimeout(1200) // inside the first bar: no full loop yet
   await expect(tb).toContainText('80%')
   await expect(tb).toContainText('85%', { timeout: 10_000 })
@@ -35,7 +35,7 @@ test('I play, you play: every other bar is the click alone', async ({ page }) =>
   })
   await d.getByRole('button', { name: 'I play, you play' }).click()
   await expect(d.getByText('I play, you play: press Play')).toBeVisible()
-  await d.getByRole('toolbar', { name: 'Practice' }).getByRole('button', { name: 'Play' }).click()
+  await transport(page, 'Play').click()
   await expect(d.getByText('Your turn: play this bar')).toBeVisible({ timeout: 8000 })
   await page.waitForTimeout(8000)
   const log = await page.evaluate(() => (window as unknown as { __log: { bar: number; kind: string }[] }).__log)
@@ -48,4 +48,32 @@ test('I play, you play: every other bar is the click alone', async ({ page }) =>
     if (i % 2 === 0) expect(here.some(x => x.kind === 'play'), `bar ${bar} is the part`).toBe(true)
     else { expect(here.some(x => x.kind === 'play'), `bar ${bar} has no drums`).toBe(false); expect(here.some(x => x.kind === 'click'), `bar ${bar} has the click`).toBe(true) }
   })
+})
+
+test('with I play, you play, the trainer climbs only after a heard bar and its played bar', async ({ page }) => {
+  const d = await openSong(page, 'chopsuey') // section 0: a one-bar loop, so a pair is two laps
+  await pickSection(page, 0)
+  await d.getByLabel('From').selectOption('80')
+  await d.getByLabel('To').selectOption('85')
+  await d.getByLabel('Climb').selectOption('5')
+  await d.getByLabel('Loops').selectOption('1')
+  await d.getByRole('button', { name: 'Speed trainer' }).click()
+  await d.getByRole('button', { name: 'I play, you play' }).click()
+  // sample the turn line and the tempo together, every animation frame
+  await page.evaluate(() => {
+    const dlg = document.querySelector('[role=dialog]')!, tb = dlg.querySelector('[role=toolbar]')!
+    const log: string[] = []; (window as unknown as { __turns: string[] }).__turns = log
+    const tick = () => {
+      const turn = [...dlg.querySelectorAll('[aria-live=polite]')].map(e => e.textContent).find(t => t === 'Listen' || t?.startsWith('Your turn')) ?? '-'
+      const s = `${turn === 'Listen' ? 'L' : turn === '-' ? '-' : 'Y'}${tb.textContent!.match(/(\d+)%/)![1]}`
+      if (log[log.length - 1] !== s) log.push(s)
+      requestAnimationFrame(tick)
+    }
+    tick()
+  })
+  await transport(page, 'Play').click()
+  await expect(d.getByRole('toolbar', { name: 'Practice' })).toContainText('85%', { timeout: 15_000 })
+  const log = await page.evaluate(() => (window as unknown as { __turns: string[] }).__turns.filter(s => s[0] !== '-'))
+  // heard and played at 80%, then the climb lands on a heard bar: never a played bar at a new tempo straight after its heard bar
+  expect(log.slice(0, 3)).toEqual(['L80', 'Y80', 'L85'])
 })
