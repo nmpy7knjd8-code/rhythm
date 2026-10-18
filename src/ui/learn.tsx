@@ -303,7 +303,7 @@ function Learn() {
   const wasPlaying = useRef(P.playing)
   useEffect(() => { if (P.playing && !wasPlaying.current) setWait(false); wasPlaying.current = P.playing }, [P.playing]) // pressing Play leaves wait mode
   // the kit as a remote: Tom 1 + Tom 2 + kick together start playback (only while stopped, so a fill never stops it)
-  const start = useRef(() => {}); start.current = () => { if (!P.playing && !waitPos) void P.toggle() } // never while waiting: a tom+kick fill must not end Wait mode
+  const start = useRef(() => {}); start.current = () => { if (!P.playing && !wait) void P.toggle() } // never while waiting: a tom+kick fill must not end Wait mode
   useEffect(() => connected ? kit.onRemote(() => start.current()) : undefined, [connected])
   useEffect(() => readout.set({ last: null, lap: null, wait: null }), [song.raw.id, selected])
   useEffect(() => { learn.callResponse(callResp); setYours(false); return () => learn.callResponse(false) }, [learn, callResp])

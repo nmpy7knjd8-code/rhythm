@@ -204,3 +204,45 @@ test('the kit is a remote: Tom 1, Tom 2 and kick together start playback while s
   await expect(transport(page, 'Stop')).toBeVisible()
   await transport(page, 'Stop').click()
 })
+
+test('the kit remote is ignored while Wait mode is on, so a tom and kick fill cannot end it', async ({ page }) => {
+  await mockKit(page)
+  const d = await openSong(page, 'backinblack')
+  await pickSection(page, 1)
+  await d.getByRole('button', { name: 'Wait mode' }).click()
+  await expect(readout(page)).toHaveText(/^Hit /)
+  await page.evaluate(() => { const m = (window as unknown as { __midi: { hit(n: number, at: number): void } }).__midi, t = performance.now(); m.hit(48, t); m.hit(45, t + 20); m.hit(36, t + 40) })
+  await page.waitForTimeout(500)
+  await expect(transport(page, 'Play')).toBeVisible()
+  await expect(d.getByRole('button', { name: 'Wait mode' })).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('Wait mode asks again for the current note when the drill filter changes', async ({ page }) => {
+  await mockKit(page)
+  const d = await openSong(page, 'backinblack')
+  await pickSection(page, 1) // bar 1 opens on crash + kick
+  await d.getByRole('button', { name: 'Wait mode' }).click()
+  await expect(readout(page)).toHaveText('Hit Crash + Kick')
+  await d.getByRole('button', { name: 'Feet only' }).click()
+  await expect(readout(page)).toHaveText('Hit Kick')
+  await d.getByRole('button', { name: 'Hands only' }).click()
+  await expect(readout(page)).toHaveText('Hit Crash')
+  await d.getByRole('button', { name: 'All', exact: true }).click()
+  await d.getByRole('button', { name: 'Mute Snare' }).click() // you play only the snare: the cursor moves to the first snare
+  await expect(readout(page)).toHaveText('Hit Snare')
+})
+
+test('with a kit, a loop with nothing to score for the drilled drums still lets the speed trainer climb', async ({ page }) => {
+  await mockKit(page)
+  const d = await openSong(page, 'chopsuey') // section 0: a one-bar loop of cross-stick only
+  await pickSection(page, 0)
+  await d.getByRole('button', { name: 'Feet only' }).click() // nothing for the feet in this loop
+  await d.getByLabel('From').selectOption('80')
+  await d.getByLabel('To').selectOption('85')
+  await d.getByLabel('Loops').selectOption('1')
+  await d.getByRole('button', { name: 'Speed trainer' }).click()
+  await transport(page, 'Play').click()
+  await expect(d.getByRole('toolbar', { name: 'Practice' })).toContainText('85%', { timeout: 10_000 }) // climbs as without a kit
+  await expect(readout(page)).not.toContainText('Last loop')
+  await transport(page, 'Stop').click()
+})
