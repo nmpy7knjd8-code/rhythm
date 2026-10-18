@@ -3,3 +3,7 @@ dist
 test-results
 playwright-report
 .verify
+.env
+.env.*
+.DS_Store
+*.log

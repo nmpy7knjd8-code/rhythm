@@ -57,7 +57,7 @@ function Styles() {
 function SongButtons({ song }: { song: Song }) {
   const P = usePlayer()
   return <div className="flex items-center gap-1.5 mt-4 whitespace-nowrap">
-    <button className="btn-primary !px-3.5" onClick={async () => { await P.loadSong(song); await P.toggle() }}><span className="inline-block w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-current" /> Play song</button>
+    <button className="btn-primary !px-3.5" onClick={async () => { if (await P.loadSong(song)) await P.toggle() }}><span className="inline-block w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-current" /> Play song</button>
     <button className="btn-ghost !px-3.5" onClick={async () => { P.load(song.pattern); if (!P.playing) await P.toggle() }}>Loop groove</button>
     <QueueButton song={song} />
     <span className="ml-auto pl-1 text-[13px] text-mute tabular-nums">{shownBpm(song, song.raw.bpm)} BPM</span>
@@ -98,7 +98,7 @@ function RequestSong() {
   return <form onSubmit={submit} className="mb-10 mx-auto max-w-sm">
     <input type="text" name="_honey" tabIndex={-1} autoComplete="off" aria-hidden="true" value={hp} onChange={e => setHp(e.target.value)} className="hidden" />
     <div className="flex gap-2">
-      <input className="req-input flex-1 min-w-0 h-10 px-3 rounded-xl bg-white/[0.05] border border-white/[0.06] text-[16px] placeholder:text-mute outline-none focus:border-amber/60" placeholder={REQ_PH} aria-label="Request a song" value={text} onChange={e => { setText(e.target.value); setState('idle') }} />
+      <input className="req-input flex-1 min-w-0 h-10 px-3 rounded-xl bg-white/[0.05] border border-white/[0.06] text-[16px] placeholder:text-mute focus:border-amber/60" placeholder={REQ_PH} aria-label="Request a song" value={text} onChange={e => { setText(e.target.value); setState('idle') }} />
       <button disabled={!text.trim() || state === 'sending'} className="h-10 px-3 rounded-xl bg-amber text-ink text-[15px] font-medium disabled:opacity-30">{state === 'sending' ? '…' : 'Send'}</button>
     </div>
     {state === 'sent' && <p className="mt-1.5 text-[13px] text-amber">Thanks, request sent.</p>}
@@ -147,7 +147,7 @@ function Songs() {
     </div>
     <nav id="artists" aria-label="Artists" className={`scroll-mt-24 mx-auto max-w-md flex flex-wrap justify-center gap-1 overflow-hidden ${allArtists ? '' : 'max-h-[108px]'}`}>
       {artists.map(a => <button key={a} onClick={() => { setPicked(a); scrollToArtist(slug(a)) }}
-        className={`h-6 px-2.5 rounded-full text-[13px] leading-none transition-colors ${picked === a ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/70 hover:text-amber'}`}>{a}</button>)}
+        className={`h-8 px-2.5 rounded-full text-[13px] leading-none transition-colors ${picked === a ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/70 hover:text-amber'}`}>{a}</button>)}
     </nav>
     <div className="mt-1 mb-4 text-center"><button onClick={() => setAllArtists(v => !v)} className="text-[13px] text-mute hover:text-amber">{allArtists ? 'Fewer' : 'More artists'}</button></div>
     <RequestSong />
@@ -264,13 +264,13 @@ export function Story() {
       <p className="mt-2 text-bone leading-relaxed">Original multi-section pieces that put these ideas to work over a few minutes each.</p>
       <ul className="mt-4">{JOURNEYS.map(j => <li key={j.raw.id} className="py-3 flex items-center gap-3">
         <div className="flex-1 min-w-0"><p className="font-medium truncate">{j.raw.song}</p><p className="text-[13px] text-mute">{j.sections.length} sections · {j.sections.reduce((n, x) => n + x.bars, 0)} bars</p></div>
-        <button aria-label={`Play ${j.raw.song}`} onClick={async () => { await loadSong(j); await toggle() }} className="w-10 h-10 rounded-full bg-white/[0.08] grid place-items-center">▶</button>
+        <button aria-label={`Play ${j.raw.song}`} onClick={async () => { if (await loadSong(j)) await toggle() }} className="w-10 h-10 rounded-full bg-white/[0.08] grid place-items-center">▶</button>
       </li>)}</ul></section>}
     {STUDIES.length > 0 && <section className="mb-10"><h2 className="text-xl font-medium">Style studies</h2>
       <p className="mt-2 text-bone leading-relaxed">Generic grooves in the style of an era or player, and reference pulses. Not transcriptions of specific recordings.</p>
       <ul className="mt-4">{STUDIES.map(j => <li key={j.raw.id} className="py-3 flex items-center gap-3">
         <div className="flex-1 min-w-0"><p className="font-medium truncate">{j.raw.song}</p><p className="text-[13px] text-mute">{j.sections.length} sections · {j.sections.reduce((n, x) => n + x.bars, 0)} bars</p></div>
-        <button aria-label={`Play ${j.raw.song}`} onClick={async () => { await loadSong(j); await toggle() }} className="w-10 h-10 rounded-full bg-white/[0.08] grid place-items-center">▶</button>
+        <button aria-label={`Play ${j.raw.song}`} onClick={async () => { if (await loadSong(j)) await toggle() }} className="w-10 h-10 rounded-full bg-white/[0.08] grid place-items-center">▶</button>
       </li>)}</ul></section>}
   </>
 }
@@ -298,7 +298,7 @@ export function Lens({ id, go }: { id?: string; go: (h: string) => void }) {
   if (!a) return <>
     <H1 t="Drummers" sub="How these drummers create feeling and tell a story with the kit." />
     <ul className="space-y-1">{ARTISTS.map(x => <li key={x.id}>
-      <button onClick={() => go(`lens/${x.id}`)} className="w-full -mx-3 px-3 py-3 text-left flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.03] active:bg-white/[0.06]" style={{ width: 'calc(100% + 1.5rem)' }}>
+      <button onClick={() => go(`lens/${x.id}`)} className="-mx-3 px-3 py-3 text-left flex items-center gap-3 rounded-lg transition-colors hover:bg-white/[0.03] active:bg-white/[0.06]" style={{ width: 'calc(100% + 1.5rem)' }}>
         <span className="min-w-0 flex-1">
           <span className="block text-lg leading-snug">{x.name}</span>
           <span className="block mt-0.5 text-[13px] text-bone/45 leading-snug">{x.band.split(/\s*;\s*/).map(b => b[0].toUpperCase() + b.slice(1)).join(' · ')}</span>
@@ -327,7 +327,7 @@ function InPulse({ name }: { name: string }) {
   if (!list.length) return null
   return <section className="mb-12"><Tag c="In Pulse" />
     <ul className="mt-3">{list.map(j => <li key={j.raw.id} className="py-3 flex items-center gap-3">
-      <button aria-label={`Play ${j.raw.song}`} onClick={async () => { await loadSong(j); if (!playing) await toggle() }} className="w-9 h-9 shrink-0 rounded-full bg-white/[0.08] grid place-items-center text-sm">▶</button>
+      <button aria-label={`Play ${j.raw.song}`} onClick={async () => { if (await loadSong(j) && !playing) await toggle() }} className="w-9 h-9 shrink-0 rounded-full bg-white/[0.08] grid place-items-center text-sm">▶</button>
       <span className="min-w-0"><span className="block truncate">{j.raw.song}</span><span className="block text-[13px] truncate">{j.raw.artist}<span className="text-mute"> · {shownBpm(j, j.raw.bpm)} BPM</span></span></span></li>)}</ul></section>
 }
 
@@ -338,14 +338,13 @@ function TheorySongs({ refs }: { refs: { id: string; note: string }[] }) {
   if (!list.length) return null
   return <div className="mt-6"><span className="block text-[13px] text-mute">Hear it in Pulse</span>
     <ul className="mt-1">{list.map(({ r, s }) => <li key={r.id} className="py-2.5 flex items-center gap-3">
-      <button aria-label={`Play ${s!.raw.song}`} onClick={async () => { await loadSong(s!); if (!playing) await toggle() }} className="w-8 h-8 shrink-0 rounded-full bg-white/[0.08] grid place-items-center text-xs">▶</button>
+      <button aria-label={`Play ${s!.raw.song}`} onClick={async () => { if (await loadSong(s!) && !playing) await toggle() }} className="w-8 h-8 shrink-0 rounded-full bg-white/[0.08] grid place-items-center text-xs">▶</button>
       <span className="min-w-0 text-[15px] leading-snug text-bone">{s!.raw.song} · {r.note}</span></li>)}</ul></div>
 }
 
 export function Theory() {
   const { load, toggle, playing } = usePlayer()
   const loadAll = async (ps: Pattern[]) => { ps.forEach((p, i) => load(p, i > 0)); if (!playing) await toggle() }
-  const NO_COMBO = new Set<string>() // different meters: stacking them makes no musical sense
   return <>
     <H1 t="Theory" sub="The ideas underneath rhythm, from meter to tension and release. Every concept has a pattern you can play." />
     <nav className="mb-14 flex flex-wrap gap-x-4 gap-y-2 text-[15px] text-bone/50">{THEORY.map(c => <a key={c.id} href={`#/theory`} onClick={e => { e.preventDefault(); document.getElementById(c.id)?.scrollIntoView({ behavior: 'smooth' }) }}>{c.title.split(':')[0]}</a>)}</nav>
@@ -356,7 +355,7 @@ export function Theory() {
       {c.points && <ul className="mt-4 space-y-2 text-[15px] leading-relaxed text-bone list-disc pl-5 marker:text-bone/30">{c.points.map(t => <li key={t}>{t}</li>)}</ul>}
       <p className="mt-4 text-[15px] text-bone">{c.listen}</p>
       {c.patterns.map(p => <div key={p.id} className="mt-5"><h3 className="text-[15px] font-medium">{p.name}</h3><LoadButtons pattern={p} /></div>)}
-      {c.patterns.length > 1 && c.combo !== false && !NO_COMBO.has(c.id) && <button className="mt-4 text-[15px] text-amber" onClick={() => loadAll(c.patterns)}>Play all {c.patterns.length} together →</button>}
+      {c.patterns.length > 1 && c.combo !== false && <button className="mt-4 text-[15px] text-amber" onClick={() => loadAll(c.patterns)}>Play all {c.patterns.length} together →</button>}
       {c.songs && <TheorySongs refs={c.songs} />}
     </section>)}
   </>

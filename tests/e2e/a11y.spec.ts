@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { openSong, pickSection } from './app'
+import { openSong, pickSection, sheet } from './app'
 
 // WCAG 2.2 A/AA plus axe best practices. Serious and critical findings fail; the rest are attached to the report.
 async function scan(page: Page, name: string) {
@@ -45,4 +45,37 @@ test('Now playing', async ({ page }) => {
   await d.getByRole('button', { name: 'Play' }).first().click()
   await page.waitForTimeout(800)
   await scan(page, 'nowplaying')
+})
+
+test('Library page', async ({ page }) => {
+  await page.goto('./#/library', { waitUntil: 'networkidle' })
+  await expect(page.getByRole('heading').first()).toBeVisible()
+  await scan(page, 'library')
+})
+
+test('Library with a song loaded and the sheet closed', async ({ page }) => {
+  await openSong(page, 'backinblack', 'Now playing')
+  await page.keyboard.press('Escape')
+  await expect(sheet(page)).toHaveAttribute('aria-hidden', 'true')
+  await scan(page, 'library-sheet-closed')
+})
+
+test('the closed sheet is out of reach; opening moves focus in and closing hands it back', async ({ page }) => {
+  await page.goto('./', { waitUntil: 'networkidle' })
+  const d = sheet(page)
+  expect(await d.evaluate(el => (el as HTMLElement).inert)).toBe(true)
+  // Tab through the page: focus never lands inside the closed sheet
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press('Tab')
+    expect(await d.evaluate(el => el.contains(document.activeElement))).toBe(false)
+  }
+  const opener = page.getByLabel('Browse rhythms')
+  await opener.focus()
+  await page.keyboard.press('Enter')
+  await expect(d).toHaveAttribute('aria-hidden', 'false')
+  await expect(d.getByRole('button', { name: 'Close player' })).toBeFocused()
+  expect(await d.evaluate(el => (el as HTMLElement).inert)).toBe(false)
+  await page.keyboard.press('Escape')
+  await expect(d).toHaveAttribute('aria-hidden', 'true')
+  await expect(opener).toBeFocused()
 })

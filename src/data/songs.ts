@@ -33,11 +33,22 @@ function stringTracks(b: Record<string, string>): Track {
   return t
 }
 interface SectionFile { humanize?: { lateMs: number; jitterMs: number }; name: string; bars: (Record<string, string> & { _sub?: Record<string, Record<string, [number | string, number][]>>; _var?: Record<string, Record<string, string>> })[]; ticksPerStep: number[]; timeSig: string[]; bpm: number[]; confidence?: string }
+/** The section a song bar falls in (0 when none). */
+export const sectionOf = (s: Song, bar: number) => Math.max(0, s.sections.findIndex(x => bar >= x.start && bar < x.start + x.bars))
+
 /** Fetch the full bar-by-bar part for a song (kept out of the main bundle). */
 export async function loadSongBars(song: Song): Promise<Song> {
   if (song.bars.length) return song
-  const r = await fetch(`${import.meta.env.BASE_URL}songs/${song.raw.id}.json?v=${__BUILD_ID__}`)
-  const data = (await r.json()) as { sections: SectionFile[] }
+  // a failed fetch, an error status or a broken file all reject with one message; callers show it with a Retry
+  let data: { sections: SectionFile[] }
+  try {
+    const r = await fetch(`${import.meta.env.BASE_URL}songs/${song.raw.id}.json?v=${__BUILD_ID__}`)
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    data = await r.json()
+    if (!Array.isArray(data?.sections)) throw new Error('no sections')
+  } catch (err) {
+    throw new Error(`Couldn't load ${song.raw.song} (${err instanceof Error ? err.message : String(err)})`)
+  }
   const bars: Pattern[] = []
   data.sections.forEach((sec, si) => sec.bars.forEach((b, i) => {
     const { _sub, _var, _tempo, _feel, _grace, ...strs } = b as Record<string, string> & { _grace?: Record<string, Record<string, number>>; _feel?: '8th' | '16th'; _tempo?: [string, number][]; _sub?: Record<string, Record<string, [number | string, number][]>>; _var?: Record<string, Record<string, string>> }
