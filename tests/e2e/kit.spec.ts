@@ -140,3 +140,67 @@ test('only the voices you are meant to play are scored: muted voices you fill in
   expect(await voices()).toEqual(['low'])
   await transport(page, 'Stop').click()
 })
+
+test('with a kit, the speed trainer climbs only after loops played at 85% or better', async ({ page }) => {
+  await mockKit(page)
+  const d = await openSong(page, 'chopsuey') // section 0: a one-bar loop
+  await pickSection(page, 0)
+  await d.getByLabel('From').selectOption('80')
+  await d.getByLabel('To').selectOption('85')
+  await d.getByLabel('Loops').selectOption('1')
+  await d.getByRole('button', { name: 'Speed trainer' }).click()
+  await expect(d.getByText(/at 85%\+/)).toBeVisible()
+  const tb = d.getByRole('toolbar', { name: 'Practice' })
+  await transport(page, 'Play').click()
+  await expect(readout(page)).toContainText('Last loop 0%', { timeout: 10_000 }) // nothing played
+  await page.waitForTimeout(4000) // two more silent loops
+  await expect(tb).toContainText('80%')
+  await autoPlay(page)
+  await expect(tb).toContainText('85%', { timeout: 10_000 })
+  await transport(page, 'Stop').click()
+})
+
+test('wait mode holds each note until every drum of it is hit', async ({ page }) => {
+  await mockKit(page)
+  const d = await openSong(page, 'backinblack')
+  await pickSection(page, 1)
+  await d.getByRole('button', { name: 'Wait mode' }).click()
+  const lit = () => notation(page).locator('[data-s].bg-amber\\/20').first().getAttribute('data-s')
+  await expect(readout(page)).toHaveText(/^Hit /)
+  const first = await lit()
+  const want = (await readout(page).textContent())!.replace(/^Hit /, '').split(' + ')
+  const NOTE_OF: Record<string, number> = { Kick: 36, Snare: 38, 'Hi-hat': 42, Crash: 49, Ride: 51 }
+  const send = (n: number) => page.evaluate(n => (window as unknown as { __midi: { hit(n: number): void } }).__midi.hit(n), n)
+  await send(want.includes('Tom 2') ? 48 : 45) // a tom that is not wanted
+  await expect(readout(page)).toContainText('Wrong drum')
+  expect(await lit()).toBe(first)
+  for (const w of want) await send(NOTE_OF[w])
+  await expect.poll(lit).not.toBe(first)
+  await expect(transport(page, 'Play')).toBeVisible() // nothing played meanwhile
+})
+
+test('wait mode with Feet only asks for the kick and ignores the hands', async ({ page }) => {
+  await mockKit(page)
+  const d = await openSong(page, 'backinblack')
+  await pickSection(page, 1)
+  await d.getByRole('button', { name: 'Feet only' }).click()
+  await d.getByRole('button', { name: 'Wait mode' }).click()
+  await expect(readout(page)).toHaveText(/^Hit Kick$/)
+  await page.evaluate(() => (window as unknown as { __midi: { hit(n: number): void } }).__midi.hit(38)) // snare: not being drilled
+  await page.waitForTimeout(200)
+  await expect(readout(page)).toHaveText(/^Hit Kick$/)
+})
+
+test('the kit is a remote: Tom 1, Tom 2 and kick together start playback while stopped', async ({ page }) => {
+  await mockKit(page)
+  await openSong(page, 'backinblack')
+  await pickSection(page, 1)
+  const combo = () => page.evaluate(() => { const m = (window as unknown as { __midi: { hit(n: number, at: number): void } }).__midi, t = performance.now(); m.hit(48, t); m.hit(45, t + 20); m.hit(36, t + 40) })
+  await combo()
+  await expect(transport(page, 'Stop')).toBeVisible()
+  await page.waitForTimeout(300)
+  await combo() // while playing it does nothing, so a fill with those drums never stops you
+  await page.waitForTimeout(500)
+  await expect(transport(page, 'Stop')).toBeVisible()
+  await transport(page, 'Stop').click()
+})

@@ -5,6 +5,8 @@ import { drumOf, sameDrum } from './map'
  *  osu! at OD 5 gives ±50 / ±100 / ±150). A window never reaches past halfway to the same drum's next or previous note. */
 export const ON_MS = 30
 export const WINDOW_MS = 100
+/** With a kit connected, the speed trainer only counts a loop scoring at least this. */
+export const PASS = 0.85
 
 export type Verdict = 'on' | 'early' | 'late'
 /** A note to play. `at` is when it is heard (performance.now ms), `t` its audio-context time (s). */
