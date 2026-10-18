@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openSong, pickSection, sheet } from './app'
+import { openSong, pickSection, sheet, transport } from './app'
 
 // Learn it at 390 px: 6 songs x idle / steps open / playing. Anything that moves with the audio (lit notation cell,
 // playing bar in the strip, the bar number) is masked. Baselines are this box's Chromium fonts, so CI skips @visual; run it through
@@ -17,8 +17,8 @@ for (const [id, section] of SONGS) {
     const tb = d.getByRole('toolbar', { name: 'Practice' })
     await tb.getByRole('button', { name: 'Steps' }).click()
     await shot(page, `${id}-steps`)
-    await tb.getByRole('button', { name: 'Play' }).click()
-    await expect(tb.getByRole('button', { name: 'Stop' })).toBeVisible()
+    await transport(page, 'Play').click()
+    await expect(transport(page, 'Stop')).toBeVisible()
     await page.waitForTimeout(600)
     await shot(page, `${id}-playing`)
   })
