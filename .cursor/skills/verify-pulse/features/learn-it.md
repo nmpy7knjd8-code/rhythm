@@ -11,6 +11,7 @@ The Learn it tab teaches the section that is playing: section pills, the bar str
 - `learn-names` section pills show clean names (no `[A]`, no `- 8 bars`).
 - `learn-bar` the practice bar sits above the notation, sticks while scrolling, and its controls work.
 - `learn-layout` every control is 44 px or more, the count-in moves nothing, "About this section" (summary + kit) starts collapsed.
+- `learn-progress` settings persist in localStorage (`pulse.learn.v1`); a whole-section loop of the full part records the best tempo; 'Best here N%, when' and 'Review <section>: N%, N days ago' under the pills.
 - `learn-visual` screenshot baselines for 6 songs x idle / steps / playing.
 
 ## How to get to it (user POV)
@@ -27,10 +28,13 @@ Preconditions:
 - **Silent section.** `tests/e2e/learn.spec.ts` "a section without drums...": Schism section 0 shows `No drums here`, no `Steps` button; tapping `Go to ...` selects that pill (`aria-pressed=true`) and the notation appears.
 - **Steps.** Same spec, "repeated beats...": Come Together `Chorus`, tap `Steps`, walk `Next` until disabled; titles are unique and end with `The full part`.
 - **Practice bar and layout.** `tests/e2e/layout.spec.ts`: toolbar `Practice` above the notation and pinned to the scroller top after scrolling 900 px; `Slower` makes `95%` and moves the `Practice tempo` slider; `Loop` toggles `aria-pressed`; no button under 44x44; notation and step card keep their y while the count-in number shows.
+- **Progress.** `tests/e2e/progress.spec.ts`: Chop Suey section 0 (one bar) at 95% records `Best here 95%, today` and it survives a reload; a step does not count; Count-in persists for every song, a mute only for its song; a seeded two-day-old record shows `Review Verse 1: 85%, 2 days ago` and tapping it opens Verse 1. Store logic: `tests/memory.test.ts` (part of `verify.sh unit`).
 - **Screenshots.** `npx playwright test visual` (local only). Fails on any unmasked pixel change over 0.2%.
 - **Sync.** Run `verify.sh learn-sync`. Every row `ok`, final `sync ok`.
 
 ## Gotchas
+
+- Progress lives in the browser profile; a fresh Playwright context starts empty. Seed it with `page.addInitScript` writing `pulse.learn.v1` when a journey needs history.
 
 - `getByRole('dialog')` finds nothing while the sheet is closed (it is `aria-hidden`); use `[role=dialog]`.
 - Section index != pill text; look the pill up by text when the index matters.
