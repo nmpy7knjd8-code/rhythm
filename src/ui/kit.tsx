@@ -14,7 +14,7 @@ export const useKit = () => useSyncExternalStore(kit.watch, kit.get)
 /** Verdicts for one bar's notes, keyed `step:voice`. */
 export const useMarks = (bar: number) => useSyncExternalStore(marks.watch, marks.get).get(bar)
 
-export const readout = store<{ last: HitResult | null; lap: Tally | null }>({ last: null, lap: null })
+export const readout = store<{ last: HitResult | null; lap: Tally | null; wait: { text: string; bad: boolean } | null }>({ last: null, lap: null, wait: null })
 export const scorer = new Scorer()
 
 export const MARK: Record<Mark, { label: string; arrow: string; color: string }> = {
@@ -70,13 +70,54 @@ export function useKitScore(src: ScoreSource) {
   }, [src.active])
 }
 
+type Pos = { bar: number; step: number }
+/** Drums to hit together at this step (one voice per drum). */
+function groupAt(p: Pattern | undefined, step: number, voices: Set<Voice>): Voice[] {
+  if (!p) return []
+  const by = new Map<string, Voice>()
+  for (const h of [...hitsAt(p, step), ...subHitsAt(p, step)]) if (!UNSCORED.has(h.voice) && voices.has(h.voice) && !by.has(drumOf(h.voice))) by.set(drumOf(h.voice), h.voice)
+  return [...by.values()]
+}
+
+/** Wait mode: no playback; the cursor sits on the next note until every drum of it is hit, then moves on (wrapping in `range`). */
+export function useWaitMode(on: boolean, pattern: (bar: number) => Pattern | undefined, voices: Set<Voice>, range: [number, number], start: number): Pos | null {
+  const [cur, setCur] = useState<(Pos & { left: Voice[] }) | null>(null)
+  const live = useRef({ pattern, voices, range, cur }); live.current = { pattern, voices, range, cur }
+  const find = (from: Pos, skip: boolean) => {
+    const { pattern, voices, range: [a, b] } = live.current
+    let bar = Math.min(Math.max(from.bar, a), b - 1), step = from.step + (skip ? 1 : 0)
+    for (let n = 0; n < (b - a + 1) * 64; n++) {
+      const p = pattern(bar)
+      if (p && step < p.steps) { const left = groupAt(p, step, voices); if (left.length) return { bar, step, left }; step++; continue }
+      bar = bar + 1 >= b ? a : bar + 1; step = 0
+    }
+    return null
+  }
+  const show = (c: { left: Voice[] } | null) => readout.set({ ...readout.get(), wait: c ? { text: `Hit ${c.left.map(v => DRUM_NAME[drumOf(v)]).join(' + ')}`, bad: false } : null })
+  useEffect(() => {
+    if (!on) { setCur(null); readout.set({ ...readout.get(), wait: null }); return }
+    const first = find({ bar: start, step: 0 }, false); setCur(first); show(first)
+    const off = kit.onHit(h => {
+      const c = live.current.cur; if (!c) return
+      const i = c.left.findIndex(v => drumOf(v) === drumOf(h.voice))
+      if (i < 0 && ![...live.current.voices].some(v => drumOf(v) === drumOf(h.voice))) return // a pad you're not drilling: ignored
+      if (i < 0) { readout.set({ ...readout.get(), wait: { text: `Wrong drum: ${DRUM_NAME[drumOf(h.voice)]}, not ${c.left.map(v => DRUM_NAME[drumOf(v)]).join(' + ')}`, bad: true } }); return }
+      const left = c.left.filter((_, j) => j !== i)
+      const next = left.length ? { ...c, left } : find(c, true)
+      live.current.cur = next; setCur(next); show(next)
+    })
+    return () => { off(); readout.set({ ...readout.get(), wait: null }) }
+  }, [on, range[0], range[1]]) // eslint-disable-line react-hooks/exhaustive-deps -- (re)starts where you are when turned on or the bars change
+  return cur && { bar: cur.bar, step: cur.step }
+}
+
 /** One fixed-height line under the bar title: the last hit (Early / On time / Late, or the wrong drum) and the last loop's score. */
 export function KitReadout({ best }: { best?: { score: number; pct: number } }) {
-  const { last, lap } = useSyncExternalStore(readout.watch, readout.get)
+  const { last, lap, wait } = useSyncExternalStore(readout.watch, readout.get)
   const m = last?.kind === 'hit' ? MARK[last.verdict] : null
   return <div className="mt-1 h-7 flex items-center justify-between gap-2 text-[15px] tabular-nums" aria-live="polite" data-kit-readout>
-    <span className={`min-w-0 truncate font-medium ${m ? m.color : last ? 'text-rose-400' : 'text-mute'}`}>
-      {(m && last?.kind === 'hit' ? `${last.verdict === 'early' ? '← ' : ''}${m.label}${last.verdict === 'late' ? ' →' : ''}${last.verdict === 'on' ? '' : ` ${Math.round(Math.abs(last.err))} ms`}`
+    <span className={`min-w-0 truncate font-medium ${wait ? (wait.bad ? 'text-rose-400' : 'text-bone') : m ? m.color : last ? 'text-rose-400' : 'text-mute'}`}>
+      {wait ? wait.text : (m && last?.kind === 'hit' ? `${last.verdict === 'early' ? '← ' : ''}${m.label}${last.verdict === 'late' ? ' →' : ''}${last.verdict === 'on' ? '' : ` ${Math.round(Math.abs(last.err))} ms`}`
         : last?.kind === 'wrong' ? `Wrong drum: ${DRUM_NAME[drumOf(last.voice)]}, not ${DRUM_NAME[drumOf(last.want)]}` : 'Play along on your kit')}
     </span>
     <span className="shrink-0 text-[13px] text-mute">{lap && <>Last loop <span className="text-bone">{Math.round(lap.score * 100)}%</span></>}{best && <>{lap ? ' · ' : ''}Best {Math.round(best.score * 100)}% at {best.pct}%</>}</span>
@@ -159,6 +200,7 @@ export function KitSettings({ before }: { before: () => Promise<void> }) {
     <p className="-mt-2 text-[13px] text-bone leading-snug">Best: a cable from this device into the kit’s Aux In, headphones in the kit, kit Local on.</p>
     <Calibrate before={before} />
     <Pads />
+    <p className="text-[13px] text-mute leading-snug">Hit Tom 1, Tom 2 and the kick together to start.</p>
   </div>
 }
 if (typeof window !== 'undefined') (window as unknown as { __pulseScorer: Scorer }).__pulseScorer = scorer

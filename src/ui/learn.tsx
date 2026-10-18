@@ -13,8 +13,8 @@ import { KitView } from './kitview'
 import { scoredVoices } from '../midi/map'
 import { ticksPerStep } from '../engine/pattern'
 import { kit } from '../midi/kit'
-import { tally } from '../midi/score'
-import { KitReadout, KitSettings, MARK, readout, scorer, useKit, useKitScore, useMarks } from './kit'
+import { PASS, tally } from '../midi/score'
+import { KitReadout, KitSettings, MARK, readout, scorer, useKit, useKitScore, useMarks, useWaitMode } from './kit'
 
 const FEET = new Set<Voice>(['low', 'pedal'])
 const VOICE_NAME = (v: Voice) => VOICE_LABEL[v][0].toUpperCase() + VOICE_LABEL[v].slice(1)
@@ -219,7 +219,13 @@ function Learn() {
   const playStep = heard?.step ?? -1
   const nowBar = heard?.bar ?? P.songBar
   const inSec = !!sec && nowBar >= sec.start && nowBar < sec.start + sec.bars
-  const view = pin !== null && sec && pin >= sec.start && pin < sec.start + sec.bars ? pin : inSec ? nowBar : (sec?.start ?? 0)
+  const followed = pin !== null && sec && pin >= sec.start && pin < sec.start + sec.bars ? pin : inSec ? nowBar : (sec?.start ?? 0)
+  // what the drummer should play in a song bar: the step being practised when its grid matches, else the full bar
+  const scorePattern = (bar: number) => { const p = song.bars[bar], o = stepBars?.get(bar); return o && p && o.steps === p.steps && ticksPerStep(o) === ticksPerStep(p) ? o : p }
+  const [wait, setWait] = useState(false)
+  const waitRange: [number, number] = P.barLoop ? [P.barLoop[0], P.barLoop[1] + 1] : sec ? [sec.start, sec.start + sec.bars] : [0, 1]
+  const waitPos = useWaitMode(wait && connected && !silent, scorePattern, scored, waitRange, followed)
+  const view = waitPos ? waitPos.bar : followed
   const shown: LessonBar | undefined = (stepOn && cur ? cur.bars : full.bars).find(b => b.songBar === view) ?? full.bars.find(b => b.songBar === view)
 
 
@@ -275,6 +281,7 @@ function Learn() {
     if (L.counts) { recordLoop(song.raw.id, L.secKey, L.pct); setRecords(bests(song.raw.id)) }
     if (L.counts && score?.total) { kit.recordBest(song.raw.id, L.secKey, score.score, L.pct); setKitBest(kit.best(song.raw.id, L.secKey)) }
     if (!L.trainer) return
+    if (L.kit && !(score?.total && score.score >= PASS)) return // with a kit, only a loop played well counts
     const n = L.loops + 1
     L.loops = n; setLoops(n)
     if (n % L.every !== 0 || L.pct >= L.to) return
@@ -292,11 +299,13 @@ function Learn() {
     return () => { learn.onPulse(null); learn.onBar(null) }
   }, [learn, countIn, silent])
   useEffect(() => () => { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel() }, [])
-  useKitScore({ active: connected && P.playing && !silent, clock: learn.clock, voices: scored, pattern: bar => {
-    const p = song.bars[bar], o = stepBars?.get(bar)
-    return o && p && o.steps === p.steps && ticksPerStep(o) === ticksPerStep(p) ? o : p
-  } })
-  useEffect(() => readout.set({ last: null, lap: null }), [song.raw.id, selected])
+  useKitScore({ active: connected && P.playing && !silent, clock: learn.clock, voices: scored, pattern: scorePattern })
+  const wasPlaying = useRef(P.playing)
+  useEffect(() => { if (P.playing && !wasPlaying.current) setWait(false); wasPlaying.current = P.playing }, [P.playing]) // pressing Play leaves wait mode
+  // the kit as a remote: Tom 1 + Tom 2 + kick together start playback (only while stopped, so a fill never stops it)
+  const start = useRef(() => {}); start.current = () => { if (!P.playing) void P.toggle() }
+  useEffect(() => connected ? kit.onRemote(() => start.current()) : undefined, [connected])
+  useEffect(() => readout.set({ last: null, lap: null, wait: null }), [song.raw.id, selected])
   useEffect(() => { learn.callResponse(callResp); setYours(false); return () => learn.callResponse(false) }, [learn, callResp])
   useEffect(() => {
     learn.voices(allow)
@@ -399,7 +408,7 @@ function Learn() {
       {connected && <KitReadout best={kitBest} />}
       {callResp && <div className={`mt-1 h-7 text-[15px] font-medium ${P.playing && yours ? 'text-amber' : 'text-bone/70'}`} aria-live="polite">{P.playing ? (yours ? 'Your turn: play this bar' : 'Listen') : 'I play, you play: press Play'}</div>}
       <div className="relative">
-        {shown ? <Notation bar={shown} step={P.playing && heard && view === heard.bar ? playStep : -1} sounds={sounds} /> : <p className="mt-3 text-[15px] text-mute">This bar hasn’t loaded.</p>}
+        {shown ? <Notation bar={shown} step={waitPos ? (view === waitPos.bar ? waitPos.step : -1) : P.playing && heard && view === heard.bar ? playStep : -1} sounds={sounds} /> : <p className="mt-3 text-[15px] text-mute">This bar hasn’t loaded.</p>}
         {/* the count-in is a small badge over the notation's corner: nothing moves, and the first bar stays readable */}
         {countFlash !== null && <div className="absolute -top-1 right-0 w-11 h-11 rounded-full grid place-items-center bg-amber text-ink text-[22px] leading-none font-semibold tabular-nums shadow-lg shadow-black/50 pointer-events-none" aria-live="polite">{countFlash}</div>}
       </div>
@@ -424,7 +433,7 @@ function Learn() {
       <p className="mt-1.5 text-[13px] text-bone leading-snug">{lesson.tempos.note}</p>
       <div className="mt-3 flex items-center justify-between gap-2">
         <button aria-pressed={trainer} onClick={startTrainer} className={pill(trainer)}>Speed trainer</button>
-        <span className="text-[13px] text-mute text-right">{trainer ? (pct >= to ? `At ${to}%.` : `${loops % every} of ${every} full loop${every > 1 ? 's' : ''} · next ${Math.min(to, pct + by)}%`) : 'Climbs only after full loops'}</span>
+        <span className="text-[13px] text-mute text-right">{trainer ? (pct >= to ? `At ${to}%.` : `${loops % every} of ${every} full loop${every > 1 ? 's' : ''}${connected ? ` at ${PASS * 100}%+` : ''} · next ${Math.min(to, pct + by)}%`) : connected ? `Climbs after full loops at ${PASS * 100}%+` : 'Climbs only after full loops'}</span>
       </div>
       <div className="mt-2 grid grid-cols-4 gap-1.5">
         <Choice label="From" value={from} options={[50, 55, 60, 65, 70, 75, 80, 85, 90, 95]} show={n => `${n}%`} set={n => { setFrom(n); if (n >= to) setTo(Math.min(100, n + 5)) }} />
@@ -439,6 +448,7 @@ function Learn() {
       <button aria-pressed={click} onClick={() => setClick(v => !v)} className={pill(click)}>Click</button>
       <button aria-pressed={voice} onClick={() => setVoice(!voice)} className={pill(voice)}>Voice</button>
       <button aria-pressed={callResp} onClick={() => setCallResp(v => !v)} className={pill(callResp)}>I play, you play</button>
+      {connected && !silent && <button aria-pressed={wait} onClick={() => { if (P.playing) void P.toggle(); setWait(v => !v) }} className={pill(wait)}>Wait mode</button>}
       {k.supported && <button aria-pressed={kitPanel} onClick={() => { setKitPanel(v => !v); if (k.status === 'off') void kit.connect() }} className={pill(kitPanel)}>{connected ? 'Kit' : 'Connect kit'}</button>}
     </div>
     {kitPanel && <KitSettings before={async () => { if (P.playing) await P.toggle() }} />}
