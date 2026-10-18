@@ -155,8 +155,8 @@ function Learn() {
   const [click, setClick] = useState(saved?.click ?? false)
   const [voice, setVoice] = useState(saved?.voice ?? false)
   const [limb, setLimb] = useState<PracticeMemory['limb']>(saved?.limb ?? 'all')
-  const [muted, setMuted] = useState<Voice[]>(saved?.muted ?? [])
-  const [solo, setSolo] = useState<Voice[]>(saved?.solo ?? [])
+  const [muted, setMuted] = useState<Voice[]>([]) // mutes and solos are for this visit only
+  const [solo, setSolo] = useState<Voice[]>([])
   const [stepOn, setStepOn] = useState(saved?.stepOn ?? false)
   const [step, setStep] = useState(saved?.step ?? 0)
   const [trainer, setTrainer] = useState(saved?.trainer ?? false)
@@ -213,8 +213,8 @@ function Learn() {
   const secKey = sec ? sectionKey(selected, sec.name) : ''
   const counts = !silent && !callResp && !P.barLoop && P.loopSection === selected && (!stepOn || stepI === lesson.steps.length - 1)
   const [records, setRecords] = useState(() => bests(song.raw.id))
-  const live = useRef({ playing: P.playing, range: loopR, pct, base: song.raw.bpm, to, by, every, trainer, loops, counts, secKey })
-  live.current = { playing: P.playing, range: loopR, pct, base: song.raw.bpm, to, by, every, trainer, loops, counts, secKey }
+  const live = useRef({ playing: P.playing, range: loopR, pct, base: song.raw.bpm, to, by, every, trainer, loops, counts, secKey, callResp })
+  live.current = { playing: P.playing, range: loopR, pct, base: song.raw.bpm, to, by, every, trainer, loops, counts, secKey, callResp }
   const lap = useRef<{ key: string; pct: number } | null>(null)
   const setBpm = useRef(P.setBpm); setBpm.current = P.setBpm
   const onPulse = useRef<(e: PulseEvent) => void>(() => {})
@@ -235,9 +235,12 @@ function Learn() {
     lastBar.current = bar
     if (!L.playing || !L.range) return
     const [a, b] = L.range
-    if (prev === null) { lap.current = bar === a ? { key, pct: L.pct } : null; return } // a lap only counts from the loop's first bar
+    // in 'I play, you play' a loop ends only where a heard bar begins, so each heard bar and the played bar after it share one tempo
+    // (a one-bar or odd-length loop then takes two laps: once heard, once played)
+    const boundary = bar === a && !(L.callResp && mine)
+    if (prev === null) { lap.current = boundary ? { key, pct: L.pct } : null; return } // a lap only counts from the loop's first bar
     const wrapped = b - a === 1 ? prev === a && bar === a : prev === b - 1 && bar === a
-    if (!wrapped) return
+    if (!wrapped || !boundary) return
     // a full lap: from the loop's first bar round to it again, at one tempo throughout
     const full = lap.current?.key === key && lap.current.pct === L.pct
     lap.current = { key, pct: L.pct }
@@ -273,7 +276,7 @@ function Learn() {
   useEffect(() => { learn.count(countMap) }, [learn, countMap])
   useEffect(() => () => learn.count(null), [learn])
 
-  useEffect(() => { savePractice(song.raw.id, { countIn, click, voice, limb, muted, solo, stepOn, step: stepI, trainer, from, to, by, every, loops, pin }) }, [song.raw.id, countIn, click, voice, limb, muted, solo, stepOn, stepI, trainer, from, to, by, every, loops, pin])
+  useEffect(() => { savePractice(song.raw.id, { countIn, click, voice, limb, stepOn, step: stepI, trainer, from, to, by, every, loops, pin }) }, [song.raw.id, countIn, click, voice, limb, stepOn, stepI, trainer, from, to, by, every, loops, pin])
 
   const setPct = (n: number) => { setLoops(0); live.current.loops = 0; live.current.pct = n; P.setBpm(song.raw.bpm * n / 100) }
   const lockSection = (i: number) => { setPin(null); setStep(0); P.setLoopSection(i); P.jumpSection(i) }
@@ -314,9 +317,8 @@ function Learn() {
       {song.sections.map((s, i) => <button key={i} data-active={i === selected || undefined} aria-pressed={i === selected} onClick={() => lockSection(i)} className={`shrink-0 max-w-[148px] truncate ${pill(i === selected)}`}>{s.name}</button>)}
     </div>
 
-    {(mine || due) && <div className="-my-1 flex items-center gap-2 text-[13px] text-mute">
-      {mine && <span className="shrink-0 tabular-nums">Best here <span className="text-bone">{mine.pct}%</span>, {ago(mine.last)}</span>}
-      {due && <button onClick={() => lockSection(due.index)} className="h-11 min-w-0 truncate text-left text-amber">Review {song.sections[due.index].name}: {due.best.pct}%, {ago(due.best.last)}</button>}
+    {due && <div className="-my-1 flex items-center gap-2 text-[13px] text-mute">
+      <button onClick={() => lockSection(due.index)} className="h-11 min-w-0 truncate text-left text-amber">Review {song.sections[due.index].name}: {due.best.pct}%, {ago(due.best.last)}</button>
     </div>}
 
     <div>
@@ -337,11 +339,8 @@ function Learn() {
       <p className="mt-1 text-[15px] leading-snug text-bone">The drums sit out {sec.name}.</p>
       {nextDrums >= 0 && <button onClick={() => lockSection(nextDrums)} className="mt-3 h-11 w-full rounded-xl bg-amber text-ink text-[15px] font-medium truncate px-3">Go to {song.sections[nextDrums].name}</button>}
     </div> : <>
-    {/* the practice bar: what you reach for while playing, kept in reach above the notation as the page scrolls */}
+    {/* the practice bar: what you reach for while playing, kept in reach above the notation as the page scrolls (Play is in the sheet header, always visible) */}
     <div className="sticky -top-4 z-10 -mx-4 px-4 py-2 bg-[#141416] flex items-center gap-1.5" role="toolbar" aria-label="Practice">
-      <button aria-label={P.playing ? 'Stop' : 'Play'} onClick={P.toggle} className="w-11 h-11 shrink-0 rounded-full bg-amber text-ink grid place-items-center active:scale-90 transition-transform">
-        {P.playing ? <span className="w-3 h-3 rounded-[2px] bg-ink" /> : <span className="ml-0.5 w-0 h-0 border-y-[7px] border-y-transparent border-l-[11px] border-l-ink" />}
-      </button>
       <div className="flex items-center rounded-full bg-white/[0.06]">
         <button aria-label="Slower" disabled={pct <= 50} onClick={() => nudge(-5)} className="w-11 h-11 text-xl leading-none disabled:opacity-30">−</button>
         <span className="w-12 text-center text-[15px] tabular-nums">{pct}%</span>
@@ -355,7 +354,10 @@ function Learn() {
       <div className="flex items-center gap-1">
         <div className="min-w-0 flex-1">
           <div className="text-[15px] font-medium truncate">{sec.name} · bar {localBar}</div>
-          <div className="text-[13px] text-mute">{shown ? `${shown.count.timeSig} · ${shown.count.counting}` : lesson.overview.meter}</div>
+          <div className="flex gap-2 text-[13px] text-mute">
+            <span className="min-w-0 truncate">{shown ? `${shown.count.timeSig} · ${shown.count.counting}` : lesson.overview.meter}</span>
+            {mine && <span className="ml-auto shrink-0 tabular-nums">Best <span className="text-bone">{mine.pct}%</span>, {ago(mine.last)}</span>}
+          </div>
         </div>
         {pin !== null && <button onClick={() => setPin(null)} className="h-11 px-3 rounded-full text-[13px] text-amber">Follow</button>}
         <button aria-label="Previous bar" disabled={!sec || view <= sec.start} onClick={() => setPin(Math.max(sec.start, view - 1))} className="w-11 h-11 rounded-full bg-white/[0.06] text-lg disabled:opacity-30">‹</button>

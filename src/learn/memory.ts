@@ -1,13 +1,9 @@
-import type { Voice } from '../engine/types'
-
 /** Practice choices for one song. */
 export interface PracticeMemory {
   countIn: boolean
   click: boolean
   voice: boolean
   limb: 'all' | 'hands' | 'feet'
-  muted: Voice[]
-  solo: Voice[]
   stepOn: boolean
   step: number
   trainer: boolean
@@ -25,13 +21,13 @@ export interface Best { pct: number; at: number; last: number }
 
 /**
  * Kept in localStorage so a reload or a new day picks up where you were:
- * count-in, click, voice and the speed-trainer settings are habits (every song); limb, mutes, solos and the step are per song;
+ * count-in, click, voice and the speed-trainer settings are habits (every song); limb and the step are per song (mutes and solos are not kept: a song opens with every voice on);
  * best tempos are per section. The pinned bar, loop count and trainer switch belong to one sitting (memory only,
  * cleared when the song is loaded again).
  */
 const KEY = 'pulse.learn.v1'
 type Prefs = Pick<PracticeMemory, 'countIn' | 'click' | 'voice' | 'from' | 'to' | 'by' | 'every'>
-type SongPractice = Pick<PracticeMemory, 'limb' | 'muted' | 'solo' | 'stepOn' | 'step'>
+type SongPractice = Pick<PracticeMemory, 'limb' | 'stepOn' | 'step'>
 type Sitting = Pick<PracticeMemory, 'trainer' | 'loops' | 'pin'>
 interface Stored { prefs?: Partial<Prefs>; songs?: Record<string, { practice?: Partial<SongPractice>; best?: Record<string, Best> }> }
 
@@ -49,7 +45,7 @@ export const savePractice = (id: string, m: PracticeMemory) => {
   sitting.set(id, { trainer: m.trainer, loops: m.loops, pin: m.pin })
   const s = read(), songs = (s.songs ??= {})
   s.prefs = { countIn: m.countIn, click: m.click, voice: m.voice, from: m.from, to: m.to, by: m.by, every: m.every }
-  songs[id] = { ...songs[id], practice: { limb: m.limb, muted: m.muted, solo: m.solo, stepOn: m.stepOn, step: m.step } }
+  songs[id] = { ...songs[id], practice: { limb: m.limb, stepOn: m.stepOn, step: m.step } }
   write(s)
 }
 export const forgetPractice = (id: string) => { sitting.delete(id) }
