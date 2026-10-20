@@ -1,21 +1,25 @@
 import type { Voice } from '../engine/types'
 import { DEFAULT_MAP, drumOf, noteOn } from './map'
 
-/** How Pulse's audio reaches the drummer's ears. Each route keeps its own calibrated offset. */
+/** How Pulse's audio reaches the drummer's ears. Each route keeps its own calibrated delay (ms the sound arrives after
+ *  what the browser reports), used by the highlight in Now playing and Learn it and by kit scoring. */
 export type Route = 'aux' | 'device' | 'bluetooth'
-export const ROUTES: { id: Route; label: string }[] = [
-  { id: 'aux', label: 'Cable into the kit’s Aux In' },
-  { id: 'device', label: 'This device’s speaker or headphones' },
-  { id: 'bluetooth', label: 'Bluetooth to the kit' },
+export const ROUTES: { id: Route; label: string; short: string }[] = [
+  { id: 'aux', label: 'Cable into the kit’s Aux In', short: 'Cable' },
+  { id: 'device', label: 'This device’s speaker or headphones', short: 'This device' },
+  { id: 'bluetooth', label: 'Bluetooth (to the kit or headphones)', short: 'Bluetooth' },
 ]
+/** Starting guesses before calibration: a cable or the device's own output adds nothing the browser misses; Bluetooth
+ *  (A2DP) typically adds 150–300 ms. */
+export const ROUTE_DELAY: Record<Route, number> = { aux: 0, device: 0, bluetooth: 200 }
 export type Status = 'off' | 'asking' | 'denied' | 'none' | 'connected'
 export interface KitState {
   supported: boolean; status: Status; device: string; open: boolean
-  route: Route; offsets: Partial<Record<Route, number>>; pads: Record<number, Voice>; asking: Voice | null
+  route: Route; delays: Partial<Record<Route, number>>; pads: Record<number, Voice>; asking: Voice | null
 }
 export interface Hit { voice: Voice; note: number; velocity: number; at: number }
 interface Best { score: number; pct: number; at: number }
-interface Stored { route?: Route; offsets?: KitState['offsets']; pads?: Record<number, Voice>; best?: Record<string, Record<string, Best>> }
+interface Stored { route?: Route; delays?: KitState['delays']; pads?: Record<number, Voice>; best?: Record<string, Record<string, Best>> }
 
 const KEY = 'pulse.kit.v1'
 const read = (): Stored => { try { return JSON.parse(localStorage.getItem(KEY) ?? '{}') as Stored } catch { return {} } }
@@ -28,7 +32,8 @@ const nav = () => (typeof navigator === 'undefined' ? undefined : navigator) as 
 const saved = typeof localStorage === 'undefined' ? {} : read()
 let state: KitState = {
   supported: !!nav()?.requestMIDIAccess, status: 'off', device: '', open: false,
-  route: saved.route ?? 'aux', offsets: saved.offsets ?? {}, pads: saved.pads ?? {}, asking: null,
+  // older `offsets` were measured on a clock without the reported output latency: not carried over
+  route: saved.route ?? 'aux', delays: saved.delays ?? {}, pads: saved.pads ?? {}, asking: null,
 }
 const watchers = new Set<() => void>()
 const hitters = new Set<(h: Hit) => void>()
@@ -38,7 +43,7 @@ let recent: { drum: string; at: number }[] = []
 
 function set(p: Partial<KitState>) {
   state = { ...state, ...p }
-  if ('route' in p || 'offsets' in p || 'pads' in p) write({ ...read(), route: state.route, offsets: state.offsets, pads: state.pads })
+  if ('route' in p || 'delays' in p || 'pads' in p) { const { offsets: _old, ...rest } = read() as Stored & { offsets?: unknown }; void _old; write({ ...rest, route: state.route, delays: state.delays, pads: state.pads }) }
   watchers.forEach(f => f())
 }
 
@@ -80,8 +85,10 @@ export const kit = {
   },
   setOpen: (open: boolean) => set({ open }),
   setRoute: (route: Route) => set({ route }),
-  setOffset: (ms: number) => set({ offsets: { ...state.offsets, [state.route]: ms } }),
-  offset: () => state.offsets[state.route] ?? 0,
+  setOffset: (ms: number) => set({ delays: { ...state.delays, [state.route]: Math.round(Math.max(-200, Math.min(600, ms))) } }),
+  /** this route's delay in ms: calibrated, else the route's starting guess */
+  offset: () => state.delays[state.route] ?? ROUTE_DELAY[state.route],
+  calibrated: () => state.delays[state.route] !== undefined,
   askPad: (v: Voice | null) => set({ asking: v }),
   /** Heard times (performance.now ms) of the last calibration's clicks. */
   calClicks: [] as number[],

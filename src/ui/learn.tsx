@@ -14,6 +14,7 @@ import { scoredVoices } from '../midi/map'
 import { ticksPerStep } from '../engine/pattern'
 import { kit } from '../midi/kit'
 import { lapCounts, PASS, tally } from '../midi/score'
+import { SyncDetails } from './sync'
 import { KitReadout, KitSettings, MARK, readout, scorer, useKit, useKitScore, useMarks, useWaitMode } from './kit'
 
 const FEET = new Set<Voice>(['low', 'pedal'])
@@ -484,6 +485,7 @@ function Learn() {
           <p className="text-center text-[13px] text-bone -mt-1">The kit lights what you hear.</p></div>}
       </div>, setKitOpen)}
       {details('Common mistakes', <ul className="space-y-3 pb-2">{lesson.tips.filter(t => t.kind === 'mistake').map(t => <li key={t.id} className="text-[15px] leading-snug text-bone">{t.text}</li>)}</ul>)}
+      {!kitPanel && <SyncDetails before={async () => { if (P.playing) await P.toggle() }} />}
       {details('How to practice', <ul className="space-y-2 pb-2 list-disc pl-4">{[...lesson.tips.filter(t => t.kind === 'technique').map(t => t.text), ...lesson.techniqueNotes].map(t => <li key={t} className="text-[15px] leading-snug text-bone">{t}</li>)}</ul>)}
     </div>
     {!AUTHORED[`${song.raw.id}:${selected}`] && <p className="text-[13px] text-bone leading-snug">Practice plan from this section’s notes. A written lesson replaces it.</p>}

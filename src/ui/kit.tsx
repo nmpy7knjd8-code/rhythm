@@ -2,11 +2,11 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import * as Tone from 'tone'
 import type { Pattern, Voice } from '../engine/types'
 import { hitsAt, subHitsAt, ticksPerStep } from '../engine/pattern'
-import { kit, ROUTES, type Route } from '../midi/kit'
+import { kit } from '../midi/kit'
 import { Scorer, type HitResult, type Tally } from '../midi/score'
 import { clearMarks, marks, putMark, store, type Mark } from '../midi/marks'
 import { heardAt } from '../midi/clock'
-import { calibrate } from '../midi/calibrate'
+import { SoundSync } from './sync'
 import { DRUM_NAME, PADS, UNSCORED, drumOf, groupAt } from '../midi/map'
 
 export const useKit = () => useSyncExternalStore(kit.watch, kit.get)
@@ -125,39 +125,6 @@ export function KitReadout({ best }: { best?: { score: number; pct: number } }) 
   </div>
 }
 
-/** Play 24 clicks; the drummer hits any pad with each. The median gap is this sound route's offset. */
-function Calibrate({ before }: { before: () => Promise<void> }) {
-  const k = useKit()
-  const [count, setCount] = useState<number | null>(null)
-  const [msg, setMsg] = useState('')
-  const N = 24, GAP = 0.6
-  const run = async () => {
-    await before(); await Tone.start()
-    const ctx = Tone.getContext().rawContext as AudioContext
-    const synth = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 2, envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.01 } }).toDestination()
-    const t0 = ctx.currentTime + 0.8, clicks: number[] = [], hits: number[] = []
-    for (let i = 0; i < N; i++) { synth.triggerAttackRelease(i % 4 ? 900 : 1400, 0.02, t0 + i * GAP, i % 4 ? 0.5 : 0.8); clicks.push(heardAt(ctx, t0 + i * GAP)) }
-    kit.calClicks = clicks
-    setMsg(''); setCount(0)
-    const off = kit.onHit(h => { hits.push(h.at); setCount(hits.length) })
-    setTimeout(() => {
-      off(); synth.dispose(); setCount(null)
-      const c = calibrate(clicks, hits)
-      if (c) { kit.setOffset(c.offset); setMsg(c.spread > 25 ? 'Saved, but your hits were spread out. Run it again for a steadier number.' : 'Saved.') }
-      else setMsg('Too few hits landed near the clicks. Try again.')
-    }, (t0 - ctx.currentTime + N * GAP + 0.4) * 1000)
-  }
-  const off = k.offsets[k.route]
-  return <div>
-    <div className="flex items-center gap-2">
-      <button onClick={run} disabled={count !== null || k.status !== 'connected'} className="h-11 px-4 rounded-full bg-white/[0.06] text-[15px] disabled:opacity-40">Calibrate</button>
-      <span className="text-[15px] tabular-nums" aria-live="polite">{count !== null ? `Hit any pad with each click: ${count} of ${N}` : off !== undefined ? `Offset ${off} ms` : <span className={k.route === 'bluetooth' ? 'text-amber' : 'text-mute'}>Not calibrated</span>}</span>
-    </div>
-    {msg && <p className="mt-1 text-[13px] text-bone">{msg}</p>}
-    {k.route === 'bluetooth' && off === undefined && <p className="mt-1 text-[13px] text-amber leading-snug">Calibrate before scoring: Bluetooth adds a long delay.</p>}
-  </div>
-}
-
 function Pads() {
   const k = useKit()
   const [i, setI] = useState<number | null>(null)
@@ -193,13 +160,8 @@ export function KitSettings({ before }: { before: () => Promise<void> }) {
       <p className="flex-1 min-w-0 text-[15px] leading-snug">{k.status === 'connected' ? <><span className="text-emerald-400">●</span> {k.device}</> : STATUS[k.status]}</p>
       {k.status !== 'connected' && <button onClick={() => void kit.connect()} className="h-11 px-4 rounded-full bg-amber text-ink text-[15px] font-medium">Connect</button>}
     </div>
-    <label className="flex flex-col gap-1 text-[13px] text-mute">Pulse sound
-      <select value={k.route} onChange={e => kit.setRoute(e.target.value as Route)} className="h-11 rounded-xl bg-white/[0.06] px-2 text-[15px] text-bone">
-        {ROUTES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
-      </select>
-    </label>
-    <p className="-mt-2 text-[13px] text-bone leading-snug">Best: a cable from this device into the kit’s Aux In, headphones in the kit, kit Local on.</p>
-    <Calibrate before={before} />
+    <p className="text-[13px] text-bone leading-snug">Best: a cable from this device into the kit’s Aux In, headphones in the kit, kit Local on.</p>
+    <SoundSync before={before} />
     <Pads />
     <p className="text-[13px] text-mute leading-snug">Hit Tom 1, Tom 2 and the kick together to start.</p>
   </div>

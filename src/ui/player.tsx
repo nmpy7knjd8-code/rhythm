@@ -13,6 +13,8 @@ import * as Tone from 'tone'
 import { applyTuning, applyShift, type Tuning } from '../engine/pitch'
 import { forgetPractice } from '../learn/memory'
 import { LearnPanel } from './learn'
+import { SyncDetails } from './sync'
+import { kit } from '../midi/kit'
 import { VOICE_SHORT } from '../learn/speech'
 import { cleanSectionName } from '../data/sectionName'
 
@@ -100,6 +102,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => { if (!arrangement && !song) e().setLayers(layers) }, [layers, arrangement, song, e])
+  // the sound route's delay (Bluetooth etc.) holds the highlight back until the sound actually arrives
+  useEffect(() => { const s = () => { e().delay = kit.offset() / 1000 }; s(); return kit.watch(s) }, [e])
   useEffect(() => {
     const kit = KITS.find(k => k.id === kitId)!
     e().setKit(applyShift(applyTuning(kit, tuning), song?.raw.tuning?.shift as Partial<Record<Voice, number>> | undefined))
@@ -522,6 +526,7 @@ export function PlayerBar() {
         <button onClick={() => void P.loadError?.retry()} className="h-11 px-4 rounded-full bg-white/[0.06] text-bone">Retry</button></div>}
       {tab === 'now' && <div className="space-y-3">
         {sg && <SongForm />}
+        {sg && <SyncDetails before={async () => { if (P.playing) await P.toggle() }} />}
         {sg?.raw.tuning && <p className="text-[13px] text-bone">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
         {!sg && P.arrangement && <ol className="space-y-1.5 text-[15px]">{P.arrangement.sections.map((s, i) => <li key={i} className={P.arrangementPos?.section === i ? 'text-amber' : 'text-mute'}>{s.name} · {s.bars} bars</li>)}</ol>}
         {!sg && !P.arrangement && (P.layers.length ? P.layers.map(l => <LayerCard key={l.id} layer={l} />) : <p className="text-sm text-mute">Nothing loaded. Open Browse to pick a rhythm, then tap + to stack layers.</p>)}
