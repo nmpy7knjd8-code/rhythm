@@ -33,7 +33,7 @@ for (const [id, mode] of cases.filter(([id, m]) => !only || only.includes(id + '
     const fr = ts => { if (stop) return; if (lastTs) frames.push(ts - lastTs); lastTs = ts; requestAnimationFrame(fr) }; requestAnimationFrame(fr)
     await new Promise(r => setTimeout(r, SECS * 1000)); stop = true; mo.disconnect()
     frames.sort((a, b) => a - b); const fd = frames[frames.length >> 1] || 16.7
-    const lat = e.latency() // reported output latency (native context) + the sound route's delay, tl = e.timeline.slice()
+    const lat = e.latency(), tl = e.timeline.slice() // reported output latency (native context) + the sound route's delay
     const offs = seen.slice(2).map(x => { let best = null; for (const t of tl) if (t.step === x.s && (best === null || Math.abs(x.at - t.t - lat) < Math.abs(x.at - best.t - lat))) best = t; return best ? (x.at - best.t - lat) * 1000 + fd : null }).filter(v => v !== null)
     return { n: offs.length, lat: lat * 1000, offs, loop: e.song.loop, fd }
   }, SECS)
