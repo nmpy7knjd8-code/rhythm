@@ -62,3 +62,15 @@ export function SyncDetails({ before }: { before: () => Promise<void> }) {
     <div className="pb-2"><SoundSync before={before} /></div>
   </details>
 }
+
+/** Open the sync panel on this tab and bring it into view. */
+export function openSync() {
+  const d = document.querySelector<HTMLDetailsElement>('[role=dialog] [data-sound-sync]'); if (!d) return
+  d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+/** A small chip in Now playing's header row: the route delay at a glance, one tap to the panel. */
+export function SyncChip() {
+  const k = useKit()
+  return <button onClick={openSync} aria-label={`Sync with the sound: ${kit.offset()} ms`} className={`h-8 px-3.5 rounded-full text-[13px] tabular-nums active:scale-95 bg-white/[0.06] ${k.route === 'bluetooth' && !kit.calibrated() ? 'text-amber' : 'text-bone/75'}`}>Sync {kit.offset()} ms</button>
+}

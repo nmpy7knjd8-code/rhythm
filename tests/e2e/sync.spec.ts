@@ -49,3 +49,13 @@ test('tapping along to the clicks measures the delay and keeps it for that route
   await sync(page).getByLabel('Pulse sound').selectOption('aux')
   await expect(sync(page).locator('summary')).toContainText('Cable · 0 ms') // each route keeps its own
 })
+
+test("Now playing's Sync chip opens the panel; in Learn it the panel is the first folded section", async ({ page }) => {
+  await openSong(page, 'backinblack', 'Now playing')
+  await sheet(page).getByRole('button', { name: 'Sync with the sound: 0 ms' }).click()
+  await expect(sync(page).getByLabel('Pulse sound')).toBeInViewport()
+  await sheet(page).getByRole('button', { name: 'Learn it', exact: true }).click()
+  await pickSection(page, 1)
+  const first = sheet(page).locator('details').first()
+  await expect(first).toHaveAttribute('data-sound-sync', '')
+})

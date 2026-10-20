@@ -478,6 +478,8 @@ function Learn() {
     </section>
 
     <div>
+      {/* first of the folded panels: Bluetooth users need it before anything else */}
+      {!kitPanel && <SyncDetails before={async () => { if (P.playing) await P.toggle() }} />}
       {details('About this section', <div className="pb-2">
         <p className="text-[15px] leading-snug text-bone">{lesson.overview.summary}</p>
         {/* the kit only mounts (and animates) while this is open */}
@@ -485,7 +487,6 @@ function Learn() {
           <p className="text-center text-[13px] text-bone -mt-1">The kit lights what you hear.</p></div>}
       </div>, setKitOpen)}
       {details('Common mistakes', <ul className="space-y-3 pb-2">{lesson.tips.filter(t => t.kind === 'mistake').map(t => <li key={t.id} className="text-[15px] leading-snug text-bone">{t.text}</li>)}</ul>)}
-      {!kitPanel && <SyncDetails before={async () => { if (P.playing) await P.toggle() }} />}
       {details('How to practice', <ul className="space-y-2 pb-2 list-disc pl-4">{[...lesson.tips.filter(t => t.kind === 'technique').map(t => t.text), ...lesson.techniqueNotes].map(t => <li key={t} className="text-[15px] leading-snug text-bone">{t}</li>)}</ul>)}
     </div>
     {!AUTHORED[`${song.raw.id}:${selected}`] && <p className="text-[13px] text-bone leading-snug">Practice plan from this section’s notes. A written lesson replaces it.</p>}

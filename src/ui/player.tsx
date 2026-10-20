@@ -13,7 +13,7 @@ import * as Tone from 'tone'
 import { applyTuning, applyShift, type Tuning } from '../engine/pitch'
 import { forgetPractice } from '../learn/memory'
 import { LearnPanel } from './learn'
-import { SyncDetails } from './sync'
+import { SyncChip, SyncDetails } from './sync'
 import { kit } from '../midi/kit'
 import { VOICE_SHORT } from '../learn/speech'
 import { cleanSectionName } from '../data/sectionName'
@@ -519,6 +519,7 @@ export function PlayerBar() {
         {P.playing && sg.raw.goodPart && <button onClick={() => P.jumpBar(sg.raw.goodPart!.bar, true)} title={sg.raw.goodPart.at && cleanSectionName(sg.raw.goodPart.at)}
           className="h-8 px-3.5 rounded-full text-[13px] text-amber bg-amber/[0.08] active:scale-95">Skip to the good part</button>}
         <button aria-pressed={P.loopMode} onClick={() => P.setLoopMode(!P.loopMode)} className={`h-8 px-3.5 rounded-full text-[13px] active:scale-95 ${P.loopMode ? 'bg-amber text-ink' : 'bg-white/[0.06] text-bone/75'}`}>Loop</button>
+        <SyncChip />
         {P.loopMode && (P.barLoop ? <button aria-label="Clear loop" onClick={P.clearBarLoop} className="h-8 pl-3 pr-2.5 rounded-full text-[13px] bg-white/[0.06] text-amber flex items-center gap-1.5">Looping bars {P.barLoop[0] + 1}{P.barLoop[1] > P.barLoop[0] ? `–${P.barLoop[1] + 1}` : ''}<span className="text-bone/60 text-[15px] leading-none">×</span></button>
           : P.loopPick !== null && <span className="text-[13px] text-mute">Bar {P.loopPick + 1} · tap the end bar</span>)}
       </div>}<UpNext key={String(open)} /></div>}>
