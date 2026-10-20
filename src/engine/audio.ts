@@ -1,4 +1,5 @@
 import * as Tone from 'tone'
+import { heardTime, reportedLatency } from './clock'
 import { sectionIndex, type Kit, type KitVoice, type Layer, type Voice, type Arrangement, type ArrangementPos, type SectionIndex, type Pattern, type Fill } from './types'
 import { CountVoice } from './count'
 import { TICKS_PER_BAR, hitsAt, stepForTick, swingOffset, audibleLayers, ticksPerStep , subHitsAt, VARIANTS, fracOf } from './pattern'
@@ -382,8 +383,12 @@ export class RhythmEngine {
   setFill(fill: Fill | null, every: number) { this.fill = fill; this.fillEvery = every }
   /** Song steps by the audio time they sound (feel and drift included), for a display that follows the ear. */
   timeline: { t: number; bar: number; step: number; listen?: boolean }[] = []
+  /** Delay the browser can't see (Bluetooth, a kit's module), in seconds: the sound route's calibrated offset. */
+  delay = 0
+  /** Seconds from scheduling to hearing: what the browser reports plus the route delay. */
+  latency() { return reportedLatency(this.rawCtx()) + this.delay }
   /** Audio-context time of what is coming out of the speakers right now. */
-  heardNow() { const c = this.rawCtx(); return c.currentTime - (c.outputLatency || 0) - (c.baseLatency || 0) }
+  heardNow() { return heardTime(this.rawCtx(), this.delay) }
   /** The song step being heard now (or `ahead` seconds from now), or null before the first one sounds. */
   songPos(ahead = 0) {
     const now = this.heardNow() + ahead, tl = this.timeline

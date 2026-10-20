@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "node scripts/validate.mjs && node scripts/check-overrides.mjs && tsc -b && vite build",
     "lint": "eslint .",
-    "test:learn": "node --import ./scripts/register-ts.mjs --test tests/learn.test.ts tests/memory.test.ts tests/midi.test.ts",
+    "test:learn": "node --import ./scripts/register-ts.mjs --test tests/learn.test.ts tests/memory.test.ts tests/midi.test.ts tests/clock.test.ts",
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test": "npm run test:learn && npm run test:e2e"

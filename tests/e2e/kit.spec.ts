@@ -53,16 +53,16 @@ test('calibration measures the offset and scoring then allows for it', async ({ 
   await pickSection(page, 1)
   await d.getByRole('button', { name: 'Kit', exact: true }).click()
   const set = d.getByRole('group', { name: 'Kit settings' })
-  await expect(set).toContainText('Not calibrated')
-  await set.getByRole('button', { name: 'Calibrate' }).click()
-  await page.waitForFunction(() => (window as unknown as { __pulseKit: { calClicks: number[] } }).__pulseKit.calClicks.length === 24)
+  await expect(set).toContainText('0 ms') // a cable: no starting guess
+  await set.getByRole('button', { name: 'Tap along' }).click()
+  await page.waitForFunction(() => (window as unknown as { __pulseKit: { calClicks: number[] } }).__pulseKit.calClicks.length === 20)
   // a drummer who hears everything 120 ms late (say Bluetooth), wobbling ±8 ms
   await page.evaluate(() => {
     const w = window as unknown as { __pulseKit: { calClicks: number[] }; __midi: { hit(n: number, at: number): void } }
     w.__pulseKit.calClicks.forEach((c, i) => w.__midi.hit(38, c + 120 + [-8, -4, 0, 4, 8][i % 5]))
   })
-  await expect(set).toContainText('24 of 24')
-  await expect(set).toContainText('Offset 120 ms', { timeout: 20_000 })
+  await expect(set).toContainText('20 of 20')
+  await expect(set.locator('[data-sound-delay]')).toHaveText('120 ms', { timeout: 25_000 })
   await transport(page, 'Play').click()
   await hitNext(page, 10) // 130 ms after the note is heard: on time for this drummer
   await expect(readout(page)).toContainText('On time')
@@ -70,7 +70,7 @@ test('calibration measures the offset and scoring then allows for it', async ({ 
   await page.reload()
   const again = await openSong(page, 'backinblack')
   await again.getByRole('button', { name: 'Kit', exact: true }).click()
-  await expect(again.getByRole('group', { name: 'Kit settings' })).toContainText('Offset 120 ms') // saved for this sound route
+  await expect(again.getByRole('group', { name: 'Kit settings' })).toContainText('120 ms') // saved for this sound route
 })
 
 test('a full loop played cleanly scores 100% and is kept as the section best', async ({ page }) => {

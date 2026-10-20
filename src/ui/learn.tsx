@@ -14,6 +14,7 @@ import { scoredVoices } from '../midi/map'
 import { ticksPerStep } from '../engine/pattern'
 import { kit } from '../midi/kit'
 import { lapCounts, PASS, tally } from '../midi/score'
+import { SyncDetails } from './sync'
 import { KitReadout, KitSettings, MARK, readout, scorer, useKit, useKitScore, useMarks, useWaitMode } from './kit'
 
 const FEET = new Set<Voice>(['low', 'pedal'])
@@ -477,6 +478,8 @@ function Learn() {
     </section>
 
     <div>
+      {/* first of the folded panels: Bluetooth users need it before anything else */}
+      {!kitPanel && <SyncDetails before={async () => { if (P.playing) await P.toggle() }} />}
       {details('About this section', <div className="pb-2">
         <p className="text-[15px] leading-snug text-bone">{lesson.overview.summary}</p>
         {/* the kit only mounts (and animates) while this is open */}
