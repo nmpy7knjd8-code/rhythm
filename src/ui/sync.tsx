@@ -34,7 +34,7 @@ export function SoundSync({ before }: { before: () => Promise<void> }) {
   }
   return <div className="space-y-2">
     <label className="flex flex-col gap-1 text-[13px] text-mute">Pulse sound
-      <select value={k.route} onChange={e => kit.setRoute(e.target.value as Route)} className="h-11 rounded-xl bg-white/[0.06] px-2 text-[15px] text-bone">
+      <select aria-label="Pulse sound" value={k.route} onChange={e => kit.setRoute(e.target.value as Route)} className="h-11 rounded-xl bg-white/[0.06] px-2 text-[15px] text-bone">
         {ROUTES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
       </select>
     </label>

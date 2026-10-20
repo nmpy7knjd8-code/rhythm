@@ -44,7 +44,7 @@ for (const [id, mode] of cases.filter(([id, m]) => !only || only.includes(id + '
     await new Promise(r => setTimeout(r, secs * 1000)); stop = true; mo.disconnect(); clearInterval(keep)
     for (const x of e.timeline) if (!tl.length || x.t > tl[tl.length - 1].t) tl.push({ ...x })
     frames.sort((a, b) => a - b); const fd = frames[frames.length >> 1] || 16.7
-    const lat = (c.outputLatency || 0) + (c.baseLatency || 0)
+    const lat = e.latency() // reported output latency (native context) + the sound route's delay
     const near = (at, ok) => { let best = null; for (const t of tl) if (ok(t) && (best === null || Math.abs(at - t.t - lat) < Math.abs(at - best.t - lat))) best = t; return best }
     const offs = seen.slice(2).map(x => { const t = near(x.at, t => t.step === x.s); return t ? (x.at - t.t - lat) * 1000 + fd : null }).filter(v => v !== null && Math.abs(v) < 400)
     const ringOffs = rings.slice(1).map(x => { const t = near(x.at, t => t.step === 0); return t ? (x.at - t.t - lat) * 1000 + fd : null }).filter(v => v !== null && Math.abs(v) < 400)
