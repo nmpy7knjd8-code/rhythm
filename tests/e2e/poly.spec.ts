@@ -56,3 +56,15 @@ test('count, your layer and the Bluetooth delay reach the engine', async ({ page
   await item.getByRole('button', { name: 'Stop 4 against 3' }).click()
   await expect(item.getByRole('button', { name: 'Play 4 against 3' })).toBeVisible()
 })
+
+test('with a song queued, a polyrhythm keeps looping instead of moving on', async ({ page }) => {
+  await page.goto('./#/library', { waitUntil: 'networkidle' })
+  await page.getByRole('button', { name: /^Add .* to queue$/ }).first().click()
+  const item = await open(page, '3 against 2')
+  await item.getByRole('button', { name: 'Play 3 against 2' }).click()
+  await page.waitForFunction(() => (window as unknown as { __pulseEngine: Eng }).__pulseEngine.songPos() !== null)
+  // 3 against 2 is two beats long; 5 s is more than two cycles at any start tempo of 60 BPM or faster
+  await page.waitForTimeout(5000)
+  await expect(page.locator('body')).toContainText('Polyrhythm · cowbell over kick')
+  await expect(item.getByRole('button', { name: 'Stop 3 against 2' })).toBeVisible()
+})

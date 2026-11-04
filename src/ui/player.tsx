@@ -209,7 +209,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const en = e(); en.stop(); setLoadError(null); en.setArrangement(null); setArr(null); setArrPos(null); setLayers([]); clearBars(); resetPractice()
       en.sound = null; en.drift = 0; setSong(null); setSwingS(0); en.setSwing(0)
       const base = bars[0].suggestedBpm ?? 100
-      en.setSong(bars); en.setSongBaseBpm(base); setBpmS(base); setPoly({ name, bars })
+      en.setSong(bars); en.setSongLoop([0, 1]); en.setSongBaseBpm(base); setBpmS(base); setPoly({ name, bars })
       preload(kitId); await en.start(); setPlaying(true)
     },
     update: (id, patch) => setLayers(ls => ls.map(l => (l.id === id ? { ...l, ...patch } : l))),
