@@ -17,7 +17,7 @@ test('the page lists all 40 and featured first', async ({ page }) => {
   await expect(page.locator('li.card')).toHaveCount(7)
   await page.getByRole('button', { name: 'All 40' }).click()
   await expect(page.locator('li.card')).toHaveCount(40)
-  await expect(page.getByRole('link', { name: 'Polyrhythms' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('link', { name: 'Poly', exact: true })).toHaveAttribute('aria-current', 'page')
 })
 
 test('3 against 2 plays, and the lit notes follow the heard step', async ({ page }) => {

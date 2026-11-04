@@ -3,7 +3,7 @@ import { PlayerProvider, PlayerBar } from './ui/player'
 import { Library, Story, Lens, Theory, About } from './ui/pages'
 import { Polyrhythms } from './ui/poly'
 
-const NAV = [['library', 'Library'], ['theory', 'Theory'], ['poly', 'Polyrhythms'], ['story', 'Story'], ['lens', "Drummers"]] as const
+const NAV = [['library', 'Library'], ['theory', 'Theory'], ['poly', 'Poly'], ['story', 'Story'], ['lens', "Drummers"]] as const
 
 export default function App() {
   const read = () => location.hash.replace(/^#\/?/, '') || 'library'
