@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { POLYRHYTHMS, POLY_SOURCES, polyBar, polyCount, engineBpm, type Poly } from '../data/polyrhythms'
 import { usePlayer, useHeardPos } from './player'
 import { kit } from '../midi/kit'
@@ -76,6 +76,11 @@ function PolyDetail({ p }: { p: Poly }) {
   // count and your layer follow the controls while this one plays
   useEffect(() => { if (mine) P.learn.count(count === 'off' ? null : new Map([[0, polyCount(p, count)]])) }, [mine, count, p, P.learn])
   useEffect(() => { if (mine) P.learn.voices(yours === 'none' ? null : [VOICE[yours === 'cross' ? 'pulse' : 'cross']]) }, [mine, yours, P.learn])
+  // another card took over: drop this card's count and your layer
+  useEffect(() => { if (!mine) { setCount('off'); setYours('none') } }, [mine])
+  // card closed or page left: unmute and silence the count if this one was playing
+  const learn = P.learn, mineRef = useRef(mine); mineRef.current = mine
+  useEffect(() => () => { if (mineRef.current) { learn.voices(null); learn.count(null) } }, [learn])
   const play = async () => {
     if (live) { await P.toggle(); return }
     if (mine) { await P.toggle(); return }
