@@ -82,7 +82,7 @@ const KNOWN: Record<string, Known> = {
 function generic(a: number, b: number) {
   const dense = a * b >= 40 ? ` The cycle is long (${a * b} subdivisions), so it tends to be heard as texture rather than a pattern.` : ''
   if (Math.abs(a - b) === 1) return { feel: 'Drifting', about: `Neighbouring counts: the ${a} notes slip a little against the ${b} beats on every beat and meet only on the one.${dense}` }
-  if (a > b) return { feel: 'Rushing', about: `More notes than beats: ${a} even notes crowd into ${b} beats, so the cross layer runs ahead of the pulse.${dense}` }
+  if (a > b) return { feel: 'Crowding', about: `More notes than beats: ${a} even notes crowd into ${b} beats, so the cross layer runs ahead of the pulse.${dense}` }
   return { feel: 'Floating', about: `Fewer notes than beats: ${a} long notes stretch across ${b} beats and float over the pulse.${dense}` }
 }
 
