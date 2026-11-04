@@ -45,6 +45,9 @@ interface Ctx {
   loadId: number
   /** The last song that failed to load (network or file error), with a way to try again; null once something loads. */
   loadError: { song: Song; retry: () => Promise<void> } | null
+  /** a polyrhythm from the Polyrhythms page, played as a one-bar loop on the song engine */
+  poly: { name: string; bars: Pattern[] } | null
+  playPoly: (name: string, bars: Pattern[]) => Promise<void>
   learn: {
     voices: (v: Voice[] | null) => void
     bars: (m: Map<number, Pattern> | null) => void
@@ -89,6 +92,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [loopMode, setLoopModeS] = useState(false), [barLoop, setBarLoop] = useState<[number, number] | null>(null), [loopPick, setLoopPick] = useState<number | null>(null)
   const [loadId, setLoadId] = useState(0)
   const [loadError, setLoadError] = useState<Ctx['loadError']>(null)
+  const [poly, setPoly] = useState<Ctx['poly']>(null)
   const clearBars = () => { setBarLoop(null); setLoopPick(null) }
 
   const e = useCallback(() => {
@@ -162,7 +166,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     },
     loadSong: async (sg, sec) => {
       if (!await fetched(sg, () => live.current!.loadSong(sg, sec).then(ok => { if (ok) return live.current!.toggle() }))) return false
-      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setArrPos(null); setLayers([]); clearBars(); resetPractice(sg.raw.id)
+      const en = e(); en.stop(); setPlaying(false); setPoly(null); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setArrPos(null); setLayers([]); clearBars(); resetPractice(sg.raw.id)
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; const st = sec === undefined ? (sg.raw.firstDrumBar ?? 0) : (sg.sections[sec]?.start ?? 0); en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm)
       return true
@@ -170,7 +174,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     /** Play bars [start, end) of a song (0-based), looping that range. */
     playRange: async (sg, a, b) => {
       if (!await fetched(sg, () => live.current!.playRange(sg, a, b).then(() => {}))) return false
-      const en = e(); en.stop(); setPlaying(false); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setArrPos(null); setLayers([]); resetPractice(sg.raw.id)
+      const en = e(); en.stop(); setPlaying(false); setPoly(null); en.setArrangement(null); en.sound = null; en.drift = 0; setArr(null); setArrPos(null); setLayers([]); resetPractice(sg.raw.id)
       const n = sg.bars.length; const st = Math.max(0, Math.min(a, n - 1)), end = Math.max(st + 1, Math.min(b, n))
       en.setSong(sg.bars); en.sound = sg.raw.sound ?? null; en.drift = sg.raw.drift ?? 0; en.jumpSong(st); setSong(sg); setSongBar(st); setLoopS(null); setSwingS(0); en.setSwing(0);
       setBpmS(sg.raw.bpm); en.setSongBaseBpm(sg.raw.bpm); en.setSongLoop([st, end])
@@ -183,7 +187,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setLoopSection: i => { setLoopS(i); clearBars(); e().setSongLoop(i === null || !song ? null : [song.sections[i].start, song.sections[i].start + song.sections[i].bars]) },
     load: (p, add) => {
       setLoadError(null) // something else is playing now: an earlier song's load error no longer applies
-      resetPractice(); e().setSong(null); e().sound = null; e().drift = 0; setSong(null)
+      resetPractice(); e().setSong(null); e().sound = null; e().drift = 0; setSong(null); setPoly(null)
       e().setArrangement(null); setArr(null); setArrPos(null)
       const l: Layer = { id: `l${n++}`, pattern: p, volume: 0.85, mute: false, solo: false }
       setLayers(prev => (add ? [...prev, l] : [l]))
@@ -195,10 +199,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const target = from ?? sectionIndex(0, a.sections.length)!
       if (arrangement?.id === a.id && en.playing) { void en.wake(); en.seekArrangement(target); return }
       setLoadError(null)
-      resetPractice(); en.setSong(null); en.sound = null; en.drift = 0; setSong(null)
+      resetPractice(); en.setSong(null); en.sound = null; en.drift = 0; setSong(null); setPoly(null)
       setArr(a); setBpmS(a.bpm); en.setBpm(a.bpm); setLayers([]); setArrPos(null)
       en.stop(); en.setArrangement(a, ids => ids.map(id => PATTERNS[id]))
       en.seekArrangement(target)
+      preload(kitId); await en.start(); setPlaying(true)
+    },
+    playPoly: async (name, bars) => {
+      const en = e(); en.stop(); setLoadError(null); en.setArrangement(null); setArr(null); setArrPos(null); setLayers([]); clearBars(); resetPractice()
+      en.sound = null; en.drift = 0; setSong(null); setSwingS(0); en.setSwing(0)
+      const base = bars[0].suggestedBpm ?? 100
+      en.setSong(bars); en.setSongBaseBpm(base); setBpmS(base); setPoly({ name, bars })
       preload(kitId); await en.start(); setPlaying(true)
     },
     update: (id, patch) => setLayers(ls => ls.map(l => (l.id === id ? { ...l, ...patch } : l))),
@@ -213,8 +224,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setKit: id => { setKitId(id); setKitProgress(0); preload(id) },
     subscribe: l => e().subscribe(l),
     songPos: ahead => e().songPos(ahead),
-    loadId, learn, loadError,
-  }), [layers, playing, bpm, swing, feel, kitId, arrangementPos, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue, loopMode, barLoop, loopPick, loadId, learn, resetPractice, fetched, loadError])
+    loadId, learn, loadError, poly,
+  }), [poly, layers, playing, bpm, swing, feel, kitId, arrangementPos, arrangement, tuning, fillId, fillEvery, inFill, kitProgress, song, songBar, loopSection, e, preload, queue, loopMode, barLoop, loopPick, loadId, learn, resetPractice, fetched, loadError])
   live.current = value
   // Lock screen / Control Center: song title and artist, play/pause and next (the queue)
   useEffect(() => {
@@ -480,8 +491,8 @@ export function PlayerBar() {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'now' | 'kit' | 'browse' | 'sound' | 'learn'>('now')
   const sg = P.song; const si = sg ? sectionOf(sg, P.songBar) : 0
-  const title = sg ? sg.raw.song : P.arrangement ? P.arrangement.name : P.layers.length ? P.layers.map(l => l.pattern.name).join(' + ') : 'Choose a rhythm'
-  const sub = sg && sg.sections[si] ? `${sg.sections[si].name} · bar ${P.songBar - sg.sections[si].start + 1}/${sg.sections[si].bars}${P.loopSection !== null ? ' · looping' : ''}` : P.arrangement && P.arrangementPos ? P.arrangement.sections[P.arrangementPos.section].name : P.inFill ? 'Fill' : P.layers.length ? `${P.layers.length} layer${P.layers.length > 1 ? 's' : ''} · ${KITS.find(k => k.id === P.kitId)!.name}` : 'Tap + to browse'
+  const title = sg ? sg.raw.song : P.poly ? P.poly.name : P.arrangement ? P.arrangement.name : P.layers.length ? P.layers.map(l => l.pattern.name).join(' + ') : 'Choose a rhythm'
+  const sub = sg && sg.sections[si] ? `${sg.sections[si].name} · bar ${P.songBar - sg.sections[si].start + 1}/${sg.sections[si].bars}${P.loopSection !== null ? ' · looping' : ''}` : P.arrangement && P.arrangementPos ? P.arrangement.sections[P.arrangementPos.section].name : P.poly ? 'Polyrhythm · cowbell over kick' : P.inFill ? 'Fill' : P.layers.length ? `${P.layers.length} layer${P.layers.length > 1 ? 's' : ''} · ${KITS.find(k => k.id === P.kitId)!.name}` : 'Tap + to browse'
   const kitLoading = P.kitProgress < 1 && P.playing && KITS.find(k => k.id === P.kitId)!.voices.low.kind === 'sample'
   const show = (t: typeof tab) => { setTab(t); setOpen(true) }
   useEffect(() => { if ((sg && tab === 'browse') || (!sg && tab === 'learn')) setTab('now') }, [sg, tab])
@@ -490,7 +501,7 @@ export function PlayerBar() {
   useEffect(() => { if (!sg || !P.playing) { setLive(null); return }
     const id = setInterval(() => setLive(Tone.getTransport().bpm.value), 200); return () => clearInterval(id) }, [sg, P.playing])
   const transport = <>
-        <button aria-label={P.playing ? 'Stop' : 'Play'} onClick={P.toggle} disabled={!P.layers.length && !P.arrangement && !P.song}
+        <button aria-label={P.playing ? 'Stop' : 'Play'} onClick={P.toggle} disabled={!P.layers.length && !P.arrangement && !P.song && !P.poly}
           className={`relative w-10 h-10 shrink-0 rounded-full bg-amber text-ink grid place-items-center active:scale-90 transition-transform disabled:opacity-25 ${P.playing ? 'pulse-ring' : ''}`}>
           {P.playing ? <span className="w-3 h-3 rounded-[2px] bg-ink" /> : <span className="ml-0.5 w-0 h-0 border-y-[7px] border-y-transparent border-l-[11px] border-l-ink" />}
         </button>
@@ -530,10 +541,11 @@ export function PlayerBar() {
         {sg && <SyncDetails before={async () => { if (P.playing) await P.toggle() }} />}
         {sg?.raw.tuning && <p className="text-[13px] text-bone">Tuning ({sg.raw.tuning.status}): {sg.raw.tuning.note}</p>}
         {!sg && P.arrangement && <ol className="space-y-1.5 text-[15px]">{P.arrangement.sections.map((s, i) => <li key={i} className={P.arrangementPos?.section === i ? 'text-amber' : 'text-mute'}>{s.name} · {s.bars} bars</li>)}</ol>}
-        {!sg && !P.arrangement && (P.layers.length ? P.layers.map(l => <LayerCard key={l.id} layer={l} />) : <p className="text-sm text-mute">Nothing loaded. Open Browse to pick a rhythm, then tap + to stack layers.</p>)}
-        {!sg && !P.arrangement && <button className="w-full h-11 rounded-xl bg-white/[0.06] text-[15px] text-bone" onClick={() => setTab('browse')}>+ Add a layer</button>}
+        {!sg && P.poly && <p className="text-[15px] text-bone">{P.poly.name} is playing from <a className="text-amber" href="#/poly">Polyrhythms</a>.</p>}
+        {!sg && !P.arrangement && !P.poly && (P.layers.length ? P.layers.map(l => <LayerCard key={l.id} layer={l} />) : <p className="text-sm text-mute">Nothing loaded. Open Browse to pick a rhythm, then tap + to stack layers.</p>)}
+        {!sg && !P.arrangement && !P.poly && <button className="w-full h-11 rounded-xl bg-white/[0.06] text-[15px] text-bone" onClick={() => setTab('browse')}>+ Add a layer</button>}
       </div>}
-      {tab === 'kit' && <KitView bars={sg ? sg.bars : P.layers.map(l => l.pattern)} />}
+      {tab === 'kit' && <KitView bars={sg ? sg.bars : P.poly ? P.poly.bars : P.layers.map(l => l.pattern)} />}
       {tab === 'browse' && !sg && <Browser />}
       {tab === 'learn' && sg && <LearnPanel key={`${sg.raw.id}:${P.loadId}`} />}
       {tab === 'sound' && <div className="space-y-6">
