@@ -20,8 +20,10 @@ sounded thin and distorted.
 
 2026-11 full kit refresh: every acoustic sample re-processed from Salamander OH
 WAVs at 128 kbps MP3. Soft-limited to ≤ −1 dBFS (sources often clipped above
-full scale). Soft/ghost/open/crash-p layers kept several dB below hard layers so
-velocity layers stay natural (addresses past soft-crash and open-hat level bugs;
-open-hat and crash2 kit trims in kits.ts are unchanged). Cymbal rings kept longer
-before fade. Mid-tom files from the prior tom fix are re-encoded at 128 kbps.
-Same CC BY-SA 3.0 / PD source (Alexander Holm).
+full scale). Soft/ghost/open layers sit several dB below their hard layers. Soft
+crashes (crash1_p_*, crash2_p_*) sit about 2 dB below the hard crashes
+(crash1_p −3.9 dBFS, crash2_p −3.6 dBFS): the player already softens half-velocity
+crashes, so a ~4 dB file gap made them too quiet. Open-hat and crash2 kit trims
+in kits.ts are unchanged. Cymbal rings kept longer before fade. Mid-tom files
+from the prior tom fix are re-encoded at 128 kbps. Same CC BY-SA 3.0 / PD source
+(Alexander Holm).
