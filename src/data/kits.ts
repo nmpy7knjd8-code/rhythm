@@ -31,7 +31,7 @@ export const KITS: Kit[] = [
     tomLo: { kind: 'sample', layers: [{vel: 0.6, files: ['tomLo_mp_2.mp3', 'tomLo_mp_6.mp3']}, {vel: 1, files: ['tomLo_ff_2.mp3', 'tomLo_ff_5.mp3']}], gain: 1, fallback: { kind: 'membrane', pitch: 95, decay: 0.45, pitchDecay: 0.03 } },
     accent: { kind: 'sample', layers: [{vel: 1, files: ['accent_f_2.mp3', 'accent_f_6.mp3']}], gain: 0.8, fallback: { kind: 'noise', tone: 2500, decay: 0.05, pitch: 900, gain: 0.5 } },
     bell: { kind: 'sample', layers: [{vel: 0.6, files: ['bell_mp_2.mp3']}, {vel: 1, files: ['bell_ff_3.mp3', 'bell_ff_6.mp3']}], gain: 0.5, fallback: { kind: 'metal', pitch: 800, tone: 3.2, decay: 0.2, gain: 0.12 } },
-    tomMid: { kind: 'sample', rate: 1.22, layers: [{ vel: 0.6, files: ['tomLo_mp_2.mp3', 'tomLo_mp_6.mp3'] }, { vel: 1, files: ['tomLo_ff_2.mp3', 'tomLo_ff_5.mp3'] }], fallback: { kind: 'membrane', pitch: 125, decay: 0.4, pitchDecay: 0.03 } },
+    tomMid: { kind: 'sample', layers: [{ vel: 0.6, files: ['tomMid_p_1.mp3', 'tomMid_p_4.mp3'] }, { vel: 1, files: ['tomMid_ff_1.mp3', 'tomMid_ff_4.mp3'] }], gain: 1, fallback: { kind: 'membrane', pitch: 125, decay: 0.4, pitchDecay: 0.03 } },
     shaker: { kind: 'noise', tone: 9000, decay: 0.05, gain: 0.25 },
   }) },
   { id: 'electronic', name: 'Electronic', blurb: 'Drum-machine style: boomy kick, clap, tight hats.', voices: withCymbals({
