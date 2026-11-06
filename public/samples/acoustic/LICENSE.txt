@@ -17,3 +17,11 @@ tom, so they are formant-preserved rubberband pitch-shifts of the hi-tom samples
 down to the kit's mid pitch (~106 Hz), then trimmed/faded/mono/MP3 the same way.
 Previously the mid voice reused the floor-tom files at playback rate 1.22, which
 sounded thin and distorted.
+
+2026-11 full kit refresh: every acoustic sample re-processed from Salamander OH
+WAVs at 128 kbps MP3. Soft-limited to ≤ −1 dBFS (sources often clipped above
+full scale). Soft/ghost/open/crash-p layers kept several dB below hard layers so
+velocity layers stay natural (addresses past soft-crash and open-hat level bugs;
+open-hat and crash2 kit trims in kits.ts are unchanged). Cymbal rings kept longer
+before fade. Mid-tom files from the prior tom fix are re-encoded at 128 kbps.
+Same CC BY-SA 3.0 / PD source (Alexander Holm).
