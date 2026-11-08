@@ -1,0 +1,145 @@
+Gain staging for the three natural-pitch kits. Measured on the encoded MP3s with ffmpeg astats.
+Not an audition. No file was peak-normalised or limited.
+
+Voice gain is set so a full-velocity hit of that voice reaches about the same level, at the
+compressor input, as the Salamander acoustic kit: kick/snare/toms match the acoustic kick,
+hats/ride/bell/shaker match the acoustic closed hat, crashes match acoustic crash 1 after the
+existing runtime crash curve (0.708 * velocity^1.5). The Salamander open-hat -6 dB and crash 2
+-3 dB trims were not copied.
+
+If a soft crash (velocity 0.5, through that same curve) landed more than 6 dB under the acoustic
+soft crash, crash gains were raised until it was within 6 dB, and not so far that a full crash
+exceeded the acoustic full crash by more than 3 dB.
+
+{
+  "rusty": {
+    "gains": {
+      "low": 0.845,
+      "back": 1.764,
+      "accent": 3.126,
+      "tick": 1.734,
+      "open": 2.254,
+      "pedal": 1.373,
+      "tomHi": 1.533,
+      "tomMid": 1.276,
+      "tomLo": 0.946,
+      "ride": 0.854,
+      "rideBell": 1.083,
+      "crash1": 1.187,
+      "crash2": 1.546,
+      "china": 1.233
+    },
+    "soft": {
+      "file_db": -16.66,
+      "bus": 0.02,
+      "vs_acoustic_db": -8.335,
+      "scaled": 1.308,
+      "bus_after": 0.027
+    },
+    "stack": 1.834,
+    "voices": {
+      "low": 14,
+      "back": 10,
+      "accent": 4,
+      "tick": 8,
+      "open": 6,
+      "pedal": 5,
+      "tomHi": 6,
+      "tomMid": 7,
+      "tomLo": 8,
+      "ride": 10,
+      "rideBell": 4,
+      "crash1": 5,
+      "crash2": 6,
+      "china": 5
+    }
+  },
+  "virtuosity": {
+    "gains": {
+      "low": 8.547,
+      "back": 0.843,
+      "accent": 1.39,
+      "tick": 1.056,
+      "open": 0.625,
+      "pedal": 6.072,
+      "tomHi": 1.373,
+      "tomLo": 1.891,
+      "ride": 1.975,
+      "rideBell": 2.327,
+      "crash1": 3.205,
+      "crash2": 2.496,
+      "bell": 0.778,
+      "shaker": 2.108,
+      "tomMid": 1.373
+    },
+    "soft": {
+      "file_db": -21.52,
+      "bus": 0.025,
+      "vs_acoustic_db": -6.598,
+      "scaled": 1.071,
+      "bus_after": 0.027
+    },
+    "stack": 1.776,
+    "voices": {
+      "low": 4,
+      "back": 36,
+      "accent": 16,
+      "tick": 4,
+      "open": 4,
+      "pedal": 3,
+      "tomHi": 16,
+      "tomLo": 16,
+      "ride": 3,
+      "rideBell": 3,
+      "crash1": 3,
+      "crash2": 3,
+      "bell": 3,
+      "shaker": 1,
+      "tomMid": 16
+    }
+  },
+  "pulse-rock": {
+    "gains": {
+      "low": 0.85,
+      "back": 0.819,
+      "accent": 0.617,
+      "tick": 0.723,
+      "open": 0.783,
+      "pedal": 0.703,
+      "tomHi": 0.842,
+      "tomLo": 0.852,
+      "ride": 0.52,
+      "rideBell": 0.486,
+      "crash1": 0.501,
+      "crash2": 0.739,
+      "china": 0.573,
+      "bell": 0.554,
+      "shaker": 0.523,
+      "tomMid": 0.842
+    },
+    "soft": {
+      "file_db": -6.18,
+      "bus": 0.037,
+      "vs_acoustic_db": -3.194
+    },
+    "stack": 1.759,
+    "voices": {
+      "low": 5,
+      "back": 5,
+      "accent": 5,
+      "tick": 5,
+      "open": 5,
+      "pedal": 5,
+      "tomHi": 5,
+      "tomLo": 5,
+      "ride": 5,
+      "rideBell": 5,
+      "crash1": 5,
+      "crash2": 5,
+      "china": 5,
+      "bell": 5,
+      "shaker": 5,
+      "tomMid": 5
+    }
+  }
+}

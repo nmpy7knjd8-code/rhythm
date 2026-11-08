@@ -1,0 +1,23 @@
+Pulse Rock
+An adaptation of AVL Red Zeppelin 2023 by Glen MacArthur / AVL Drumkits.
+Original archive: https://www.bandshed.net/sounds/AVLDrumkits_SFZ/RED_ZEPPELIN_2023_repack.zip
+License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0).
+License text: AVL-LICENSE.pdf in this folder, and https://bandshed.net/pdf/AVL-Drumkits%20CC-BY-SA%20License.pdf
+
+You must credit Glen MacArthur and AVL Drumkits, and you must distribute adaptations of these
+samples under CC BY-SA 3.0. This folder is the adapted library. It is named Pulse Rock, not
+AVL Red Zeppelin. The rest of the Pulse application is not licensed under CC BY-SA.
+
+What changed from the 2023 repack:
+- Kept the center articulations Pulse songs use: 26" kick, 14" snare, sidestick, 14" rack tom,
+  16" floor tom, closed hat, pedal hat, semi-open hat (used for the open-hat voice), ride bow,
+  ride bell, 20" crash, 17" crash, 10" splash (splash variant only), china, cowbell, maraca.
+- The mid tom is the same 14" rack tom files, not a new drum and not a pitch shift.
+  Edge hits were not used as a fake round robin or a fake third tom.
+- Upstream SFZ exclusive groups that choke a cymbal when the same cymbal repeats were not imported.
+  Choke samples were not included.
+- Encoded to VBR MP3 (LAME -q:a 2) for delivery. No peak normalisation, no limiter, no fade,
+  no resampling, no pitch shift. Recorded dynamics and tails are otherwise intact.
+- This adaptation was not auditioned by ear.
+
+Suggested credit: "Pulse Rock — based on AVL Red Zeppelin by Glen MacArthur (CC BY-SA 3.0); adaptations documented in this file."

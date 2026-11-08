@@ -79,6 +79,12 @@ export interface KitVoice {
   kind: 'membrane' | 'noise' | 'metal' | 'sample'
   /** sample kind: velocity layers, each with round-robin files (paths relative to sample base URL) */
   layers?: SampleLayer[]
+  /** a different native recording for a hit variant (splash, low floor). Played at rate 1, never pitch-shifted into existence */
+  alts?: Partial<Record<string, SampleLayer[]>>
+  /** this voice plays another voice's recordings, same files and pitch (a kit with fewer drums) */
+  sharedFrom?: Voice
+  /** the library has no recording here; the hit is scheduled and stays silent */
+  silent?: boolean
   /** synth used until samples have loaded */
   fallback?: KitVoice
   /** sample playback rate (pitch shift), default 1 */
@@ -89,7 +95,11 @@ export interface KitVoice {
   pitchDecay?: number
   gain?: number
 }
-export interface Kit { id: string; name: string; blurb: string; voices: Record<Voice, KitVoice> }
+export interface Kit {
+  id: string; name: string; blurb: string; voices: Record<Voice, KitVoice>
+  /** Recorded at its own pitch. Skip Salamander reference tuning, per-song pitch, variant rate and the sample wobble. */
+  naturalPitch?: boolean
+}
 
 /** A fill replaces the groove for its bar. crashAfter = crash on the next downbeat. */
 export interface Fill { pattern: Pattern; crashAfter: boolean; description: string; category?: string }

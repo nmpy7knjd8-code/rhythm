@@ -11,10 +11,21 @@ export const PITCHED: Voice[] = ['low', 'tomLo', 'tomHi', 'back', 'accent', 'bel
 export type Tuning = Partial<Record<Voice, number>> // MIDI note per voice
 
 /** Return a copy of the kit with tuned voices' pitch overridden. Pure; no audio dependency. */
-/** Approximate fundamental (Hz) of each recorded sample voice as played, estimated by ear.
- *  Used to pitch-shift samples to a target note via playback rate. */
+/** Approximate fundamental (Hz) of the Salamander acoustic samples, estimated by ear.
+ *  Pitch-shifts that kit only. Natural-pitch kits (Big Rusty, Pulse Rock, Virtuosity) do not use these numbers. */
 export const SAMPLE_BASE_HZ: Partial<Record<Voice, number>> = { low: 55, tomLo: 87, tomMid: 106, tomHi: 147, back: 220, accent: 392, bell: 784 }
+
+/** Sample playback rate for one hit. Natural-pitch kits stay at 1: no kit rate, no song/variant rate, no ±0.8% wobble. */
+export function hitPlaybackRate(natural: boolean, kitRate: number, hitRate: number, rrIndex: number) {
+  if (natural) return 1
+  const wob = 1 + ((rrIndex * 0.61803) % 1 - 0.5) * 0.016 // ±0.8% pitch per stroke
+  return kitRate * hitRate * wob
+}
+/** Song gate (snareGate / tomGate) shortens a tail. Natural-pitch kits keep the recorded tail. */
+export function hitGate(natural: boolean, gate: number) { return natural ? 0 : gate }
+
 export function applyTuning(kit: Kit, t: Tuning): Kit {
+  if (kit.naturalPitch) return kit
   const voices = { ...kit.voices }
   for (const [v, m] of Object.entries(t) as [Voice, number][]) {
     if (m === undefined) continue
@@ -29,7 +40,7 @@ export function applyTuning(kit: Kit, t: Tuning): Kit {
 
 /** Shift voices by semitones (per-song tuning). Samples change playback rate; synths change pitch. */
 export function applyShift(kit: Kit, shift: Partial<Record<Voice, number>> | undefined): Kit {
-  if (!shift) return kit
+  if (!shift || kit.naturalPitch) return kit
   const voices = { ...kit.voices }
   for (const [v, st] of Object.entries(shift) as [Voice, number][]) {
     const k = voices[v]; if (!k || !st) continue; const r = 2 ** (st / 12)
