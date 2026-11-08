@@ -1,4 +1,5 @@
 import type { Kit, KitVoice, Voice } from '../engine/types'
+import { NATURAL_DEFS } from './kit-banks'
 
 /** Synth cymbals / extra voices for kits that don't define them. Every kit gets all voices. */
 const SYNTH_EXTRA: Partial<Record<Voice, KitVoice>> = {
@@ -11,7 +12,7 @@ const SYNTH_EXTRA: Partial<Record<Voice, KitVoice>> = {
 }
 function withCymbals(v: Partial<Record<Voice, KitVoice>>): Record<Voice, KitVoice> {
   const out = { ...SYNTH_EXTRA, ...v } as Record<Voice, KitVoice>
-  for (const k of Object.keys(out) as Voice[]) if (out[k].kind === 'sample' && !out[k].fallback) out[k] = { ...out[k], fallback: SYNTH_EXTRA[k] }
+  for (const k of Object.keys(out) as Voice[]) if (out[k].kind === 'sample' && !out[k].fallback && !out[k].silent) out[k] = { ...out[k], fallback: SYNTH_EXTRA[k] }
   return out
 }
 
@@ -105,8 +106,11 @@ KITS.splice(1, 0,
 // Level trims (dB), applied to per-kit copies so shared synth voices/fallbacks are trimmed exactly once per kit:
 // rim/cross-stick -3 dB, open hi-hat -3.5 dB, crash 2 -3 dB. Closed hat and pedal unchanged.
 const TRIM_DB: Partial<Record<Voice, number>> = { accent: -3, open: -6, crash2: -3, rideBell: -3 }
-for (const k of KITS) for (const [v, db] of Object.entries(TRIM_DB) as [Voice, number][]) {
+for (const k of KITS) if (!k.naturalPitch) for (const [v, db] of Object.entries(TRIM_DB) as [Voice, number][]) {
   const kv = k.voices[v]; if (!kv) continue
   const f = 10 ** (db / 20)
   k.voices[v] = { ...kv, gain: (kv.gain ?? 1) * f, fallback: kv.fallback && { ...kv.fallback, gain: (kv.fallback.gain ?? 1) * f } }
 }
+
+// After the Salamander trims, so those trims never touch these recordings.
+KITS.splice(3, 0, ...NATURAL_DEFS.map(d => ({ id: d.id, name: d.name, blurb: d.blurb, naturalPitch: true as const, voices: withCymbals(d.voices) })))

@@ -20,6 +20,10 @@ Preconditions:
 - **All songs.** Run `verify.sh playthrough`. One `ok` row per song (`bars N/N wrapped=true hits ... dup=0`), final `all songs played through`.
 - **Some songs.** Run `verify.sh playthrough killing,change`.
 
+## Kits on the Sound tab
+
+The default kit is still Acoustic (Salamander). Big Rusty, Pulse Rock and Virtuosity are separate choices on the Sound tab. They load when selected. Their samples stay at the recorded playback rate: song tuning, the Salamander reference pitch, variant pitch and the per-hit wobble do not move them. Pulse Rock and Virtuosity have two native toms; the mid tom plays the high tom's recordings with no pitch change. Virtuosity has no china sample, so china notes stay silent. Tests: `tests/natural-kits.test.ts`, `tests/e2e/sounds.spec.ts`.
+
 ## Gotchas
 
 - Takes several minutes for the full library; it runs 6 pages in parallel.

@@ -554,7 +554,7 @@ export function PlayerBar() {
           {sg && <p className="mt-1.5 text-[13px] text-bone leading-snug">{sg.raw.bpmNote ?? 'Follows the tab\'s tempo map; the slider scales every tempo change proportionally.'}</p>}
           {P.layers[0]?.pattern.bpmNote && <p className="mt-1.5 text-[13px] text-bone leading-snug">{P.layers[0].pattern.bpmNote}{P.layers[0].pattern.bpmSource && <> <a className="underline underline-offset-2" href={P.layers[0].pattern.bpmSource} target="_blank" rel="noreferrer">source</a></>}</p>}</section>
         <section><Label>Kit</Label>
-          <select value={P.kitId} onChange={e => P.setKit(e.target.value)} className="sel w-full">{KITS.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}</select>
+          <select aria-label="Kit" value={P.kitId} onChange={e => P.setKit(e.target.value)} className="sel w-full">{KITS.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}</select>
           <p className="mt-1.5 text-[13px] text-bone">{KITS.find(k => k.id === P.kitId)!.blurb}</p>
           {P.kitProgress > 0 && P.kitProgress < 1 && <div className="mt-2 h-0.5 rounded bg-white/10 overflow-hidden"><div className="h-full bg-amber transition-[width] duration-200" style={{ width: `${P.kitProgress * 100}%` }} /></div>}</section>
         <FillPicker />

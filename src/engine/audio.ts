@@ -2,9 +2,10 @@ import * as Tone from 'tone'
 import { heardTime, reportedLatency } from './clock'
 import { sectionIndex, type Kit, type KitVoice, type Layer, type Voice, type Arrangement, type ArrangementPos, type SectionIndex, type Pattern, type Fill } from './types'
 import { CountVoice } from './count'
+import { hitGate, hitPlaybackRate } from './pitch'
 import { TICKS_PER_BAR, hitsAt, stepForTick, swingOffset, audibleLayers, ticksPerStep , subHitsAt, VARIANTS, fracOf } from './pattern'
 
-type Inst = { trigger: (t: number, v: number, r?: number, gm?: number, gate?: number, tip?: boolean, tier?: number) => void; choke?: (t: number) => void; dispose: () => void }
+type Inst = { trigger: (t: number, v: number, r?: number, gm?: number, gate?: number, tip?: boolean, tier?: number, alt?: string) => void; choke?: (t: number) => void; dispose: () => void }
 
 // ---- sample bank: lazy, cached, shared across kits/layers ----
 let SAMPLE_BASE = ''
@@ -13,7 +14,9 @@ const buffers = new Map<string, Tone.ToneAudioBuffer>()
 /** Where each sample's attack actually starts (s). Samples differ by up to ~9 ms of lead-in (and MP3 decoders add their own padding),
  *  so round-robin and layer changes made equal notes land unevenly. Playback starts every file at its own attack, 0.5 ms early. */
 const onsets = new Map<string, number>()
-export const sampleAlign = { on: true } // test hook: compare against unaligned playback
+/** Test hook. `lastRate` / `lastGate` / `lastVoice` / `lastFile` are the most recent sample that actually started.
+ *  `crashChokes` counts choke calls on crash/china (a repeated crash must not increment this). */
+export const sampleAlign = { on: true, lastRate: -1, lastGate: -1, lastVoice: '', lastFile: '', crashChokes: 0 }
 function onsetOf(b: Tone.ToneAudioBuffer) {
   const d = b.getChannelData(0); let pk = 0
   for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > pk) pk = a }
@@ -52,8 +55,12 @@ function loadFile(f: string): Promise<void> {
 }
 /** Preload every sample a kit uses. Resolves with progress callbacks; safe to call repeatedly. */
 export async function preloadKit(kit: Kit, onProgress?: (done: number, total: number) => void) {
-  const files = Object.values(kit.voices).flatMap(v => v.layers?.flatMap(l => l.files) ?? [])
+  const files = [...new Set(Object.values(kit.voices).flatMap(v => [
+    ...(v.layers?.flatMap(l => l.files) ?? []),
+    ...Object.values(v.alts ?? {}).flatMap(bank => (bank ?? []).flatMap(l => l.files)),
+  ]))].filter(Boolean)
   let done = 0
+  if (!files.length) { onProgress?.(1, 1); return }
   await Promise.all(files.map(f => loadFile(f).then(() => onProgress?.(++done, files.length))))
 }
 
@@ -76,7 +83,7 @@ function makeSynth(kv: KitVoice, g: Tone.Gain): Inst {
   return { trigger: (t, v0, r = 1, gm = 1) => { const v = v0 * gm; s.triggerAttackRelease((kv.pitch ?? 300) * r, (kv.decay ?? 0.3), t, v) }, choke: t => s.triggerRelease(t), dispose: () => s.dispose() }
 }
 
-function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false, leveled = false): Inst {
+function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false, leveled = false, stable = false, voice?: Voice): Inst {
   const eqs: Tone.Filter[] = []
   if (kv.eq?.peak) eqs.push(new Tone.Filter({ type: 'peaking', frequency: kv.eq.peak[0], gain: kv.eq.peak[1], Q: kv.eq.peak[2] }))
   if (kv.eq?.shelf) eqs.push(new Tone.Filter({ type: 'highshelf', frequency: kv.eq.shelf[0], gain: kv.eq.shelf[1] }))
@@ -84,32 +91,39 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false, leveled 
   const g = new Tone.Gain(kv.gain ?? 1)
   if (eqs.length) { g.chain(...eqs, out) } else g.connect(out)
   if (kv.kind !== 'sample') { const s = makeSynth(kv, g); return { ...s, dispose: () => { s.dispose(); g.dispose() } } }
+  if (kv.silent) return { trigger() {}, choke() {}, dispose() { g.dispose(); eqs.forEach(f => f.dispose()) } }
   const layers = kv.layers ?? []
-  layers.forEach(l => l.files.forEach(loadFile))
+  const banks = [layers, ...Object.values(kv.alts ?? {}).filter((b): b is NonNullable<typeof b> => !!b)]
+  banks.forEach(b => b.forEach(l => l.files.forEach(loadFile)))
   const fb = kv.fallback ? makeSynth(kv.fallback, g) : null
-  const rr = layers.map(() => 0)
+  const rrBanks = new Map<typeof layers, number[]>()
+  const rrOf = (bank: typeof layers) => { let a = rrBanks.get(bank); if (!a) { a = bank.map(() => 0); rrBanks.set(bank, a) } return a }
   let last = '', seed = 1, lp: Tone.Filter | null = null
   const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 }
   const live = new Set<Tone.ToneBufferSource>()
   let lastT = -9
   return {
-    trigger: (t, v, r = 1, gm = 1, gate = 0, tip = false, tier = 0) => {
-      let li = layers.findIndex(l => v <= l.vel + 1e-6); if (li < 0) li = layers.length - 1
+    trigger: (t, v, r = 1, gm = 1, gate = 0, tip = false, tier = 0, alt?: string) => {
+      const bank = (alt && kv.alts?.[alt]?.length) ? kv.alts[alt]! : layers
+      if (!bank.length) return
+      const rr = rrOf(bank)
+      let li = bank.findIndex(l => v <= l.vel + 1e-6); if (li < 0) li = bank.length - 1
       if (tier === 2) li = 0 // true ghost: always the softest layer
-      const lo = li ? layers[li - 1].vel : 0
-      const rel = (v - lo) / Math.max(0.01, layers[li].vel - lo) // position within layer
+      const lo = li ? bank[li - 1].vel : 0
+      const rel = (v - lo) / Math.max(0.01, bank[li].vel - lo) // position within layer
       // near a layer boundary, borrow from the neighbouring layer 30% of the time (gain stays matched to v)
       let pick = li
-      if (tier === 2) { /* ghosts never borrow a louder layer */ } else if (rel > 0.85 && li < layers.length - 1 && rnd() < 0.3) pick = li + 1
+      if (tier === 2) { /* ghosts never borrow a louder layer */ } else if (rel > 0.85 && li < bank.length - 1 && rnd() < 0.3) pick = li + 1
       else if (rel < 0.15 && li > 0 && rnd() < 0.3) pick = li - 1
       // random round-robin, never the same file twice in a row
-      const files = layers[pick].files.filter(x => x !== last).length ? layers[pick].files.filter(x => x !== last) : layers[pick].files
+      const files = bank[pick].files.filter(x => x !== last).length ? bank[pick].files.filter(x => x !== last) : bank[pick].files
+      if (!files.length) return
       const f = files[Math.floor(rnd() * files.length)]; rr[li]++; last = f
       const buf = buffers.get(f)
       if (!buf) { fb?.trigger(t, v, r); return }
       const src = new Tone.ToneBufferSource(buf).connect(tip ? (lp ??= new Tone.Filter(7000, 'lowpass').connect(g)) : g)
-      const wob = 1 + ((rr[li] * 0.61803) % 1 - 0.5) * 0.016 // ±0.8% pitch per stroke
-      src.playbackRate.value = (kv.rate ?? 1) * r * wob
+      src.playbackRate.value = hitPlaybackRate(stable, kv.rate ?? 1, r, rr[li])
+      sampleAlign.lastRate = src.playbackRate.value; sampleAlign.lastFile = f; sampleAlign.lastVoice = voice ?? sampleAlign.lastVoice
       src.onended = () => { live.delete(src); src.dispose() }
       live.add(src)
       // a crash/china/open hat that is still ringing doesn't give a fresh sharp transient: soften the attack of quick repeats (2-8 ms fade-in from the onset)
@@ -121,22 +135,22 @@ function makeInst(kv: KitVoice, out: Tone.ToneAudioNode, washy = false, leveled 
       let vg = 0.55 + 0.45 * Math.min(1, rel), lead = 0
       if (leveled) {
         const avg = (fs: string[]) => { const a = fs.map(x => levels.get(x) ?? 0).filter(x => x > 0); return a.length ? a.reduce((p, q) => p + q, 0) / a.length : 0 }
-        const ref = avg(layers[layers.length - 1].files), soft = avg(layers[0].files), lv = levels.get(f) ?? 0
-        if (layers.length > 1 && ref > 0 && soft >= 0.7 * ref && lv > 0) vg = (0.2 + 0.8 * Math.pow(Math.min(1, Math.max(0, v)), 1.5)) * Math.max(0.5, Math.min(1.5, ref / lv))
+        const ref = avg(bank[bank.length - 1].files), soft = avg(bank[0].files), lv = levels.get(f) ?? 0
+        if (bank.length > 1 && ref > 0 && soft >= 0.7 * ref && lv > 0) vg = (0.2 + 0.8 * Math.pow(Math.min(1, Math.max(0, v)), 1.5)) * Math.max(0.5, Math.min(1.5, ref / lv))
         if (sampleAlign.on) lead = Math.min(0.008, Math.max(0, (rises.get(f) ?? 0) - 0.001)) / Math.max(0.5, src.playbackRate.value)
       }
       // snare tiers: a fixed level below the backbeat (a '7' hit: its layer's average attack level at that velocity), whatever the files' own loudness
       if (tier) {
         const avg = (fs: string[]) => { const a = fs.map(x => levels.get(x) ?? 0).filter(x => x > 0); return a.length ? a.reduce((p, q) => p + q, 0) / a.length : 0 }
-        let bi = layers.findIndex(l => BACKBEAT_V <= l.vel + 1e-6); if (bi < 0) bi = layers.length - 1
-        const blo = bi ? layers[bi - 1].vel : 0, bvg = 0.55 + 0.45 * Math.min(1, (BACKBEAT_V - blo) / Math.max(0.01, layers[bi].vel - blo))
-        const ref = avg(layers[bi].files) * bvg, lv = levels.get(f) ?? 0
+        let bi = bank.findIndex(l => BACKBEAT_V <= l.vel + 1e-6); if (bi < 0) bi = bank.length - 1
+        const blo = bi ? bank[bi - 1].vel : 0, bvg = 0.55 + 0.45 * Math.min(1, (BACKBEAT_V - blo) / Math.max(0.01, bank[bi].vel - blo))
+        const ref = avg(bank[bi].files) * bvg, lv = levels.get(f) ?? 0
         if (ref > 0 && lv > 0) vg = 10 ** (TIER_DB[tier] / 20) * (ref / lv) * (v / TIER_V[tier])
       }
       src.start(Math.max(0, t - lead), sampleAlign.on ? onsets.get(f) ?? 0 : 0, undefined, vg * gm)
       if (gate > 0) { src.fadeOut = 0.03; src.stop(t + gate) } // gated / dampened drum
     },
-    choke: t => { live.forEach(s => { try { s.fadeOut = 0.06; s.stop(t) } catch { /* already stopped */ } }); fb?.choke?.(t) }, // ~60 ms damping, like a foot closing the hat
+    choke: t => { if (voice === 'crash1' || voice === 'crash2' || voice === 'china') sampleAlign.crashChokes++; live.forEach(s => { try { s.fadeOut = 0.06; s.stop(t) } catch { /* already stopped */ } }); fb?.choke?.(t) }, // ~60 ms damping, like a foot closing the hat
     dispose: () => { fb?.dispose(); lp?.dispose(); g.dispose(); eqs.forEach(f => f.dispose()) },
   }
 }
@@ -426,7 +440,8 @@ export class RhythmEngine {
 
   private inst(channelId: string, v: Voice): Inst | undefined {
     const c = this.channels.get(channelId) ?? this.channel(channelId)
-    return (c.insts[v] ??= makeInst(this.kit.voices[v], c.gain, v === 'crash1' || v === 'crash2' || v === 'china' || v === 'open', v === 'tomHi' || v === 'tomMid' || v === 'tomLo'))
+    const natural = !!this.kit.naturalPitch
+    return (c.insts[v] ??= makeInst(this.kit.voices[v], c.gain, v === 'crash1' || v === 'crash2' || v === 'china' || v === 'open', !natural && (v === 'tomHi' || v === 'tomMid' || v === 'tomLo'), natural, v))
   }
 
   /** Optional event trace for timing tests: every scheduled hit's audio-context time. */
@@ -458,14 +473,19 @@ export class RhythmEngine {
     const tip = !!hz && fl > 0 && (voice === 'tick' || voice === 'open') && hz.pos % (hz.beat / 2) !== 0
     const sp = this.sound, isSn = voice === 'back', isCr = voice === 'crash1' || voice === 'crash2'
     const isTom = voice === 'tomHi' || voice === 'tomMid' || voice === 'tomLo'
-    const rate = (vr?.rate ?? 1) * ((isSn ? sp?.snare : isTom ? sp?.toms : isCr || voice === 'ride' ? sp?.cym : 1) ?? 1)
-    const gate = (isSn ? sp?.snareGate : isTom ? sp?.tomGate : 0) ?? 0
+    const natural = !!this.kit.naturalPitch
+    const profile = (isSn ? sp?.snare : isTom ? sp?.toms : isCr || voice === 'ride' ? sp?.cym : 1) ?? 1
+    // Natural-pitch kits ignore variant rate, the song sound profile and the Salamander gate. hitPlaybackRate also forces 1.
+    const rate = natural ? 1 : (vr?.rate ?? 1) * profile
+    const gate = hitGate(natural, (isSn ? sp?.snareGate : isTom ? sp?.tomGate : 0) ?? 0)
+    const alt = natural && variant && this.kit.voices[voice]?.alts?.[variant]?.length ? variant : undefined
+    sampleAlign.lastGate = gate; sampleAlign.lastVoice = voice
     // crashes/china: -3 dB overall and a steep velocity curve (gain ~ v^1.5, so half velocity is -9 dB below full), with the
     // layer picked from v^1.5 so soft hits use the softer samples
     const crashy = isCr || voice === 'china', cv = crashy ? Math.pow(Math.max(0, vel), 1.5) : vel, cg = crashy ? 0.708 * Math.pow(Math.max(0, vel), 1.5) : 1
     const tier = isSn ? snareTier(vel0) : 0, kind = this.kit.voices[voice]?.kind
     if (tier && kind !== 'sample') vel = BACKBEAT_V * 10 ** (TIER_DB[tier] / 20) * (vel / TIER_V[tier]) // synth snares: level follows velocity
-    inst.trigger(t, tier && kind !== 'sample' ? vel : cv, rate, (isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1) * cg, gate, tip, kind === 'sample' ? tier : 0)
+    inst.trigger(t, tier && kind !== 'sample' ? vel : cv, rate, (isSn || isCr ? this.density(channelId + (isSn ? ':sn' : ':cr'), t, vel, isSn ? 1 : 2) : 1) * cg, gate, tip, kind === 'sample' ? tier : 0, alt)
   }
   /** Tab grace notes for this step: soft strokes just before the onset, 18-35 ms apart and never closer than 40% of the gap to that drum's previous note. */
   private playGraces(ch: string, p: Pattern, step: number, t: number, stepSec: number, shift: (frac: number) => number) {
